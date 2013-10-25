@@ -883,7 +883,6 @@ begin
   if Assigned(FOnProgress) then
   begin
     case ProgressState of
-      psStart, psInitialization: CurrentProgress := 0;
       psInProgress:
       begin
         if FCompressedStream.Size = 0 then
@@ -899,6 +898,8 @@ begin
               (FTotalSizeCount / 100));
       end;
       psFinalization, psEnd: CurrentProgress := 100;
+    else
+      CurrentProgress := 0;
     end;
     Cancel := False;
     FOnProgress(Self, Item[FProcessedItemIndex].FileName,
