@@ -6,7 +6,7 @@
 //  * Purpose   : Набор классов для распаковки ZIP архива
 //  * Author    : Александр (Rouse_) Багель
 //  * Copyright : © Fangorn Wizards Lab 1998 - 2013.
-//  * Version   : 1.0.9
+//  * Version   : 1.0.10
 //  * Home Page : http://rouse.drkb.ru
 //  * Home Blog : http://alexander-bagel.blogspot.ru
 //  ****************************************************************************
@@ -90,6 +90,7 @@ type
       CheckCRC32: Boolean = True): TExtractResult;
     property Attributes: TWin32FileAttributeData read FFileHeader.Attributes;
     property Comment: string index 0 read GetString;
+    property ItemIndex: Integer read FItemIndex;
     property IsFolder: Boolean read FIsFolder;
     property FileName: string index 1 read GetString;
     property VersionMadeBy: Word read FFileHeader.Header.VersionMadeBy;
@@ -178,6 +179,7 @@ type
   EWrongPasswordException = class(Exception);
   EZipReaderItem = class(Exception);
   EZipReader = class(Exception);
+  EZipReaderRead = class(Exception);
 
 implementation
 
@@ -233,9 +235,9 @@ begin
 
   if Length(FullPath) > MAX_PATH then
     raise EZipReaderItem.CreateFmt(
-      'Элемент архива "%s" не может быть распакован.' + sLineBreak +
+      'Элемент архива №%d "%s" не может быть распакован.' + sLineBreak +
       'Общая длина пути и имени файла не должна превышать 260 символов',
-      [FFileHeader.FileName]);
+      [ItemIndex, FFileHeader.FileName]);
   if IsFolder then
   begin
     ForceDirectories(FullPath);
@@ -350,7 +352,9 @@ function TFWZipReaderItem.ExtractToStream(Value: TStream;
         begin
           if Count - FTotalExtracted < MAXWORD then
             Size := Count - FTotalExtracted;
-          Src.ReadBuffer(Buff^, Size);
+          if Src.Read(Buff^, Size) <> Size then
+            raise EZipReaderRead.CreateFmt(
+              'Ошибка чтения данных элемента №%d "%s".', [ItemIndex, FileName]);
           if Decryptor <> nil then
             Decryptor.DecryptBuffer(Buff, Size);
           Result := CRC32Calc(Result, Buff, Size);
@@ -414,8 +418,10 @@ begin
 
       if FFileHeader.Header.GeneralPurposeBitFlag and
         PBF_STRONG_CRYPT <> 0 then
-        raise EZipReaderItem.Create(
-          'Ошибка извлечения данных. Не поддерживаемый режим шифрования');
+        raise EZipReaderItem.CreateFmt(
+          'Ошибка извлечения данных элемента №%d "%s".' + sLineBreak +
+          'Не поддерживаемый режим шифрования',
+          [ItemIndex, FileName]);
 
       if Password = '' then
       begin
@@ -479,6 +485,10 @@ begin
               try
                 CRC32Stream.CopyFrom(Decompressor, UncompressedSize);
               except
+                on E: EReadError do
+                  raise EZipReaderRead.CreateFmt(
+                    'Ошибка чтения данных элемента №%d "%s".', [ItemIndex, FileName]);
+
                 // Rouse_ 04.04.2010
                 // Ранее это исключенияе было EDecompressionError
                 // Поэтому привяжемся к базовому исключению EZLibError
@@ -521,17 +531,21 @@ begin
       end;
       1..7, 9..12:
         raise EZipReaderItem.CreateFmt(
+          'Ошибка извлечения данных элемента №%d "%s".' + sLineBreak +
           'Не поддерживаемый алгоритм декомпрессии "%s"',
-          [CompressionMetods[CompressionMethod]]);
+          [ItemIndex, FileName, CompressionMetods[CompressionMethod]]);
     else
       raise EZipReaderItem.CreateFmt(
+        'Ошибка извлечения данных элемента №%d "%s".' + sLineBreak +
         'Не поддерживаемый алгоритм декомпрессии (%d)',
-        [FFileHeader.Header.CompressionMethod]);
+        [ItemIndex, FileName, FFileHeader.Header.CompressionMethod]);
     end;
     if CurrItemCRC32 <> Crc32 then
       if CheckCRC32 then
-        raise EZipReaderItem.Create(
-          'Ошибка извлечения данных. Неверная контрольная сумма.')
+        raise EZipReaderItem.CreateFmt(
+          'Ошибка извлечения данных элемента №%d "%s".' + sLineBreak +
+          'Неверная контрольная сумма.',
+          [ItemIndex, FileName])
       else
         Result := erWrongCRC32;
   finally
@@ -561,13 +575,16 @@ begin
   FOwner := Owner;
   FItemIndex := Index;
   ZeroMemory(@FFileHeader, SizeOf(TCentralDirectoryFileHeaderEx));
-  Owner.ZIPStream.ReadBuffer(FFileHeader.Header,
-    SizeOf(TCentralDirectoryFileHeader));
+
+  if Owner.ZIPStream.Read(FFileHeader.Header,
+    SizeOf(TCentralDirectoryFileHeader)) <> SizeOf(TCentralDirectoryFileHeader) then
+    raise EZipReaderRead.CreateFmt(
+      'Отсутствуют данные TCentralDirectoryFileHeader элемента №%d', [ItemIndex]);
 
   if FFileHeader.Header.CentralFileHeaderSignature <>
     CENTRAL_FILE_HEADER_SIGNATURE then
-    raise EZipReaderItem.Create(
-      'Ошибка чтения структуры TCentralDirectoryFileHeader');
+    raise EZipReaderItem.CreateFmt(
+      'Ошибка чтения структуры TCentralDirectoryFileHeader элемента №%d', [ItemIndex]);
 
   LoadStringValue(FFileHeader.FileName, FFileHeader.Header.FilenameLength, True);
 
@@ -624,7 +641,11 @@ begin
   GetMem(Buff, FFileHeader.Header.ExtraFieldLength);
   try
     BuffCount := FFileHeader.Header.ExtraFieldLength;
-    FOwner.ZIPStream.ReadBuffer(Buff^, BuffCount);
+
+    if FOwner.ZIPStream.Read(Buff^, BuffCount) <> BuffCount then
+      raise EZipReaderRead.CreateFmt(
+        'Отсутствуют данные поля ExtraField элемента №%d "%s"', [ItemIndex, FileName]);
+
     EOFBuff := Pointer(Integer(Buff) + BuffCount);
     while BuffCount > 0 do
     begin
@@ -827,11 +848,16 @@ begin
   // При чтении учитываем оффсет на начало архива StartZipDataOffset
   FOwner.ZIPStream.Position :=
     FFileHeader.RelativeOffsetOfLocalHeader + FOwner.StartZipDataOffset;
-  FOwner.ZIPStream.ReadBuffer(FLocalFileHeader, SizeOf(TLocalFileHeader));
+
+  if FOwner.ZIPStream.Read(FLocalFileHeader,
+    SizeOf(TLocalFileHeader)) <> SizeOf(TLocalFileHeader) then
+    raise EZipReaderRead.CreateFmt(
+      'Отсутстсвуют данные TLocalFileHeader элемента №%d "%s"', [ItemIndex, FileName]);
 
   if FLocalFileHeader.LocalFileHeaderSignature <>
     LOCAL_FILE_HEADER_SIGNATURE then
-    raise EZipReaderItem.Create('Ошибка чтения TLocalFileHeader');
+    raise EZipReaderItem.CreateFmt(
+      'Ошибка чтения TLocalFileHeader элемента №%d "%s"', [ItemIndex, FileName]);
 
   FFileHeader.DataOffset := FOwner.ZIPStream.Position +
     FLocalFileHeader.FilenameLength + FLocalFileHeader.ExtraFieldLength;
@@ -848,7 +874,11 @@ begin
   if Integer(nSize) > 0 then
   begin
     SetLength(aString, nSize);
-    FOwner.ZIPStream.ReadBuffer(aString[1], nSize);
+
+    if FOwner.ZIPStream.Read(aString[1], nSize) <> Integer(nSize) then
+      raise EZipReaderRead.CreateFmt(
+        'Ошибка чтения строковых данных элемента №%d "%s"', [ItemIndex, FileName]);
+
     // Rouse_ 13.06.2013
     // 11 бит отвечает за UTF8 кодировку
     if FFileHeader.Header.GeneralPurposeBitFlag and PBF_UTF8 = PBF_UTF8 then
@@ -1125,14 +1155,16 @@ begin
   Zip64LocatorOffset := FZIPStream.Position -
     SizeOf(TZip64EOFCentralDirectoryLocator);
 
-  FZIPStream.ReadBuffer(FEndOfCentralDir, SizeOf(TEndOfCentralDir));
+  if FZIPStream.Read(FEndOfCentralDir, SizeOf(TEndOfCentralDir)) <>
+    SizeOf(TEndOfCentralDir) then
+    raise EZipReader.Create('Отсутствуют данные структуры TEndOfCentralDir.');
 
   if FEndOfCentralDir.NumberOfThisDisk <> 0 then
     raise EZipReader.Create('Многотомные архивы не поддерживаются.');
 
   if FEndOfCentralDir.EndOfCentralDirSignature <>
     END_OF_CENTRAL_DIR_SIGNATURE then
-    raise EZipReader.Create('Ошибка чтения структуры TEndOfCentralDir');
+    raise EZipReader.Create('Ошибка чтения структуры TEndOfCentralDir.');
 
   LoadStringValue(FEndOfCentralDirComment,
     FEndOfCentralDir.ZipfileCommentLength);
@@ -1225,7 +1257,9 @@ begin
         Offset := StartZipDataOffset;
       end;
       Value.Position := Offset;
-      Value.ReadBuffer(Buff^, BuffSize);
+
+      if Value.Read(Buff^, BuffSize) <> BuffSize then
+        raise EZipReaderRead.Create('Ошибка чтения данных при поиске END_OF_CENTRAL_DIR_SIGNATURE');
 
       // Rouse_ 14.02.2013
       // Если в архиве будет незапакованый ZIP архив,
@@ -1291,7 +1325,10 @@ begin
   if Integer(nSize) > 0 then
   begin
     SetLength(Value, nSize);
-    FZIPStream.ReadBuffer(Value[1], nSize);
+
+    if FZIPStream.Read(Value[1], nSize) <> Integer(nSize) then
+      raise EZipReaderRead.Create('Ошибка чтения коментария к архиву');
+
     OemToAnsi(@Value[1], @Value[1]);
   end;
 end;
@@ -1308,8 +1345,6 @@ begin
   if not Zip64Present then
     raise EZipReader.Create(
       'Ошибка чтения структуры FZip64EOFCentralDirectoryRecord');
-
-  { TODO : Зачитывать ExData или нет? }
 
   // Rouse_ 02.10.2012
   // При чтении учитываем оффсет на начало архива StartZipDataOffset
