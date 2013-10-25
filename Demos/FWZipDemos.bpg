@@ -1,0 +1,43 @@
+#------------------------------------------------------------------------------
+VERSION = BWS.01
+#------------------------------------------------------------------------------
+!ifndef ROOT
+ROOT = $(MAKEDIR)\..
+!endif
+#------------------------------------------------------------------------------
+MAKE = $(ROOT)\bin\make.exe -$(MAKEFLAGS) -f$**
+DCC = $(ROOT)\bin\dcc32.exe $**
+BRCC = $(ROOT)\bin\brcc32.exe $**
+#------------------------------------------------------------------------------
+PROJECTS = CreateZIPDemo1.exe CreateZIPDemo2.exe ExctractZIPDemo1.exe \
+  ExctractZIPDemo2.exe FWZipPerfomance.exe BuildWithException.exe \
+  UseExDataBlob.exe ZipAnalizer.exe
+#------------------------------------------------------------------------------
+default: $(PROJECTS)
+#------------------------------------------------------------------------------
+
+CreateZIPDemo1.exe: Create ZIP 1\CreateZIPDemo1.dpr
+  $(DCC)
+
+CreateZIPDemo2.exe: Create ZIP 2\CreateZIPDemo2.dpr
+  $(DCC)
+
+ExctractZIPDemo1.exe: Extract ZIP 1\ExctractZIPDemo1.dpr
+  $(DCC)
+
+ExctractZIPDemo2.exe: Extract ZIP 2\ExctractZIPDemo2.dpr
+  $(DCC)
+
+FWZipPerfomance.exe: PerfomanceTest\FWZipPerfomance.dpr
+  $(DCC)
+
+BuildWithException.exe: Test Build With Exception\BuildWithException.dpr
+  $(DCC)
+
+UseExDataBlob.exe: Use ZIP ExData\UseExDataBlob.dpr
+  $(DCC)
+
+ZipAnalizer.exe: ZipAnalizer\ZipAnalizer.dpr
+  $(DCC)
+
+
