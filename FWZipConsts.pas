@@ -6,7 +6,7 @@
 //  * Purpose   : Типы и константы используемые для работы с ZIP архивами
 //  * Author    : Александр (Rouse_) Багель
 //  * Copyright : © Fangorn Wizards Lab 1998 - 2013.
-//  * Version   : 1.0.9
+//  * Version   : 1.0.10
 //  * Home Page : http://rouse.drkb.ru
 //  * Home Blog : http://alexander-bagel.blogspot.ru
 //  ****************************************************************************
@@ -230,7 +230,15 @@ const
   SUPPORTED_EXDATA_NTFSTIME = 10;
 
 type
-  TProgressState = (psInitialization, psInProgress, psFinalization, psException);
+  TProgressState = (
+    psStart,            // начало распаковки элемента, результирующий файл еще не создан
+    psInitialization,   // результирующий файл создан и залочен, производится подготовка к распаковке
+    psInProgress,       // идет распаковка
+    psFinalization,     // распаковка завершена, сейчас будут разрушены все служебные объекты, результирующий файл все еще залочен
+    psEnd,              // операция распаковки полностью завершена, результирующий файл доступен на чтение/запись
+    psException         // ошибка
+    );
+
   TZipProgressEvent = procedure(Sender: TObject; const FileName: string;
     Percent, TotalPercent: Byte; var Cancel: Boolean; ProgressState: TProgressState) of object;
   TZipExtractItemEvent = procedure(Sender: TObject; const FileName: string;
@@ -328,6 +336,7 @@ const
   function FileSizeToInt64(FileSizeLo, FileSizeHi: DWORD): Int64;
   function PathCanonicalize(Value: string): string;
   function MakeUniqueName(const Value: string): string;
+  function FileSizeToStr(Value: Int64): string;
 
 implementation
 
@@ -393,5 +402,34 @@ begin
 {$ENDIF}
 end;
 
+function FileSizeToStr(Value: Int64): string;
+begin
+  if Value < 1024 then
+  begin
+    Result := Format('%d байт', [Value]);
+    Exit;
+  end;
+  Value := Value div 1024;
+  if Value < 1024 then
+  begin
+    Result := Format('%d килобайт', [Value]);
+    Exit;
+  end;
+  Value := Value div 1024;
+  if Value < 1024 then
+  begin
+    Result := Format('%d мегабайт', [Value]);
+    Exit;
+  end;
+  Value := Value div 1024;
+  if Value < 1024 then
+  begin
+    Result := Format('%d гигабайт', [Value]);
+    Exit;
+  end;
+  // ну а чем бог не шутит? :)
+  Value := Value div 1024;
+  Result := Format('%d терабайт', [Value]);
+end;
 
 end.

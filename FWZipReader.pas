@@ -141,6 +141,8 @@ type
     procedure LoadZIP64Locator;
     procedure LoadZip64EOFCentralDirectoryRecord;
     procedure LoadCentralDirectoryFileHeader;
+    procedure ProcessExtractOrCheckAllData(const ExtractMask: string;
+      Path: string; CheckMode: Boolean);
   protected
     procedure DoProgress(Sender: TObject;
       const FileName: string; Extracted, TotalSize: Int64;
@@ -162,6 +164,7 @@ type
       ZipEndOffset: Integer = -1);
     procedure ExtractAll(const Path: string); overload;
     procedure ExtractAll(const ExtractMask: string; Path: string); overload;
+    procedure Check(const ExtractMask: string = '');
     function Count: Integer;
     property Item[Index: Integer]: TFWZipReaderItem read GetItem; default;
     property Comment: AnsiString read FEndOfCentralDirComment;
@@ -224,108 +227,122 @@ var
 begin
   Result := erDone;
 
-  // Правка пустого и относительного пути
-  Path := PathCanonicalize(Path);
-  if Path = '' then
-    Path := GetCurrentDir;
-
-  FullPath := StringReplace(
-    IncludeTrailingPathDelimiter(Path) + FFileHeader.FileName,
-    ZIP_SLASH, '\', [rfReplaceAll]);
-
-  if Length(FullPath) > MAX_PATH then
-    raise EZipReaderItem.CreateFmt(
-      'Элемент архива №%d "%s" не может быть распакован.' + sLineBreak +
-      'Общая длина пути и имени файла не должна превышать 260 символов',
-      [ItemIndex, FFileHeader.FileName]);
-  if IsFolder then
-  begin
-    ForceDirectories(FullPath);
-    Exit;
-  end;
-  ForceDirectories(ExtractFilePath(FullPath));
+  // Rouse_ 25.10.2013
+  // Генерируем событие начала распаковки перед тем как результирующий файл будет залочен
+  DoProgress(nil, psStart);
   try
 
-    // проверка на существование файла
-    if FileExists(FullPath) then
+    // Правка пустого и относительного пути
+    Path := PathCanonicalize(Path);
+    if Path = '' then
+      Path := GetCurrentDir;
+
+    FullPath := StringReplace(
+      IncludeTrailingPathDelimiter(Path) + FFileHeader.FileName,
+      ZIP_SLASH, '\', [rfReplaceAll]);
+
+    if Length(FullPath) > MAX_PATH then
+      raise EZipReaderItem.CreateFmt(
+        'Элемент архива №%d "%s" не может быть распакован.' + sLineBreak +
+        'Общая длина пути и имени файла не должна превышать 260 символов',
+        [ItemIndex, FFileHeader.FileName]);
+    if IsFolder then
     begin
-      if Assigned(FDuplicate) then
+      ForceDirectories(FullPath);
+      Exit;
+    end;
+    ForceDirectories(ExtractFilePath(FullPath));
+    try
+
+      // проверка на существование файла
+      if FileExists(FullPath) then
       begin
-        // если файл уже существует, узнаем - как жить дальше с этим ;)
-        DuplicateAction := daSkip;
-        FDuplicate(Self, FullPath, DuplicateAction);
+        if Assigned(FDuplicate) then
+        begin
+          // если файл уже существует, узнаем - как жить дальше с этим ;)
+          DuplicateAction := daSkip;
+          FDuplicate(Self, FullPath, DuplicateAction);
 
-        case DuplicateAction of
+          case DuplicateAction of
 
-          // пропустить файл
-          daSkip:
-          begin
-            Result := erSkiped;
-            Exit;
-          end;
-
-          // перезаписать
-          daOverwrite:
-            SetFileAttributes(PChar(FullPath), FILE_ATTRIBUTE_NORMAL);
-
-          // распаковать с другим именем
-          daUseNewFilePath:
-            // если программист указал новый пусть к файлу,
-            // то о существовании директории он должен позаботиться сам
-            if not DirectoryExists(ExtractFilePath(FullPath)) then
+            // пропустить файл
+            daSkip:
             begin
               Result := erSkiped;
               Exit;
             end;
 
-          // прервать распаковку
-          daAbort:
-            Abort;
+            // перезаписать
+            daOverwrite:
+              SetFileAttributes(PChar(FullPath), FILE_ATTRIBUTE_NORMAL);
 
+            // распаковать с другим именем
+            daUseNewFilePath:
+              // если программист указал новый пусть к файлу,
+              // то о существовании директории он должен позаботиться сам
+              if not DirectoryExists(ExtractFilePath(FullPath)) then
+              begin
+                Result := erSkiped;
+                Exit;
+              end;
+
+            // прервать распаковку
+            daAbort:
+              Abort;
+
+          end;
+        end
+        else
+        begin
+          Result := erSkiped;
+          Exit;
+        end
+      end;
+
+      UnpackedFile := TFileStream.Create(FullPath, fmCreate);
+      try
+        Result := ExtractToStream(UnpackedFile, Password);
+      finally
+        UnpackedFile.Free;
+      end;
+
+      if Result <> erDone then
+      begin
+        DeleteFile(FullPath);
+        Exit;
+      end;
+
+      if IsAttributesPresent(FFileHeader.Attributes) then
+      begin
+        hFile := FileOpen(FullPath, fmOpenWrite);
+        try
+          SetFileTime(hFile,
+            @FFileHeader.Attributes.ftCreationTime,
+            @FFileHeader.Attributes.ftLastAccessTime,
+            @FFileHeader.Attributes.ftLastWriteTime);
+        finally
+          FileClose(hFile);
         end;
+        SetFileAttributes(PChar(FullPath),
+          FFileHeader.Attributes.dwFileAttributes);
       end
       else
       begin
-        Result := erSkiped;
-        Exit;
-      end
+        FileDate :=
+          FFileHeader.Header.LastModFileTimeTime +
+          FFileHeader.Header.LastModFileTimeDate shl 16;
+        FileSetDate(FullPath, FileDate);
+      end;
+
+    except
+      DeleteFile(FullPath);
+      raise;
     end;
 
-    UnpackedFile := TFileStream.Create(FullPath, fmCreate);
-    try
-      Result := ExtractToStream(UnpackedFile, Password);
-    finally
-      UnpackedFile.Free;
-    end;
-    if Result <> erDone then
-    begin
-      DeleteFile(FullPath);
-      Exit;
-    end;
-    if IsAttributesPresent(FFileHeader.Attributes) then
-    begin
-      hFile := FileOpen(FullPath, fmOpenWrite);
-      try
-        SetFileTime(hFile,
-          @FFileHeader.Attributes.ftCreationTime,
-          @FFileHeader.Attributes.ftLastAccessTime,
-          @FFileHeader.Attributes.ftLastWriteTime);
-      finally
-        FileClose(hFile);
-      end;
-      SetFileAttributes(PChar(FullPath),
-        FFileHeader.Attributes.dwFileAttributes);
-    end
-    else
-    begin
-      FileDate :=
-        FFileHeader.Header.LastModFileTimeTime +
-        FFileHeader.Header.LastModFileTimeDate shl 16;
-      FileSetDate(FullPath, FileDate);
-    end;
-  except
-    DeleteFile(FullPath);
-    raise;
+  finally
+    // Rouse_ 25.10.2013
+    // Результирующий файл освобожден, генерируем событие
+    DoProgress(nil, psEnd);
   end;
 end;
 
@@ -903,6 +920,15 @@ end;
 { TFWZipReader }
 
 //
+//  Процедура производит проверку архива с учетом маски файла в архиве
+//  Данные распаковываются, но не сохраняются
+// =============================================================================
+procedure TFWZipReader.Check(const ExtractMask: string);
+begin
+  ProcessExtractOrCheckAllData(ExtractMask, '', True);
+end;
+
+//
 //  Процедура очищает данные о открытом ранее архиве
 // =============================================================================
 procedure TFWZipReader.Clear;
@@ -955,7 +981,7 @@ begin
   if Assigned(FOnProgress) then
   begin
     if TotalSize = 0 then
-      if ProgressState = psInitialization then
+      if ProgressState in [psStart, psInitialization] then
         Percent := 0
       else
         Percent := 100
@@ -968,7 +994,7 @@ begin
         Round((FTotalProcessedCount + Extracted) / (FTotalSizeCount / 100));
     Cancel := False;
     FOnProgress(Self, FileName, Percent, TotalPercent, Cancel, ProgressState);
-    if Cancel then Abort;    
+    if Cancel then Abort;
   end;
 end;
 
@@ -977,120 +1003,8 @@ end;
 //  с учетом маски файла в архиве
 // =============================================================================
 procedure TFWZipReader.ExtractAll(const ExtractMask: string; Path: string);
-var
-  I, A: Integer;
-  OldExtractEvent: TZipExtractItemEvent;
-  OldDuplicateEvent: TZipDuplicateEvent;
-  CurrentItem: TFWZipReaderItem;
-  ExtractResult: TExtractResult;
-  CancelExtract, Handled: Boolean;
-  Password: string;
-  FreeAvailable, TotalSpace: TLargeInteger;
-  ExtractList: TList;
 begin
-  FTotalSizeCount := 0;
-  FTotalProcessedCount := 0;
-  ExtractList := TList.Create;
-  try
-    for I := 0 to Count - 1 do
-      if ExtractMask = '' then
-      begin
-        ExtractList.Add(Pointer(I));
-        Inc(FTotalSizeCount, Item[I].UncompressedSize);
-      end
-      else
-        if MatchesMask(Item[I].FileName, ExtractMask) then
-        begin
-          ExtractList.Add(Pointer(I));
-          Inc(FTotalSizeCount, Item[I].UncompressedSize);
-        end;
-
-    // Правка пустого и относительного пути
-    Path := PathCanonicalize(Path);
-    if Path = '' then
-      Path := GetCurrentDir;
-
-    // Проверка хватит ли места на диске?
-    if GetDiskFreeSpaceEx(PChar(Path), FreeAvailable, TotalSpace, nil) then
-      if FreeAvailable <= FTotalSizeCount then
-        raise EZipReader.Create('Недостаточно места на диске.');
-
-    for I := 0 to ExtractList.Count - 1 do
-    begin
-      CurrentItem := Item[Integer(ExtractList[I])];
-      OldExtractEvent := CurrentItem.OnProgress;
-      try
-        CurrentItem.OnProgress := DoProgress;
-        OldDuplicateEvent := CurrentItem.OnDuplicate;
-        try
-          CurrentItem.OnDuplicate := OnDuplicate;
-          // Пробуем извлечь файл
-          try
-            ExtractResult := CurrentItem.Extract(Path, '');
-            if ExtractResult = erNeedPassword then
-            begin
-              // Если произошла обшибка из-за того что файл зашифрован,
-              // пробуем расшифровать его используя список известных паролей
-              for A := 0 to FPasswordList.Count - 1 do
-              begin
-                ExtractResult := CurrentItem.Extract(Path, FPasswordList[A]);
-                if ExtractResult in [erDone, erSkiped] then Break;
-              end;
-              // если не получилось, запрашиваем пароль у пользователя
-              if ExtractResult = erNeedPassword then
-                if Assigned(FOnNeedPwd) then
-                begin
-                  CancelExtract := False;
-                  while ExtractResult = erNeedPassword do
-                  begin
-                    Password := '';
-                    FOnNeedPwd(Self, CurrentItem.FileName,
-                      Password, CancelExtract);
-                    if CancelExtract then Exit;
-                    if Password <> '' then
-                    begin
-                      FPasswordList.Add(Password);
-                      ExtractResult := CurrentItem.Extract(Path, Password);
-                    end;
-                  end;
-                end
-                else
-                  raise EWrongPasswordException.Create(
-                    'Ошибка извлечения данных. Неверный пароль.');
-            end;
-          except
-
-            // Пользователь отменил распаковку архива
-            on E: EAbort do
-              Exit;
-
-            // Ну не прерывать же распаковку из-за исключения на одном файле?
-            // Пусть решение о прерывании распаковки принимают снаружи
-            on E: Exception do
-            begin
-              Handled := False;
-              if Assigned(FException) then
-                FException(Self, E, Integer(ExtractList[I]), Handled);
-              if not Handled then
-                // Rouse_ 20.02.2012
-                // Неверно перевозбуждено исключение
-                // Спасибо v1ctar за найденый глюк
-                //raise E;
-                raise;
-            end;
-          end;
-          Inc(FTotalProcessedCount, CurrentItem.UncompressedSize);
-        finally
-          CurrentItem.OnDuplicate := OldDuplicateEvent;
-        end;
-      finally
-        CurrentItem.OnProgress := OldExtractEvent;
-      end;
-    end;
-
-  finally
-    ExtractList.Free;
-  end;
+  ProcessExtractOrCheckAllData(ExtractMask, Path, False);
 end;
 
 //
@@ -1136,9 +1050,10 @@ begin
   while FZIPStream.Position < EndOfLoadCentralDirectory do
     FLocalFiles.Add(TFWZipReaderItem.InitFromStream(Self, Count, FZIPStream));
   if Count <> TotalEntryesCount then
-    raise EZipReader.Create(
-      'Ошибка чтения центральной директории. ' +
-      'Количетсво элементов не соответствует заявленному.');
+    raise EZipReader.CreateFmt(
+      'Ошибка чтения центральной директории. ' + sLineBreak +
+      'Прочитанное количество элементов (%d) не соответствует заявленному (%d).',
+      [Count, TotalEntryesCount]);
 end;
 
 //
@@ -1344,7 +1259,7 @@ begin
 
   if not Zip64Present then
     raise EZipReader.Create(
-      'Ошибка чтения структуры FZip64EOFCentralDirectoryRecord');
+      'Ошибка чтения структуры TZip64EOFCentralDirectoryRecord');
 
   // Rouse_ 02.10.2012
   // При чтении учитываем оффсет на начало архива StartZipDataOffset
@@ -1371,6 +1286,195 @@ begin
   FZIPStream.Position := FZip64EOFCentralDirectoryLocator.RelativeOffset +
     StartZipDataOffset;
   LoadZip64EOFCentralDirectoryRecord;
+end;
+
+{ TFakeStream }
+
+//
+//  TFakeStream предназначен для проверки архива на целостность
+// =============================================================================
+type
+  TFakeStream = class(TStream)
+  private
+    FSize: Int64;
+    FPosition: Int64;
+  protected
+    procedure SetSize(const NewSize: Int64); override;
+  public
+    function Seek(Offset: Longint; Origin: Word): Longint; override;
+    function Write(const Buffer; Count: Longint): Longint; override;
+    function Read(var Buffer; Count: Longint): Longint; override;
+  end;
+
+function TFakeStream.Read(var Buffer; Count: Longint): Longint;
+begin
+  Result := Count;
+end;
+
+function TFakeStream.Write(const Buffer; Count: Longint): Longint;
+begin
+  FSize := FSize + Count;
+  Result := Count;
+end;
+
+function TFakeStream.Seek(Offset: Longint; Origin: Word): Longint;
+begin
+  case Origin of
+    soFromBeginning: FPosition := Offset;
+    soFromCurrent: Inc(FPosition, Offset);
+    soFromEnd: FPosition := FSize + Offset;
+  end;
+  Result := FPosition;
+end;
+
+procedure TFakeStream.SetSize(const NewSize: Int64);
+begin
+  FSize := NewSize;
+end;
+
+//
+//  Процедура производит распаковку или проверку архива с учетом маски файла в архиве
+//  При проверке архива данные распаковываются, но не сохраняются
+// =============================================================================
+procedure TFWZipReader.ProcessExtractOrCheckAllData(const ExtractMask: string;
+  Path: string; CheckMode: Boolean);
+var
+  I, A: Integer;
+  OldExtractEvent: TZipExtractItemEvent;
+  OldDuplicateEvent: TZipDuplicateEvent;
+  CurrentItem: TFWZipReaderItem;
+  ExtractResult: TExtractResult;
+  CancelExtract, Handled: Boolean;
+  Password: string;
+  FreeAvailable, TotalSpace: TLargeInteger;
+  ExtractList: TList;
+  FakeStream: TFakeStream;
+begin
+  FTotalSizeCount := 0;
+  FTotalProcessedCount := 0;
+  ExtractList := TList.Create;
+  try
+    // Производим поиск файлов для распаковки
+    for I := 0 to Count - 1 do
+      if ExtractMask = '' then
+      begin
+        ExtractList.Add(Pointer(I));
+        Inc(FTotalSizeCount, Item[I].UncompressedSize);
+      end
+      else
+        if MatchesMask(Item[I].FileName, ExtractMask) then
+        begin
+          ExtractList.Add(Pointer(I));
+          Inc(FTotalSizeCount, Item[I].UncompressedSize);
+        end;
+
+    if not CheckMode then
+    begin
+      // Правка пустого и относительного пути
+      Path := PathCanonicalize(Path);
+      if Path = '' then
+        Path := GetCurrentDir;
+
+      // Проверка хватит ли места на диске?
+      if GetDiskFreeSpaceEx(PChar(Path), FreeAvailable, TotalSpace, nil) then
+        if FreeAvailable <= FTotalSizeCount then
+          raise EZipReader.CreateFmt('Недостаточно места на диске "%s".' + sLineBreak +
+            'Необходимо освободить %s.', [Path[1], FileSizeToStr(FTotalSizeCount)]);
+    end;
+
+    FakeStream := TFakeStream.Create;
+    try
+      for I := 0 to ExtractList.Count - 1 do
+      begin
+        FakeStream.Size := 0;
+        CurrentItem := Item[Integer(ExtractList[I])];
+        OldExtractEvent := CurrentItem.OnProgress;
+        try
+          CurrentItem.OnProgress := DoProgress;
+          OldDuplicateEvent := CurrentItem.OnDuplicate;
+          try
+            CurrentItem.OnDuplicate := OnDuplicate;
+            // Пробуем извлечь файл
+            try
+              if CheckMode then
+                ExtractResult := CurrentItem.ExtractToStream(FakeStream, '')
+              else
+                ExtractResult := CurrentItem.Extract(Path, '');
+              if ExtractResult = erNeedPassword then
+              begin
+                // Если произошла обшибка из-за того что файл зашифрован,
+                // пробуем расшифровать его используя список известных паролей
+                for A := 0 to FPasswordList.Count - 1 do
+                begin
+                  if CheckMode then
+                    ExtractResult := CurrentItem.ExtractToStream(FakeStream, FPasswordList[A])
+                  else
+                    ExtractResult := CurrentItem.Extract(Path, FPasswordList[A]);
+                  if ExtractResult in [erDone, erSkiped] then Break;
+                end;
+                // если не получилось, запрашиваем пароль у пользователя
+                if ExtractResult = erNeedPassword then
+                  if Assigned(FOnNeedPwd) then
+                  begin
+                    CancelExtract := False;
+                    while ExtractResult = erNeedPassword do
+                    begin
+                      Password := '';
+                      FOnNeedPwd(Self, CurrentItem.FileName,
+                        Password, CancelExtract);
+                      if CancelExtract then Exit;
+                      if Password <> '' then
+                      begin
+                        FPasswordList.Add(Password);
+                        if CheckMode then
+                          ExtractResult := CurrentItem.ExtractToStream(FakeStream, Password)
+                        else
+                          ExtractResult := CurrentItem.Extract(Path, Password);
+                      end;
+                    end;
+                  end
+                  else
+                    raise EWrongPasswordException.CreateFmt(
+                      'Ошибка извлечения данных элемента №%d "%s".' + sLineBreak +
+                      'Неверный пароль.', [CurrentItem.ItemIndex, CurrentItem.FileName]);
+              end;
+            except
+
+              // Пользователь отменил распаковку архива
+              on E: EAbort do
+                Exit;
+
+              // Ну не прерывать же распаковку из-за исключения на одном файле?
+              // Пусть решение о прерывании распаковки принимают снаружи
+              on E: Exception do
+              begin
+                Handled := False;
+                if Assigned(FException) then
+                  FException(Self, E, Integer(ExtractList[I]), Handled);
+                if not Handled then
+                  // Rouse_ 20.02.2012
+                  // Неверно перевозбуждено исключение
+                  // Спасибо v1ctar за найденый глюк
+                  //raise E;
+                  raise;
+              end;
+            end;
+            Inc(FTotalProcessedCount, CurrentItem.UncompressedSize);
+          finally
+            CurrentItem.OnDuplicate := OldDuplicateEvent;
+          end;
+        finally
+          CurrentItem.OnProgress := OldExtractEvent;
+        end;
+      end;
+
+    finally
+      FakeStream.Free;
+    end;
+
+  finally
+    ExtractList.Free;
+  end;
 end;
 
 //

@@ -6,7 +6,7 @@
 //  * Purpose   : Набор классов для распаковки ZIP архива
 //  * Author    : Александр (Rouse_) Багель
 //  * Copyright : © Fangorn Wizards Lab 1998 - 2013.
-//  * Version   : 1.0.9
+//  * Version   : 1.0.10
 //  * Home Page : http://rouse.drkb.ru
 //  * Home Blog : http://alexander-bagel.blogspot.ru
 //  ****************************************************************************
