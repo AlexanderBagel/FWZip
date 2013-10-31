@@ -10,10 +10,14 @@
 //  * Home Page : http://rouse.drkb.ru
 //  * Home Blog : http://alexander-bagel.blogspot.ru
 //  ****************************************************************************
+//  * Stable Release : http://rouse.drkb.ru/components.php#fwzip
+//  * Latest Source  : https://github.com/AlexanderBagel/FWZip
+//  ****************************************************************************
 //
 //  Используемые источники:
 //  ftp://ftp.info-zip.org/pub/infozip/doc/appnote-iz-latest.zip
 //  http://zlib.net/zlib-1.2.5.tar.gz
+//  http://www.base2ti.com/
 //
 
 unit FWZipConsts;
@@ -228,6 +232,8 @@ const
   // константы поддерживаемых полей ExData
   SUPPORTED_EXDATA_ZIP64 = 1;
   SUPPORTED_EXDATA_NTFSTIME = 10;
+
+  defaultWindowBits = -15;
 
 type
   TProgressState = (
