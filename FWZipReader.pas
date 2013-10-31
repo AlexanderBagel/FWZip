@@ -219,122 +219,111 @@ begin
 
   FTotalExtracted := 0;
 
-  // Rouse_ 25.10.2013
-  // Генерируем событие начала распаковки перед тем как результирующий файл будет залочен
-  DoProgress(nil, psStart);
+  // Правка пустого и относительного пути
+  Path := PathCanonicalize(Path);
+  if Path = '' then
+    Path := GetCurrentDir;
+
+  FullPath := StringReplace(
+    IncludeTrailingPathDelimiter(Path) + FFileHeader.FileName,
+    ZIP_SLASH, '\', [rfReplaceAll]);
+
+  if Length(FullPath) > MAX_PATH then
+    raise EZipReaderItem.CreateFmt(
+      'Элемент архива №%d "%s" не может быть распакован.' + sLineBreak +
+      'Общая длина пути и имени файла не должна превышать 260 символов',
+      [ItemIndex, FFileHeader.FileName]);
+  if IsFolder then
+  begin
+    ForceDirectories(FullPath);
+    Exit;
+  end;
+  ForceDirectories(ExtractFilePath(FullPath));
   try
 
-    // Правка пустого и относительного пути
-    Path := PathCanonicalize(Path);
-    if Path = '' then
-      Path := GetCurrentDir;
-
-    FullPath := StringReplace(
-      IncludeTrailingPathDelimiter(Path) + FFileHeader.FileName,
-      ZIP_SLASH, '\', [rfReplaceAll]);
-
-    if Length(FullPath) > MAX_PATH then
-      raise EZipReaderItem.CreateFmt(
-        'Элемент архива №%d "%s" не может быть распакован.' + sLineBreak +
-        'Общая длина пути и имени файла не должна превышать 260 символов',
-        [ItemIndex, FFileHeader.FileName]);
-    if IsFolder then
+    // проверка на существование файла
+    if FileExists(FullPath) then
     begin
-      ForceDirectories(FullPath);
-      Exit;
-    end;
-    ForceDirectories(ExtractFilePath(FullPath));
-    try
-
-      // проверка на существование файла
-      if FileExists(FullPath) then
+      if Assigned(FDuplicate) then
       begin
-        if Assigned(FDuplicate) then
-        begin
-          // если файл уже существует, узнаем - как жить дальше с этим ;)
-          DuplicateAction := daSkip;
-          FDuplicate(Self, FullPath, DuplicateAction);
+        // если файл уже существует, узнаем - как жить дальше с этим ;)
+        DuplicateAction := daSkip;
+        FDuplicate(Self, FullPath, DuplicateAction);
 
-          case DuplicateAction of
+        case DuplicateAction of
 
-            // пропустить файл
-            daSkip:
+          // пропустить файл
+          daSkip:
+          begin
+            Result := erSkiped;
+            Exit;
+          end;
+
+          // перезаписать
+          daOverwrite:
+            SetFileAttributes(PChar(FullPath), FILE_ATTRIBUTE_NORMAL);
+
+          // распаковать с другим именем
+          daUseNewFilePath:
+            // если программист указал новый пусть к файлу,
+            // то о существовании директории он должен позаботиться сам
+            if not DirectoryExists(ExtractFilePath(FullPath)) then
             begin
               Result := erSkiped;
               Exit;
             end;
 
-            // перезаписать
-            daOverwrite:
-              SetFileAttributes(PChar(FullPath), FILE_ATTRIBUTE_NORMAL);
+          // прервать распаковку
+          daAbort:
+            Abort;
 
-            // распаковать с другим именем
-            daUseNewFilePath:
-              // если программист указал новый пусть к файлу,
-              // то о существовании директории он должен позаботиться сам
-              if not DirectoryExists(ExtractFilePath(FullPath)) then
-              begin
-                Result := erSkiped;
-                Exit;
-              end;
-
-            // прервать распаковку
-            daAbort:
-              Abort;
-
-          end;
-        end
-        else
-        begin
-          Result := erSkiped;
-          Exit;
-        end
-      end;
-
-      UnpackedFile := TFileStream.Create(FullPath, fmCreate);
-      try
-        Result := ExtractToStream(UnpackedFile, Password);
-      finally
-        UnpackedFile.Free;
-      end;
-
-      if Result <> erDone then
-      begin
-        DeleteFile(FullPath);
-        Exit;
-      end;
-
-      if IsAttributesPresent(FFileHeader.Attributes) then
-      begin
-        hFile := FileOpen(FullPath, fmOpenWrite);
-        try
-          SetFileTime(hFile,
-            @FFileHeader.Attributes.ftCreationTime,
-            @FFileHeader.Attributes.ftLastAccessTime,
-            @FFileHeader.Attributes.ftLastWriteTime);
-        finally
-          FileClose(hFile);
         end;
-        SetFileAttributes(PChar(FullPath),
-          FFileHeader.Attributes.dwFileAttributes);
       end
       else
       begin
-        FileDate :=
-          FFileHeader.Header.LastModFileTimeTime +
-          FFileHeader.Header.LastModFileTimeDate shl 16;
-        FileSetDate(FullPath, FileDate);
-      end;
-
-    except
-      DeleteFile(FullPath);
-      raise;
+        Result := erSkiped;
+        Exit;
+      end
     end;
 
-  finally
-    // Rouse_ 25.10.2013
-    // Результирующий файл освобожден, генерируем событие
-    DoProgress(nil, psEnd);
+    UnpackedFile := TFileStream.Create(FullPath, fmCreate);
+    try
+      Result := ExtractToStream(UnpackedFile, Password);
+    finally
+      UnpackedFile.Free;
+    end;
+
+    if Result <> erDone then
+    begin
+      DeleteFile(FullPath);
+      Exit;
+    end;
+
+    if IsAttributesPresent(FFileHeader.Attributes) then
+    begin
+      hFile := FileOpen(FullPath, fmOpenWrite);
+      try
+        SetFileTime(hFile,
+          @FFileHeader.Attributes.ftCreationTime,
+          @FFileHeader.Attributes.ftLastAccessTime,
+          @FFileHeader.Attributes.ftLastWriteTime);
+      finally
+        FileClose(hFile);
+      end;
+      SetFileAttributes(PChar(FullPath),
+        FFileHeader.Attributes.dwFileAttributes);
+    end
+    else
+    begin
+      FileDate :=
+        FFileHeader.Header.LastModFileTimeTime +
+        FFileHeader.Header.LastModFileTimeDate shl 16;
+      FileSetDate(FullPath, FileDate);
+    end;
+
+  except
+    DeleteFile(FullPath);
+    raise;
   end;
 end;
 
@@ -1386,6 +1375,7 @@ begin
       begin
         FakeStream.Size := 0;
         CurrentItem := Item[Integer(ExtractList[I])];
+        DoProgress(Self, CurrentItem.FileName, 0, CurrentItem.UncompressedSize, psStart);
         OldExtractEvent := CurrentItem.OnProgress;
         try
           CurrentItem.OnProgress := DoProgress;
@@ -1463,6 +1453,8 @@ begin
           end;
         finally
           CurrentItem.OnProgress := OldExtractEvent;
+          DoProgress(Self, CurrentItem.FileName, CurrentItem.UncompressedSize,
+            CurrentItem.UncompressedSize, psEnd);
         end;
       end;
 
