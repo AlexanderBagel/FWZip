@@ -24,7 +24,7 @@
 // директив настройки пакета FWZip
 
 // Если необходимо использовать ZLibEx раскоментируйте директиву ниже
- {$DEFINE USE_ZLIB_EX}
+// {$DEFINE USE_ZLIB_EX}
 
 // Если необходимо использовать внешнюю библиотеку раскоментируйте директиву ниже
 // {$DEFINE USE_ZLIB_DLL}
@@ -67,7 +67,7 @@
 {$IFDEF VER180} {$DEFINE OLDEST_ZLIB} {$ENDIF}
 {$IFDEF VER185} {$DEFINE OLDEST_ZLIB} {$ENDIF}
 {$IFDEF VER190} {$DEFINE OLDEST_ZLIB} {$ENDIF}
-{$IFDEF VER200} {$DEFINE OLDEST_ZLIB} {$ENDIF}
+//{$IFDEF VER200} {$DEFINE OLDEST_ZLIB} {$ENDIF} // начиная с 2009-ой нужные функции присутствуют
 
 // Если подключена библиотека ZLibEx, то использовать deflateInit2_ и inflateInit2_ можно
 {$IFDEF USE_ZLIB_EX}
