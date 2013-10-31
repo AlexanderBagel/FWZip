@@ -40,8 +40,6 @@ uses
   Classes,
   SysUtils,
   {$IFDEF USE_ZLIB_EX}
-  {$UNDEF USE_ZLIB_DLL}
-  ZLibEx,
   ZLibExApi
   {$ELSE}
     {$IFDEF USE_ZLIB_DLL}
@@ -312,8 +310,12 @@ function ZDeflateInit2(var stream: TZStreamRec;
   level: TCompressionLevel; windowBits, memLevel: Integer;
   strategy: TZStrategy): Integer;
 begin
+  {$IFDEF OLDEST_ZLIB}
+  result := ZDeflateInit(stream, level);
+  {$ELSE}
   result := deflateInit2_(stream, ZLevels[level], Z_DEFLATED, windowBits,
     memLevel, ZStrategies[strategy], ZLIB_VERSION, SizeOf(TZStreamRec));
+  {$ENDIF}
 end;
 
 function ZDeflate(var stream: TZStreamRec; flush: TZFlush): Integer;
@@ -336,8 +338,12 @@ end;
 function ZInflateInit2(var stream: TZStreamRec;
   windowBits: Integer): Integer;
 begin
+  {$IFDEF OLDEST_ZLIB}
+  result := ZInflateInit(stream);
+  {$ELSE}
   result := inflateInit2_(stream, windowBits, ZLIB_VERSION,
     SizeOf(TZStreamRec));
+  {$ENDIF}
 end;
 
 function ZInflate(var stream: TZStreamRec; flush: TZFlush): Integer;
