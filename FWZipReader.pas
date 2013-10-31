@@ -1453,7 +1453,7 @@ begin
           end;
         finally
           CurrentItem.OnProgress := OldExtractEvent;
-          DoProgress(Self, CurrentItem.FileName, CurrentItem.UncompressedSize,
+          DoProgress(Self, CurrentItem.FileName, 0,
             CurrentItem.UncompressedSize, psEnd);
         end;
       end;
