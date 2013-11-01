@@ -217,8 +217,6 @@ var
 begin
   Result := erDone;
 
-  FTotalExtracted := 0;
-
   // ѕравка пустого и относительного пути
   Path := PathCanonicalize(Path);
   if Path = '' then
@@ -396,6 +394,7 @@ var
 begin
   Result := erError;
   CurrItemCRC32 := 0;
+  FTotalExtracted := 0;
   Decryptor := nil;
   try
     if IsFolder then Exit;
@@ -973,7 +972,10 @@ begin
       else
         Percent := 100
     else
-      Percent := Round(Extracted / (TotalSize / 100));
+      if ProgressState = psEnd then
+        Percent := 100
+      else
+        Percent := Round(Extracted / (TotalSize / 100));
     if FTotalSizeCount = 0 then
       TotalPercent := 100
     else
