@@ -394,7 +394,7 @@ var
 begin
   Result := erError;
   CurrItemCRC32 := 0;
-  FTotalExtracted := 0;
+  //FTotalExtracted := 0;
   Decryptor := nil;
   try
     if IsFolder then Exit;
@@ -510,14 +510,18 @@ begin
                   end
                   else
                     DoProgress(Decompressor, psException);
-                    // Rouse_ 09.03.2011
-                    // забыл поднять исключение :)
-                    // Rouse_ 20.02.2012
-                    // Блин, да еще и поднял его не правильно :)
-                    // Спасибо v1ctar за найденый глюк
-                    //raise E;
-                    raise;
+                  raise EZipReaderRead.CreateFmt(
+                    'Ошибка распаковки данных элемента №%d "%s".' + sLineBreak +
+                    E.ClassName + ': ' + E.Message, [ItemIndex, FileName]);
                 end;
+
+                // Rouse_ 01.11.2013
+                // Для остальных исключений тоже нужно говорить с каким элементом беда приключилась.
+                on E: Exception do
+                  raise EZipReaderRead.CreateFmt(
+                    'Ошибка распаковки данных элемента №%d "%s".' + sLineBreak +
+                    E.ClassName + ': ' + E.Message, [ItemIndex, FileName]);
+
               end;
               CurrItemCRC32 := CRC32Stream.CRC32;
             finally
@@ -1038,7 +1042,20 @@ begin
   EndOfLoadCentralDirectory := FZIPStream.Position + SizeOfCentralDirectory;
   while FZIPStream.Position < EndOfLoadCentralDirectory do
     FLocalFiles.Add(TFWZipReaderItem.InitFromStream(Self, Count, FZIPStream));
-  if Count <> TotalEntryesCount then
+
+  // Rouse_ 01.11.2013
+  // Исключение будем поднимать только в случае если заявленное кол-во элементов
+  // больше чем удалось прочитать.
+  // Ибо попался мне один архив в котором кол-во элементов 95188,
+  // (превышение по количеству элементов и нужно использовать ZIP64),
+  // но ZIP64 не использовался и поле TotalNumberOfEntries хранило значение 29652
+  // Собственно что и равняется 95188 - $10000
+
+  // Поэтому вместо такого условия:
+  //if Count <> TotalEntryesCount then
+  //пишем вот так:
+  if Count < TotalEntryesCount then
+
     raise EZipReader.CreateFmt(
       'Ошибка чтения центральной директории. ' + sLineBreak +
       'Прочитанное количество элементов (%d) не соответствует заявленному (%d).',
