@@ -394,7 +394,7 @@ var
 begin
   Result := erError;
   CurrItemCRC32 := 0;
-  //FTotalExtracted := 0;
+  FTotalExtracted := 0;
   Decryptor := nil;
   try
     if IsFolder then Exit;
