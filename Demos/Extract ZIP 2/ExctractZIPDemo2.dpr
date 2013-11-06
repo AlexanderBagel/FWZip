@@ -5,14 +5,19 @@
 //  * Unit Name : ExctractZIPDemo2
 //  * Purpose   : Демонстрация распаковки зашифрованного архива.
 //  * Author    : Александр (Rouse_) Багель
-//  * Copyright : © Fangorn Wizards Lab 1998 - 2012.
-//  * Version   : 1.0.4
+//  * Copyright : © Fangorn Wizards Lab 1998 - 2013.
+//  * Version   : 1.0.10
 //  * Home Page : http://rouse.drkb.ru
+//  * Home Blog : http://alexander-bagel.blogspot.ru
+//  ****************************************************************************
+//  * Stable Release : http://rouse.drkb.ru/components.php#fwzip
+//  * Latest Source  : https://github.com/AlexanderBagel/FWZip
 //  ****************************************************************************
 //
 //  Используемые источники:
 //  ftp://ftp.info-zip.org/pub/infozip/doc/appnote-iz-latest.zip
 //  http://zlib.net/zlib-1.2.5.tar.gz
+//  http://www.base2ti.com/
 //
 
 // Данный пример показывает создание и распаковку зашифрованного архива.

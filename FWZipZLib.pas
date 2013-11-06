@@ -383,6 +383,11 @@ begin
 
   FStream := stream;
   FStreamPos := stream.Position;
+
+  {$IFDEF OLDEST_ZLIB}
+    FZStream.zalloc := zlibAllocMem;
+    FZStream.zfree := zlibFreeMem;
+  {$ENDIF}
 end;
 
 function TCustomZStream.StreamRead(var buffer; count: Longint): Longint;

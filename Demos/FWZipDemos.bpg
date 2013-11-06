@@ -11,7 +11,7 @@ BRCC = $(ROOT)\bin\brcc32.exe $**
 #------------------------------------------------------------------------------
 PROJECTS = CreateZIPDemo1.exe CreateZIPDemo2.exe ExctractZIPDemo1.exe \
   ExctractZIPDemo2.exe FWZipPerfomance.exe BuildWithException.exe \
-  UseExDataBlob.exe ZipAnalizer.exe
+  UseExDataBlob.exe ZipAnalizer.exe ZipAnalizer2.exe
 #------------------------------------------------------------------------------
 default: $(PROJECTS)
 #------------------------------------------------------------------------------
@@ -38,6 +38,9 @@ UseExDataBlob.exe: Use ZIP ExData\UseExDataBlob.dpr
   $(DCC)
 
 ZipAnalizer.exe: ZipAnalizer\ZipAnalizer.dpr
+  $(DCC)
+
+ZipAnalizer2.exe: ZipAnalizer2\ZipAnalizer2.dpr
   $(DCC)
 
 

@@ -6,14 +6,19 @@
 //  * Purpose   : Демонстрация распаковки архива.
 //  *           : Используется архив созданный демоприложением CreateZIPDemo1
 //  * Author    : Александр (Rouse_) Багель
-//  * Copyright : © Fangorn Wizards Lab 1998 - 2012.
-//  * Version   : 1.0.4
+//  * Copyright : © Fangorn Wizards Lab 1998 - 2013.
+//  * Version   : 1.0.10
 //  * Home Page : http://rouse.drkb.ru
+//  * Home Blog : http://alexander-bagel.blogspot.ru
+//  ****************************************************************************
+//  * Stable Release : http://rouse.drkb.ru/components.php#fwzip
+//  * Latest Source  : https://github.com/AlexanderBagel/FWZip
 //  ****************************************************************************
 //
 //  Используемые источники:
 //  ftp://ftp.info-zip.org/pub/infozip/doc/appnote-iz-latest.zip
 //  http://zlib.net/zlib-1.2.5.tar.gz
+//  http://www.base2ti.com/
 //
 
 // Данный пример показывает два варианта извлечения информации из архива.
@@ -26,7 +31,13 @@ uses
   Windows,
   Classes,
   SysUtils,
+  TypInfo,
   FWZipReader;
+
+function ExtractResultStr(Value: TExtractResult): string;
+begin
+  Result := GetEnumName(TypeInfo(TExtractResult), Integer(Value));
+end;
 
 var
   Zip: TFWZipReader;
@@ -53,15 +64,21 @@ begin
         try
           Zip[Index].ExtractToStream(S, '');
           // Файл извлечен, выведем его содержимое в окно консоли
+          {$IFDEF UNICODE}
+          Writeln(OemString);
+          {$ELSE}
           OemString := AnsiString(S.DataString);
           AnsiToOem(PAnsiChar(OemString), PAnsiChar(OemString));
           Writeln(OemString);
+          {$ENDIF}
         finally
           S.Free;
         end;
 
         // Распаковать так-же можно на диск:
-        Zip[Index].Extract('..\DemoResults\CreateZIPDemo1\ManualExtract\', '');
+        Write('Extract "', Zip[Index].FileName, '": ');
+        Writeln(ExtractResultStr(
+          Zip[Index].Extract('..\DemoResults\CreateZIPDemo1\ManualExtract\', '')));
       end;
 
       // Таким-же образом можно получить содержимое остальных файлов
@@ -80,4 +97,5 @@ begin
     on E: Exception do
       Writeln(E.ClassName, ': ', E.Message);
   end;
+  Readln;
 end.

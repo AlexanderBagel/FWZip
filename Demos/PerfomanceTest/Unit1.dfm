@@ -1,9 +1,9 @@
 object Form1: TForm1
   Left = 381
   Top = 183
+  Width = 578
+  Height = 654
   Caption = #1058#1077#1089#1090' '#1087#1088#1086#1080#1079#1074#1086#1076#1080#1090#1077#1083#1100#1085#1086#1089#1090#1080' FWZip'
-  ClientHeight = 421
-  ClientWidth = 514
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -12,38 +12,37 @@ object Form1: TForm1
   Font.Style = []
   OldCreateOrder = False
   Position = poScreenCenter
-  OnCreate = FormCreate
   DesignSize = (
-    514
-    421)
+    562
+    616)
   PixelsPerInch = 96
   TextHeight = 13
   object GroupBox1: TGroupBox
     Left = 8
     Top = 8
-    Width = 481
+    Width = 527
     Height = 105
     Anchors = [akLeft, akTop, akRight]
     Caption = #1053#1072#1089#1090#1088#1086#1081#1082#1080' '#1089#1078#1072#1090#1080#1103
     TabOrder = 0
     DesignSize = (
-      481
+      527
       105)
     object LabeledEdit1: TLabeledEdit
       Left = 16
       Top = 40
-      Width = 423
+      Width = 469
       Height = 21
       Anchors = [akLeft, akTop, akRight]
       EditLabel.Width = 149
       EditLabel.Height = 13
       EditLabel.Caption = #1042#1099#1073#1077#1088#1080#1090#1077' '#1087#1072#1087#1082#1091' '#1076#1083#1103' '#1089#1078#1072#1090#1080#1103':'
       TabOrder = 0
-      Text = 'D:\Program Files'
+      Text = 'D:\StroyInfo 5'
       OnChange = LabeledEdit1Change
     end
     object Button1: TButton
-      Left = 445
+      Left = 491
       Top = 38
       Width = 26
       Height = 25
@@ -67,8 +66,9 @@ object Form1: TForm1
     object LabeledEdit2: TLabeledEdit
       Left = 264
       Top = 70
-      Width = 121
+      Width = 172
       Height = 21
+      Anchors = [akLeft, akTop, akRight]
       EditLabel.Width = 84
       EditLabel.Height = 13
       EditLabel.Caption = #1059#1082#1072#1078#1080#1090#1077' '#1087#1072#1088#1086#1083#1100
@@ -77,7 +77,7 @@ object Form1: TForm1
       TabOrder = 3
     end
     object Button2: TButton
-      Left = 396
+      Left = 442
       Top = 69
       Width = 75
       Height = 25
@@ -90,29 +90,28 @@ object Form1: TForm1
   object GroupBox2: TGroupBox
     Left = 8
     Top = 128
-    Width = 481
-    Height = 105
+    Width = 527
+    Height = 137
     Anchors = [akLeft, akTop, akRight]
     Caption = #1053#1072#1089#1090#1088#1086#1081#1082#1080' '#1088#1072#1089#1087#1072#1082#1086#1074#1082#1080
     TabOrder = 1
     DesignSize = (
-      481
-      105)
+      527
+      137)
     object LabeledEdit3: TLabeledEdit
       Left = 16
       Top = 40
-      Width = 423
+      Width = 469
       Height = 21
       Anchors = [akLeft, akTop, akRight]
       EditLabel.Width = 171
       EditLabel.Height = 13
       EditLabel.Caption = #1042#1099#1073#1077#1088#1080#1090#1077' '#1072#1088#1093#1080#1074' '#1076#1083#1103' '#1088#1072#1089#1087#1072#1082#1086#1074#1082#1080':'
       TabOrder = 0
-      Text = 'S:\Grand2010\Lib\ZIP\test\N26W098.hgt\123.zip'
       OnChange = LabeledEdit3Change
     end
     object Button3: TButton
-      Left = 445
+      Left = 491
       Top = 38
       Width = 26
       Height = 25
@@ -136,8 +135,9 @@ object Form1: TForm1
     object LabeledEdit4: TLabeledEdit
       Left = 264
       Top = 70
-      Width = 121
+      Width = 167
       Height = 21
+      Anchors = [akLeft, akTop, akRight]
       EditLabel.Width = 84
       EditLabel.Height = 13
       EditLabel.Caption = #1059#1082#1072#1078#1080#1090#1077' '#1087#1072#1088#1086#1083#1100
@@ -146,7 +146,7 @@ object Form1: TForm1
       TabOrder = 3
     end
     object Button4: TButton
-      Left = 396
+      Left = 442
       Top = 68
       Width = 75
       Height = 25
@@ -155,17 +155,28 @@ object Form1: TForm1
       TabOrder = 4
       OnClick = Button4Click
     end
+    object Button6: TButton
+      Tag = 1
+      Left = 442
+      Top = 99
+      Width = 75
+      Height = 25
+      Anchors = [akTop, akRight]
+      Caption = #1055#1088#1086#1074#1077#1088#1080#1090#1100
+      TabOrder = 5
+      OnClick = Button4Click
+    end
   end
   object GroupBox3: TGroupBox
     Left = 8
-    Top = 239
-    Width = 481
+    Top = 271
+    Width = 527
     Height = 178
     Anchors = [akLeft, akTop, akRight]
     Caption = #1055#1088#1086#1080#1079#1074#1086#1076#1080#1090#1077#1083#1100#1085#1086#1089#1090#1100':'
     TabOrder = 2
     DesignSize = (
-      481
+      527
       178)
     object Label1: TLabel
       Left = 16
@@ -198,7 +209,7 @@ object Form1: TForm1
     object Label5: TLabel
       Left = 16
       Top = 109
-      Width = 455
+      Width = 501
       Height = 13
       Anchors = [akLeft, akTop, akRight]
       AutoSize = False
@@ -206,30 +217,42 @@ object Form1: TForm1
     object ProgressBar1: TProgressBar
       Left = 16
       Top = 128
-      Width = 455
+      Width = 498
       Height = 17
+      Anchors = [akLeft, akTop, akRight]
       TabOrder = 0
     end
     object ProgressBar2: TProgressBar
       Left = 16
       Top = 151
-      Width = 455
+      Width = 498
       Height = 17
+      Anchors = [akLeft, akTop, akRight]
       TabOrder = 1
     end
     object Button5: TButton
-      Left = 396
+      Left = 439
       Top = 97
       Width = 75
       Height = 25
+      Anchors = [akTop, akRight]
       Caption = #1054#1089#1090#1072#1085#1086#1074#1080#1090#1100
       TabOrder = 2
       Visible = False
       OnClick = Button5Click
     end
   end
+  object Memo1: TMemo
+    Left = 8
+    Top = 456
+    Width = 527
+    Height = 146
+    Anchors = [akLeft, akTop, akRight, akBottom]
+    ScrollBars = ssVertical
+    TabOrder = 3
+  end
   object OpenDialog1: TOpenDialog
-    Left = 368
-    Top = 144
+    Left = 376
+    Top = 224
   end
 end

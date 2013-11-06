@@ -7,13 +7,18 @@
 //  *           : варианты добавления данных
 //  * Author    : Александр (Rouse_) Багель
 //  * Copyright : © Fangorn Wizards Lab 1998 - 2013.
-//  * Version   : 1.0.8
+//  * Version   : 1.0.10
 //  * Home Page : http://rouse.drkb.ru
+//  * Home Blog : http://alexander-bagel.blogspot.ru
+//  ****************************************************************************
+//  * Stable Release : http://rouse.drkb.ru/components.php#fwzip
+//  * Latest Source  : https://github.com/AlexanderBagel/FWZip
 //  ****************************************************************************
 //
 //  Используемые источники:
 //  ftp://ftp.info-zip.org/pub/infozip/doc/appnote-iz-latest.zip
 //  http://zlib.net/zlib-1.2.5.tar.gz
+//  http://www.base2ti.com/
 //
 
 // Данный пример показывает различные варианты добавления информации в архив
@@ -26,10 +31,10 @@ program CreateZIPDemo1;
 uses
   SysUtils,
   Classes,
-  TypInfo,
+  TypInfo,  zlib,
   FWZipWriter;
 
-  procedure CheckResult(Value: Integer);
+procedure CheckResult(Value: Integer);
   begin
     if Value < 0 then
       raise Exception.Create('Ошибка добавления данных');
@@ -47,7 +52,7 @@ begin
   try
     Zip := TFWZipWriter.Create;
     try
-      // У всего архива включим UTF8 кодировку
+      // У всего архива включим UTF8 кодировку (если необходимо)
       Zip.UseUTF8String := True;
 
       // добавим комментарий по необходимости
@@ -60,10 +65,12 @@ begin
       S := TStringStream.Create('Тестовый текстовый файл №1');
       try
         S.Position := 0;
-        ItemIndex := Zip.AddStream('Тестовый текстовый файл.txt', S);
+        ItemIndex := Zip.AddStream('test.txt', S);
         CheckResult(ItemIndex);
         // Можно добавить коментарий к самому элементу
         Zip.Item[ItemIndex].Comment := 'Мой тестовый комментарий';
+
+        //TCompressionStream.Create(clDefault, S);
       finally
         S.Free;
       end;

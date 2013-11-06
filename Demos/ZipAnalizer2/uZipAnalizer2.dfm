@@ -13,7 +13,6 @@ object dlgZipAnalizer: TdlgZipAnalizer
   OldCreateOrder = False
   Position = poScreenCenter
   OnCreate = FormCreate
-  OnDestroy = FormDestroy
   DesignSize = (
     685
     300)

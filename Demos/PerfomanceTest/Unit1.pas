@@ -1,3 +1,24 @@
+////////////////////////////////////////////////////////////////////////////////
+//
+//  ****************************************************************************
+//  * Project   : FWZip - FWZipPerfomance
+//  * Purpose   : Тестирование производительности FWZip
+//  * Author    : Александр (Rouse_) Багель
+//  * Copyright : © Fangorn Wizards Lab 1998 - 2013.
+//  * Version   : 1.0.10
+//  * Home Page : http://rouse.drkb.ru
+//  * Home Blog : http://alexander-bagel.blogspot.ru
+//  ****************************************************************************
+//  * Stable Release : http://rouse.drkb.ru/components.php#fwzip
+//  * Latest Source  : https://github.com/AlexanderBagel/FWZip
+//  ****************************************************************************
+//
+//  Используемые источники:
+//  ftp://ftp.info-zip.org/pub/infozip/doc/appnote-iz-latest.zip
+//  http://zlib.net/zlib-1.2.5.tar.gz
+//  http://www.base2ti.com/
+//
+
 unit Unit1;
 
 interface
@@ -35,6 +56,8 @@ type
     ProgressBar2: TProgressBar;
     Label5: TLabel;
     Button5: TButton;
+    Button6: TButton;
+    Memo1: TMemo;
     procedure CheckBox1Click(Sender: TObject);
     procedure Button1Click(Sender: TObject);
     procedure LabeledEdit1Change(Sender: TObject);
@@ -42,7 +65,6 @@ type
     procedure CheckBox2Click(Sender: TObject);
     procedure LabeledEdit3Change(Sender: TObject);
     procedure Button2Click(Sender: TObject);
-    procedure FormCreate(Sender: TObject);
     procedure Button4Click(Sender: TObject);
     procedure Button5Click(Sender: TObject);
   private
@@ -94,7 +116,10 @@ begin
       Inc(TotalSize, Item.Size);
       Inc(InitialHeapSize, SizeOf(TCentralDirectoryFileHeaderEx));
       if LabeledEdit2.Text <> '' then
+      begin
         Item.Password := LabeledEdit2.Text;
+        Item.NeedDescriptor := True;
+      end;
     end;
     Label3.Caption := 'Общее количество элементов: ' + IntToStr(Writer.Count);
     Label4.Caption := 'Общий размер элементов: ' + IntToStr(TotalSize);
@@ -164,8 +189,12 @@ begin
       AverageHeapSize := 0;
       TotalGetHeapStatusCount := 0;
       StopProcess := False;
+      Memo1.Lines.Clear;
       TicCount := GetTickCount;
-      Reader.ExtractAll(Path);
+      if TButton(Sender).Tag = 0 then
+        Reader.ExtractAll(Path)
+      else
+        Reader.Check;
       if TotalGetHeapStatusCount = 0 then
         TotalGetHeapStatusCount := 1;
       ShowMessage(Format(
@@ -207,11 +236,6 @@ begin
   Label5.Caption := '';
 end;
 
-procedure TForm1.FormCreate(Sender: TObject);
-begin
-  //ReportMemoryLeaksOnShutdown := True;
-end;
-
 procedure TForm1.LabeledEdit1Change(Sender: TObject);
 begin
   Button2.Enabled := DirectoryExists(LabeledEdit1.Text);
@@ -224,11 +248,16 @@ end;
 
 procedure TForm1.OnProgress(Sender: TObject; const FileName: string; Percent,
   TotalPercent: Byte; var Cancel: Boolean; ProgressState: TProgressState);
+const
+  p: array [TProgressState] of string = ('psStart', 'psInitialization',
+    'psInProgress', 'psFinalization', 'psEnd', 'psException');
 begin
   Cancel := StopProcess;
-  Label5.Caption := FileName;
+  Label5.Caption := Format('(%d) %s', [Percent, FileName]);
   ProgressBar1.Position := Percent;
   ProgressBar2.Position := TotalPercent;
+  Memo1.Lines.Add(Format('%s - %s percent %d total %d',
+    [FileName, P[ProgressState], Percent, TotalPercent]));
   UpdateMemoryStatus;
 end;
 
@@ -239,6 +268,7 @@ begin
   Button3.Enabled := Value;
   Button4.Enabled := Value;
   Button5.Visible := not Value;
+  Button6.Enabled := Value;
   LabeledEdit1.Enabled := Value;
   LabeledEdit2.Enabled := Value;
   LabeledEdit3.Enabled := Value;
@@ -261,6 +291,7 @@ begin
   Inc(AverageHeapSize, HeapSize);
   Label1.Caption := 'Текущий расход памяти: ' + IntToStr(HeapSize) + ' байт';
   Label2.Caption := 'Пиковый расход памяти: ' + IntToStr(MaxHeapSize) + ' байт';
+  Application.ProcessMessages;
   Application.ProcessMessages;
 end;
 

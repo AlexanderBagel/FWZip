@@ -1,6 +1,6 @@
 ﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
     <PropertyGroup>
-        <ProjectGuid>{8E158B64-32A6-4ED0-B952-E5FBF0F17CF3}</ProjectGuid>
+        <ProjectGuid>{DEBDAF2E-104F-436D-8AFC-8BAC60505E64}</ProjectGuid>
     </PropertyGroup>
     <ItemGroup>
         <Projects Include="Create ZIP 1\CreateZIPDemo1.dproj">
@@ -25,6 +25,9 @@
             <Dependencies/>
         </Projects>
         <Projects Include="ZipAnalizer\ZipAnalizer.dproj">
+            <Dependencies/>
+        </Projects>
+        <Projects Include="ZipAnalizer2\ZipAnalizer2.dproj">
             <Dependencies/>
         </Projects>
     </ItemGroup>
@@ -107,14 +110,23 @@
     <Target Name="ZipAnalizer:Make">
         <MSBuild Projects="ZipAnalizer\ZipAnalizer.dproj" Targets="Make"/>
     </Target>
+    <Target Name="ZipAnalizer2">
+        <MSBuild Projects="ZipAnalizer2\ZipAnalizer2.dproj"/>
+    </Target>
+    <Target Name="ZipAnalizer2:Clean">
+        <MSBuild Projects="ZipAnalizer2\ZipAnalizer2.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="ZipAnalizer2:Make">
+        <MSBuild Projects="ZipAnalizer2\ZipAnalizer2.dproj" Targets="Make"/>
+    </Target>
     <Target Name="Build">
-        <CallTarget Targets="CreateZIPDemo1;CreateZIPDemo2;ExctractZIPDemo1;ExctractZIPDemo2;FWZipPerfomance;BuildWithException;UseExDataBlob;ZipAnalizer"/>
+        <CallTarget Targets="CreateZIPDemo1;CreateZIPDemo2;ExctractZIPDemo1;ExctractZIPDemo2;FWZipPerfomance;BuildWithException;UseExDataBlob;ZipAnalizer;ZipAnalizer2"/>
     </Target>
     <Target Name="Clean">
-        <CallTarget Targets="CreateZIPDemo1:Clean;CreateZIPDemo2:Clean;ExctractZIPDemo1:Clean;ExctractZIPDemo2:Clean;FWZipPerfomance:Clean;BuildWithException:Clean;UseExDataBlob:Clean;ZipAnalizer:Clean"/>
+        <CallTarget Targets="CreateZIPDemo1:Clean;CreateZIPDemo2:Clean;ExctractZIPDemo1:Clean;ExctractZIPDemo2:Clean;FWZipPerfomance:Clean;BuildWithException:Clean;UseExDataBlob:Clean;ZipAnalizer:Clean;ZipAnalizer2:Clean"/>
     </Target>
     <Target Name="Make">
-        <CallTarget Targets="CreateZIPDemo1:Make;CreateZIPDemo2:Make;ExctractZIPDemo1:Make;ExctractZIPDemo2:Make;FWZipPerfomance:Make;BuildWithException:Make;UseExDataBlob:Make;ZipAnalizer:Make"/>
+        <CallTarget Targets="CreateZIPDemo1:Make;CreateZIPDemo2:Make;ExctractZIPDemo1:Make;ExctractZIPDemo2:Make;FWZipPerfomance:Make;BuildWithException:Make;UseExDataBlob:Make;ZipAnalizer:Make;ZipAnalizer2:Make"/>
     </Target>
     <Import Project="$(BDS)\Bin\CodeGear.Group.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')"/>
 </Project>

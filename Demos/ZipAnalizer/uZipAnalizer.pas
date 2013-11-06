@@ -1,3 +1,25 @@
+////////////////////////////////////////////////////////////////////////////////
+//
+//  ****************************************************************************
+//  * Project   : FWZip - ZipAnalizer
+//  * Unit Name : uZipAnalizer
+//  * Purpose   : Вывод параметров архива используя возможности FWZipReader
+//  * Author    : Александр (Rouse_) Багель
+//  * Copyright : © Fangorn Wizards Lab 1998 - 2013.
+//  * Version   : 1.0.10
+//  * Home Page : http://rouse.drkb.ru
+//  * Home Blog : http://alexander-bagel.blogspot.ru
+//  ****************************************************************************
+//  * Stable Release : http://rouse.drkb.ru/components.php#fwzip
+//  * Latest Source  : https://github.com/AlexanderBagel/FWZip
+//  ****************************************************************************
+//
+//  Используемые источники:
+//  ftp://ftp.info-zip.org/pub/infozip/doc/appnote-iz-latest.zip
+//  http://zlib.net/zlib-1.2.5.tar.gz
+//  http://www.base2ti.com/
+//
+
 unit uZipAnalizer;
 
 interface
