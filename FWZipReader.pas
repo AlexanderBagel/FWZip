@@ -6,7 +6,7 @@
 //  * Purpose   : Набор классов для распаковки ZIP архива
 //  * Author    : Александр (Rouse_) Багель
 //  * Copyright : © Fangorn Wizards Lab 1998 - 2013.
-//  * Version   : 1.0.10
+//  * Version   : 1.0.11
 //  * Home Page : http://rouse.drkb.ru
 //  * Home Blog : http://alexander-bagel.blogspot.ru
 //  ****************************************************************************
@@ -115,7 +115,9 @@ type
     FException: TZipExtractExceptionEvent;
     FDuplicate: TZipDuplicateEvent;
     FStartZipDataOffset, FEndZipDataOffset: Int64;
+    FDefaultDuplicateAction: TDuplicateAction;
     function GetItem(Index: Integer): TFWZipReaderItem;
+    procedure SetDefaultDuplicateAction(const Value: TDuplicateAction);
   protected
     property ZIPStream: TStream read FZIPStream;
     // Rouse_ 02.10.2012
@@ -156,6 +158,8 @@ type
     procedure ExtractAll(const ExtractMask: string; Path: string); overload;
     procedure Check(const ExtractMask: string = '');
     function Count: Integer;
+    property DefaultDuplicateAction: TDuplicateAction
+      read FDefaultDuplicateAction write SetDefaultDuplicateAction;
     property Item[Index: Integer]: TFWZipReaderItem read GetItem; default;
     property Comment: AnsiString read FEndOfCentralDirComment;
     property PasswordList: TStringList read FPasswordList;
@@ -245,7 +249,7 @@ begin
       if Assigned(FDuplicate) then
       begin
         // если файл уже существует, узнаем - как жить дальше с этим ;)
-        DuplicateAction := daSkip;
+        DuplicateAction := FOwner.DefaultDuplicateAction;
         FDuplicate(Self, FullPath, DuplicateAction);
 
         case DuplicateAction of
@@ -948,6 +952,7 @@ begin
   FPasswordList := TStringList.Create;
   FPasswordList.Duplicates := dupIgnore;
   FPasswordList.Sorted := True;
+  DefaultDuplicateAction := daSkip;
 end;
 
 // =============================================================================
@@ -1484,6 +1489,14 @@ begin
   finally
     ExtractList.Free;
   end;
+end;
+
+procedure TFWZipReader.SetDefaultDuplicateAction(const Value: TDuplicateAction);
+begin
+  if Value = daUseNewFilePath then
+    raise EZipReader.Create(
+      'Действие daUseNewFilePath можно назначать только в обработчике события OnDuplicate.');
+  FDefaultDuplicateAction := Value;
 end;
 
 //
