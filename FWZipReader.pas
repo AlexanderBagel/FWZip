@@ -246,46 +246,40 @@ begin
     // проверка на существование файла
     if FileExists(FullPath) then
     begin
+
+      // если файл уже существует, узнаем - как жить дальше с этим ;)
+      DuplicateAction := FOwner.DefaultDuplicateAction;
       if Assigned(FDuplicate) then
-      begin
-        // если файл уже существует, узнаем - как жить дальше с этим ;)
-        DuplicateAction := FOwner.DefaultDuplicateAction;
         FDuplicate(Self, FullPath, DuplicateAction);
 
-        case DuplicateAction of
+      case DuplicateAction of
 
-          // пропустить файл
-          daSkip:
+        // пропустить файл
+        daSkip:
+        begin
+          Result := erSkiped;
+          Exit;
+        end;
+
+        // перезаписать
+        daOverwrite:
+          SetFileAttributes(PChar(FullPath), FILE_ATTRIBUTE_NORMAL);
+
+        // распаковать с другим именем
+        daUseNewFilePath:
+          // если программист указал новый пусть к файлу,
+          // то о существовании директории он должен позаботиться сам
+          if not DirectoryExists(ExtractFilePath(FullPath)) then
           begin
             Result := erSkiped;
             Exit;
           end;
 
-          // перезаписать
-          daOverwrite:
-            SetFileAttributes(PChar(FullPath), FILE_ATTRIBUTE_NORMAL);
+        // прервать распаковку
+        daAbort:
+          Abort;
 
-          // распаковать с другим именем
-          daUseNewFilePath:
-            // если программист указал новый пусть к файлу,
-            // то о существовании директории он должен позаботиться сам
-            if not DirectoryExists(ExtractFilePath(FullPath)) then
-            begin
-              Result := erSkiped;
-              Exit;
-            end;
-
-          // прервать распаковку
-          daAbort:
-            Abort;
-
-        end;
-      end
-      else
-      begin
-        Result := erSkiped;
-        Exit;
-      end
+      end;
     end;
 
     UnpackedFile := TFileStream.Create(FullPath, fmCreate);
