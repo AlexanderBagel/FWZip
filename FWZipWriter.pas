@@ -5,8 +5,8 @@
 //  * Unit Name : FWZipWriter
 //  * Purpose   : Класс для создания ZIP архива
 //  * Author    : Александр (Rouse_) Багель
-//  * Copyright : © Fangorn Wizards Lab 1998 - 2015.
-//  * Version   : 1.0.11
+//  * Copyright : © Fangorn Wizards Lab 1998 - 2013.
+//  * Version   : 1.0.10
 //  * Home Page : http://rouse.drkb.ru
 //  * Home Blog : http://alexander-bagel.blogspot.ru
 //  ****************************************************************************
@@ -969,10 +969,10 @@ begin
   // нам необходимо применять ZIP64
 
   Result := 20;
-  if (FCD[Index].UncompressedSize >= MAXDWORD) or
-    (FCD[Index].CompressedSize >= MAXDWORD) or
-    (FCD[Index].RelativeOffsetOfLocalHeader >= MAXDWORD) or
-    (FCD[Index].DiskNumberStart >= MAXWORD) then
+  if (FCD[Index].UncompressedSize > MAXDWORD) or
+    (FCD[Index].CompressedSize > MAXDWORD) or
+    (FCD[Index].RelativeOffsetOfLocalHeader > MAXDWORD) or
+    (FCD[Index].DiskNumberStart > MAXWORD) then
     Result := 45;
 end;
 
@@ -1010,13 +1010,13 @@ begin
           directory record field is set to 0xFFFF or 0xFFFFFFFF.
       }
 
-      if FCD[I].UncompressedSize >= MAXDWORD then
+      if FCD[I].UncompressedSize > MAXDWORD then
         ZIP64Data.WriteBuffer(FCD[I].UncompressedSize, 8);
-      if FCD[I].CompressedSize >= MAXDWORD then
+      if FCD[I].CompressedSize > MAXDWORD then
         ZIP64Data.WriteBuffer(FCD[I].CompressedSize, 8);
-      if FCD[I].RelativeOffsetOfLocalHeader >= MAXDWORD then
+      if FCD[I].RelativeOffsetOfLocalHeader > MAXDWORD then
         ZIP64Data.WriteBuffer(FCD[I].RelativeOffsetOfLocalHeader, 8);
-      if FCD[I].DiskNumberStart >= MAXWORD then
+      if FCD[I].DiskNumberStart > MAXWORD then
         ZIP64Data.WriteBuffer(FCD[I].DiskNumberStart, 4);
 
       ZeroMemory(@ExDataNTFS, SizeOf(TExDataHeaderAndSize));
@@ -1372,10 +1372,6 @@ begin
     StreamSizeBeforeCompress := FileNameOffset +
       FCD[Index].Header.FilenameLength;
 
-    // резервируем место под ZIP64
-    if FCD[Index].UncompressedSize >= MAXDWORD then
-      Inc(StreamSizeBeforeCompress, SizeOf(TExDataInfo64));
-
     // выделяем блок данных под LocalFileHeader и имя файла
     Stream.Size := StreamSizeBeforeCompress;
     Stream.Position := Stream.Size;
@@ -1612,7 +1608,6 @@ var
   lfh: TLocalFileHeader;
   dd: TDataDescriptor;
   UseDescriptor: Boolean;
-  Info64: TExDataInfo64;
 begin
   FcdfhOffset := Stream.Position;  
   for I := 0 to Count - 1 do
@@ -1665,40 +1660,17 @@ begin
         lfh.UncompressedSize := FCD[I].UncompressedSize;
     end;
     lfh.FilenameLength := FCD[I].Header.FilenameLength;
-
-    if (FCD[I].UncompressedSize >= MAXDWORD) or
-      (FCD[I].CompressedSize >= MAXDWORD) then
-      lfh.ExtraFieldLength := SizeOf(TExDataInfo64)
-    else
-      lfh.ExtraFieldLength := 0;
+    // блок с расширенной информацией не пишем -
+    // эти данные будем помещать только в CentralDirectoryFileHeader
+    lfh.ExtraFieldLength := 0;
 
     Stream.Position := FCD[I].RelativeOffsetOfLocalHeader;
-
     Stream.WriteBuffer(lfh, SizeOf(TLocalFileHeader));
-
-    // Rouse_ 20.03.2015
-    // Пишем данные для поддержки ZIP64
-    // а то WinRar, WinZip и 7Zip не будут распаковывать такой архив
-    // (не понятно правда, почему они не читают эту информацию из CentralDirectory)
-    if lfh.ExtraFieldLength > 0 then
-    begin
-      Stream.Position := Stream.Position + lfh.FilenameLength;
-      Info64.HS.Header := SUPPORTED_EXDATA_ZIP64;
-      Info64.HS.Size := SizeOf(TExDataInfo64) - SizeOf(TExDataHeaderAndSize);
-      Info64.UncompressedSize := FCD[I].UncompressedSize;
-      // если CompressedSize меньше MAXDWORD его писать не надо по стандарту,
-      // но место под него уже зарезервированно, поэтому придется писать его в любом случае
-      // как обойти это расхождение со стандартом хорошим способом - я пока не знаю
-      Info64.CompressedSize := FCD[I].CompressedSize;
-      Stream.WriteBuffer(Info64, SizeOf(TExDataInfo64));
-    end;
-
     if UseDescriptor then
     begin
       // дескриптор пишется после сжатого блока данных
-      Stream.Position := FCD[I].RelativeOffsetOfLocalHeader +
-        SizeOf(TLocalFileHeader) + lfh.FilenameLength +
-        lfh.ExtraFieldLength + FCD[I].CompressedSize;
+      Stream.Position := Stream.Position + lfh.FilenameLength +
+        FCD[I].CompressedSize;
       Stream.WriteBuffer(dd, SizeOf(TDataDescriptor));
     end;
 
