@@ -75,7 +75,8 @@ type
       FFileHeader.RelativeOffsetOfLocalHeader;
     property DiskNumberStart: Integer read FFileHeader.DiskNumberStart;
   public
-    function Extract(Path: string; const Password: string): TExtractResult;
+    function Extract(const Path, Password: string): TExtractResult; overload;
+    function Extract(const Path, NewFileName, Password: string): TExtractResult; overload;
     function ExtractToStream(Value: TStream; const Password: string;
       CheckCRC32: Boolean = True): TExtractResult;
     property Attributes: TWin32FileAttributeData read FFileHeader.Attributes;
@@ -209,9 +210,18 @@ begin
 end;
 
 //
+//  Функция распаковывает текущий элемент архва в указанную папку
+// =============================================================================
+function TFWZipReaderItem.Extract(const Path, Password: string): TExtractResult;
+begin
+  Result := Extract(Path, '', Password);
+end;
+
+//
 //  Функция распаковывает текущий элемент архва в указанный файл
 // =============================================================================
-function TFWZipReaderItem.Extract(Path: string; const Password: string): TExtractResult;
+function TFWZipReaderItem.Extract(
+  const Path, NewFileName, Password: string): TExtractResult;
 var
   UnpackedFile: TFileStream;
   FullPath: string;
@@ -222,13 +232,18 @@ begin
   Result := erDone;
 
   // Правка пустого и относительного пути
-  Path := PathCanonicalize(Path);
+  FullPath := PathCanonicalize(Path);
   if Path = '' then
-    Path := GetCurrentDir;
+    FullPath := GetCurrentDir;
 
   FullPath := StringReplace(
-    IncludeTrailingPathDelimiter(Path) + FFileHeader.FileName,
+    IncludeTrailingPathDelimiter(FullPath) + FFileHeader.FileName,
     ZIP_SLASH, '\', [rfReplaceAll]);
+
+  // Rouse_ 23.03.2015
+  // Даем возможность поменять имя распаковываемого файла на лету
+  if NewFileName <> '' then
+    FullPath := ExtractFilePath(FullPath) + NewFileName;
 
   if Length(FullPath) > MAX_PATH then
     raise EZipReaderItem.CreateFmt(
@@ -1128,7 +1143,7 @@ begin
   // Спасибо v1ctar за найденый глюк
   //FFileStream.Free;
   FreeAndNil(FFileStream);
-  FFileStream := TFileStream.Create(Value, fmOpenRead);
+  FFileStream := TFileStream.Create(Value, fmOpenRead or fmShareDenyWrite);
   LoadFromStream(FFileStream, SFXOffset, ZipEndOffset);
 end;
 
@@ -1313,14 +1328,15 @@ type
   protected
     procedure SetSize(const NewSize: Int64); override;
   public
-    function Seek(Offset: Longint; Origin: Word): Longint; override;
+    function Seek(Offset: Longint; Origin: Word): Longint; overload; override;
+    function Seek(const Offset: Int64; Origin: TSeekOrigin): Int64; overload; override;
     function Write(const Buffer; Count: Longint): Longint; override;
     function Read(var Buffer; Count: Longint): Longint; override;
   end;
 
 function TFakeStream.Read(var Buffer; Count: Longint): Longint;
 begin
-  Result := Count;
+  raise Exception.Create('TFakeStream.Read');
 end;
 
 function TFakeStream.Write(const Buffer; Count: Longint): Longint;
@@ -1331,10 +1347,15 @@ end;
 
 function TFakeStream.Seek(Offset: Longint; Origin: Word): Longint;
 begin
+  Result := Seek(Int64(Offset), TSeekOrigin(Origin));
+end;
+
+function TFakeStream.Seek(const Offset: Int64; Origin: TSeekOrigin): Int64;
+begin
   case Origin of
-    soFromBeginning: FPosition := Offset;
-    soFromCurrent: Inc(FPosition, Offset);
-    soFromEnd: FPosition := FSize + Offset;
+    soBeginning: FPosition := Offset;
+    soCurrent: Inc(FPosition, Offset);
+    soEnd: FPosition := FSize + Offset;
   end;
   Result := FPosition;
 end;
