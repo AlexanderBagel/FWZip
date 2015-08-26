@@ -52,6 +52,7 @@ type
 
   EFWZipModifier = class(Exception);
 
+  // Данная структура хранит все блоки ExData из подключаемых архивов
   TExDataRecord = record
     Index: Integer;
     Tag: Word;
@@ -59,6 +60,7 @@ type
   end;
   TExDataRecords = array of TExDataRecord;
 
+  // сдруктура для хранения подключенного архива и его блоков ExData
   TReaderData = record
     Reader: TFWZipReader;
     ExDataRecords: TExDataRecords;
@@ -100,6 +102,11 @@ type
 
 { TFWZipModifierItem }
 
+//
+//  В конструкторе производим первичную инициализацию полей
+//  Сами поля ReaderIndex и OriginalItemIndex будут инициализироваться только
+//  при добавлении их посредством класса TFWZipModifier
+// =============================================================================
 constructor TFWZipModifierItem.Create(Owner: TFWZipWriter;
   const InitFilePath: string; InitAttributes: TWin32FileAttributeData;
   const InitFileName: string);
@@ -111,6 +118,13 @@ end;
 
 { TFWZipModifier }
 
+//
+//  Функция переносит элемент в финальный архив из ранее добавленного архива.
+//  В качестве результата возвращает индекс элемента в списке.
+//  Параметры:
+//  ReaderIndex - индекс ранее добавленно функцией AddZipFile архива
+//  ItemPath - имя элемента, которое требуется добавить
+// =============================================================================
 function TFWZipModifier.AddFromZip(ReaderIndex: TReaderIndex;
   const ItemPath: string): Integer;
 var
@@ -118,9 +132,16 @@ var
 begin
   CheckZipFileIndex(ReaderIndex);
   Reader := FReaderList[ReaderIndex].Reader;
-  Result := AddItemFromZip(Reader, ReaderIndex, Reader.GetElementIndex(ItemPath));
+  Result :=
+    AddItemFromZip(Reader, ReaderIndex, Reader.GetElementIndex(ItemPath));
 end;
 
+//
+//  Функция переносит все элементы из ранее добавленного архива в финальный архив.
+//  В качестве результата возвращает количество успешно добавленных элементов.
+//  Параметры:
+//  ReaderIndex - индекс ранее добавленно функцией AddZipFile архива
+// =============================================================================
 function TFWZipModifier.AddFromZip(ReaderIndex: TReaderIndex): Integer;
 var
   I: Integer;
@@ -134,6 +155,14 @@ begin
       Inc(Result);
 end;
 
+//
+//  Функция переносит все элементы из ранее добавленного архива
+//  по списку в финальный архив.
+//  В качестве результата возвращает количество успешно добавленных элементов.
+//  Параметры:
+//  ReaderIndex - индекс ранее добавленно функцией AddZipFile архива
+//  ItemsList - список элементов к добавлению
+// =============================================================================
 function TFWZipModifier.AddFromZip(ReaderIndex: TReaderIndex;
   ItemsList: TStringList): Integer;
 var
@@ -149,6 +178,10 @@ begin
       Inc(Result);
 end;
 
+//
+//  Функция переносит элемент в финальный архив из ранее добавленного архива.
+//  В качестве результата возвращает индекс элемента в списке.
+// =============================================================================
 function TFWZipModifier.AddItemFromZip(AReader: TFWZipReader;
   ReaderIndex: TReaderIndex; ItemIndex: Integer): Integer;
 var
@@ -157,20 +190,33 @@ var
 begin
   Result := -1;
   if ItemIndex < 0 then Exit;
+  // Получаем указатель на элемент из уже существующего архива
   OldItem := TFWZipReaderItemFriendly(AReader.Item[ItemIndex]);
+  // создаем новый элемент, который будем добавлять к новому архиву
   NewItem := TFWZipModifierItem(
     GetItemClass.Create(Self, '', OldItem.Attributes, OldItem.FileName));
+  // переключаем его в режим получения данных вручную
   NewItem.UseExternalData := True;
+  // инициализируем ему индексы, дабы потом понять, откуда брать о нем данные
   NewItem.ReaderIndex := ReaderIndex;
   NewItem.OriginalItemIndex := ItemIndex;
+  // инициализируем внешние и рассчитываемые поля
   NewItem.Comment := OldItem.Comment;
   NewItem.NeedDescriptor :=
     OldItem.CentralDirFileHeader.GeneralPurposeBitFlag and PBF_DESCRIPTOR <> 0;
   NewItem.UseUTF8String :=
     OldItem.CentralDirFileHeader.GeneralPurposeBitFlag and PBF_UTF8 <> 0;
+  // добавляем
   Result := AddNewItem(NewItem);
 end;
 
+//
+//  Функция добавляет новый архив из которого можно брать готовые данные.
+//  В качестве результата возвращает индекс архива в списке добавленных.
+//  Параметры:
+//  FileStream - поток с данными архива
+//  SFXOffset и ZipEndOffset - его границы
+// =============================================================================
 function TFWZipModifier.AddZipFile(FileStream: TStream; SFXOffset,
   ZipEndOffset: Integer): TReaderIndex;
 var
@@ -184,6 +230,13 @@ begin
   FReaderList[Result].Reader := AReader;
 end;
 
+//
+//  Функция добавляет новый архив из которого можно брать готовые данные.
+//  В качестве результата возвращает индекс архива в списке добавленных.
+//  Параметры:
+//  FilePath - путь к добавляемому архиву
+//  SFXOffset и ZipEndOffset - его границы
+// =============================================================================
 function TFWZipModifier.AddZipFile(const FilePath: string;
   SFXOffset, ZipEndOffset: Integer): TReaderIndex;
 var
@@ -197,6 +250,9 @@ begin
   FReaderList[Result].Reader := AReader;
 end;
 
+//
+//  Функция проверяет правильность переданного индекса архива в списке
+// =============================================================================
 function TFWZipModifier.CheckZipFileIndex(Value: TReaderIndex): TReaderIndex;
 begin
   Result := Value;
@@ -204,6 +260,10 @@ begin
     raise EFWZipModifier.CreateFmt('Invalid index value (%d).', [Value]);
 end;
 
+//
+//  Процедура перекрывает сжатие данных эелемента
+//  и берет эти данные из ранее сформированного архива.
+// =============================================================================
 procedure TFWZipModifier.CompressItem(CurrentItem: TFWZipWriterItem;
   Index: Integer; StreamSizeBeforeCompress: Int64; Stream: TStream);
 var
@@ -213,22 +273,30 @@ var
   Offset: Int64;
 begin
   NewItem := TFWZipModifierItem(CurrentItem);
+  // проверка, работаем ли мы с элементом, данные которого заполняются вручную?
   if not NewItem.UseExternalData then
   begin
     inherited;
     Exit;
   end;
+  // получаем указатель на класс, который держит добавленный ранее архив
   Reader := TFWZipReaderFriendly(FReaderList[NewItem.ReaderIndex].Reader);
+  // получаем указатель на оригинальный элемент архива
   OldItem := TFWZipReaderItemFriendly(Reader.Item[NewItem.OriginalItemIndex]);
+  // рассчитываем его позицию в архиве
   Offset := OldItem.CentralDirFileHeader.RelativeOffsetOfLocalHeader;
   Inc(Offset, SizeOf(TLocalFileHeader));
   Inc(Offset, OldItem.CentralDirFileHeader.FilenameLength);
   if OldItem.CentralDirFileHeaderEx.UncompressedSize >= MAXDWORD then
     Inc(Offset, SizeOf(TExDataInfo64));
   Reader.ZIPStream.Position := Offset;
+  // копируем данные как есть, без перепаковки
   Stream.CopyFrom(Reader.ZIPStream, OldItem.CentralDirFileHeaderEx.CompressedSize);
 end;
 
+//
+//  Modifier слегка не оптимально расходует память, поэтому подчищаем.
+// =============================================================================
 destructor TFWZipModifier.Destroy;
 var
   I, A: Integer;
@@ -242,6 +310,10 @@ begin
   inherited;
 end;
 
+//
+//  Процедура перекрывает заполнение блоков ExData
+//  и берет эти данные из ранее сформированного архива.
+// =============================================================================
 procedure TFWZipModifier.FillExData(Stream: TStream; Index: Integer);
 var
   NewItem: TFWZipModifierItem;
@@ -251,15 +323,18 @@ var
   ExDataRecord: TExDataRecord;
 begin
   NewItem := TFWZipModifierItem(Item[Index]);
+  // проверка, работаем ли мы с элементом, данные которого заполняются вручную?
   if not NewItem.UseExternalData then
   begin
     inherited;
     Exit;
   end;
+  // проверяем привязку к архиву, с елементов которого мы будем добавлять блоки ExData
   ReaderIndex := CheckZipFileIndex(NewItem.ReaderIndex);
   for I := 0 to Length(FReaderList[ReaderIndex].ExDataRecords) - 1 do
     if FReaderList[ReaderIndex].ExDataRecords[I].Index = NewItem.OriginalItemIndex then
     begin
+      // блоков может быть несколько, поэтому добавляем их все
       ExDataRecord := FReaderList[ReaderIndex].ExDataRecords[I];
       Stream.WriteBuffer(ExDataRecord.Tag, 2);
       ExDataSize := ExDataRecord.Stream.Size;
@@ -268,6 +343,10 @@ begin
     end;
 end;
 
+//
+//  Процедура перекрывает заполнение сьруктуры TCentralDirectoryFileHeaderEx
+//  и берет эти данные из ранее сформированного архива.
+// =============================================================================
 procedure TFWZipModifier.FillItemCDFHeader(CurrentItem: TFWZipWriterItem;
   var Value: TCentralDirectoryFileHeaderEx);
 var
@@ -276,6 +355,7 @@ var
   Reader: TFWZipReader;
 begin
   NewItem := TFWZipModifierItem(CurrentItem);
+  // проверка, работаем ли мы с элементом, данные которого заполняются вручную?
   if not NewItem.UseExternalData then
   begin
     inherited;
@@ -283,14 +363,24 @@ begin
   end;
   Reader := FReaderList[NewItem.ReaderIndex].Reader;
   OldItem := TFWZipReaderItemFriendly(Reader.Item[NewItem.OriginalItemIndex]);
+  // полностью перезаписываем все данные структуры
+  // исключением является поле RelativeOffsetOfLocalHeader
+  // но оно реинициализируется после вызова данного метода
   Value := OldItem.CentralDirFileHeaderEx;
 end;
 
+//
+//  Расширяем коллекцию
+// =============================================================================
 function TFWZipModifier.GetItemClass: TFWZipWriterItemClass;
 begin
   Result := TFWZipModifierItem;
 end;
 
+//
+//  Задача процедуры собрать все ExData в локальное хранилище,
+//  чтобы их можно было присоединить к структуре архива на этапе ребилда
+// =============================================================================
 procedure TFWZipModifier.OnLoadExData(Sender: TObject; ItemIndex: Integer;
   Tag: Word; Data: TStream);
 var

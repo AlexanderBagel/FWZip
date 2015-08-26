@@ -204,7 +204,8 @@ begin
 end;
 
 //
-//  Процедура изменяет блок данных о файле. Автоматически чистится имя к файлу.
+//  Процедура изменяет блок данных об элементе. Автоматически чистится имя к файлу.
+//  Данные при сжатии будут браться из поля FData
 // =============================================================================
 procedure TFWZipWriterItem.ChangeDataStream(Value: TStream);
 begin
@@ -247,6 +248,9 @@ begin
   inherited;
 end;
 
+//
+//  Функция проверяет - является ли элемент папкой?
+// =============================================================================
 function TFWZipWriterItem.IsFolder: Boolean;
 begin
   Result := Attributes.dwFileAttributes and faDirectory <> 0;
@@ -1113,7 +1117,7 @@ begin
 end;
 
 //
-//  Процедура удаляет ненужный элеент архива
+//  Процедура удаляет ненужный элемент архива
 // =============================================================================
 procedure TFWZipWriter.DeleteItem(Index: Integer);
 begin
@@ -1129,6 +1133,9 @@ begin
   inherited;
 end;
 
+//
+//  Вызов внешнего события о прогрессе сжатия
+// =============================================================================
 procedure TFWZipWriter.DoProgress(ProgressState: TProgressState);
 var
   CurrentProgress: Byte;
@@ -1162,6 +1169,9 @@ begin
   end;
 end;
 
+//
+//  Рассчитываем длину строки с учетом UTF8
+// =============================================================================
 function TFWZipWriter.StringLength(const Value: string; UTF8String: Boolean): Integer;
 begin
   if UTF8String then
@@ -1447,20 +1457,22 @@ begin
         Inc(FCD[I].Header.ExtraFieldLength,
           ZIP64Data.Size + SizeOf(TExDataHeaderAndSize));
 
-      // Запрашиваем блоки ExData от пользователя
       TotalExDataStream := TMemoryStream.Create;
       try
+        // Запрашиваем блоки ExData от пользователя
         FillExData(TotalExDataStream, I);
 
+        // правим общий размер расширенных блоков
         Inc(FCD[I].Header.ExtraFieldLength, TotalExDataStream.Size);
 
-        // Пишем саму структуру
+        // Пишем структуру TCentralDirectoryFileHeader, описывающую элемент
         Stream.WriteBuffer(FCD[I].Header, SizeOf(TCentralDirectoryFileHeader));
+
         // Пишем наименование элемента
         SaveString(Stream, FCD[I].FileName,
           FCD[I].Header.GeneralPurposeBitFlag and PBF_UTF8 = PBF_UTF8);
 
-        // и доп информацию в формате ZIP64
+        // если нужно -  доп информацию в формате ZIP64
         if ZIP64Data.Size > 0 then
         begin
           ExDataHeader.Header := SUPPORTED_EXDATA_ZIP64;
@@ -1468,11 +1480,12 @@ begin
           Stream.WriteBuffer(ExDataHeader, SizeOf(TExDataHeaderAndSize));
           Stream.CopyFrom(ZIP64Data, 0);
         end;
-        // информацию о NTFSTime
+
+        // потом информацию о NTFSTime
         if ExDataNTFS.HS.Header = SUPPORTED_EXDATA_NTFSTIME then
           Stream.WriteBuffer(ExDataNTFS, SizeOf(TExDataNTFS));
 
-        // и расширенную информацию полученною от пользователя
+        // и расширенную информацию полученную от пользователя
         if TotalExDataStream.Size > 0 then
           Stream.CopyFrom(TotalExDataStream, 0);
 
@@ -1480,7 +1493,7 @@ begin
          TotalExDataStream.Free;
       end;
 
-      // Пишем коментарий к элементу
+      // в завершение, пишем коментарий к элементу
       SaveString(Stream, FCD[I].FileComment,
         FCD[I].Header.GeneralPurposeBitFlag and PBF_UTF8 = PBF_UTF8);
 
@@ -1648,7 +1661,7 @@ begin
 end;
 
 //
-//  Процедура проводит преобразование переданной строки  в OEM и ее сохранение
+//  Процедура проводит преобразование переданной строки в OEM и ее сохранение
 // =============================================================================
 procedure TFWZipWriter.SaveString(Stream: TStream; const Value: string;
   UTF8String: Boolean);
