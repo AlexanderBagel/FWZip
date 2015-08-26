@@ -71,6 +71,7 @@ type
     property LocalFileHeader: TLocalFileHeader read FLocalFileHeader;
     property CentralDirFileHeader: TCentralDirectoryFileHeader
       read FFileHeader.Header;
+    property CentralDirFileHeaderEx: TCentralDirectoryFileHeaderEx read FFileHeader;
     property RelativeOffsetOfLocalHeader: Int64 read
       FFileHeader.RelativeOffsetOfLocalHeader;
     property DiskNumberStart: Integer read FFileHeader.DiskNumberStart;

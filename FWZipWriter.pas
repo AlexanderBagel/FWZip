@@ -57,16 +57,18 @@ type
       TWin32FileAttributeData;
     FTag: Integer;
     FUseUTF8String: Boolean;
+    FUseExternalData: Boolean;       // Флаг указывающий на то что данные будут передаваться снаружи
     procedure SetBool(const Value: Boolean);
     procedure SetCmpLevel(const Value: TCompressionLevel);
     procedure SetString(const Index: Integer; const Value: string);
   protected
     property Data: TMemoryStream read FData;
+    property UseExternalData: Boolean read FUseExternalData write FUseExternalData;
   public
     constructor Create(Owner: TFWZipWriter;
       const InitFilePath: string;
       InitAttributes: TWin32FileAttributeData;
-      const InitFileName: string = '');
+      const InitFileName: string = ''); virtual;
     destructor Destroy; override;
     procedure ChangeDataStream(Value: TStream);
     procedure ChangeAttributes(Value: TWin32FileAttributeData);
@@ -82,6 +84,8 @@ type
     property Tag: Integer read FTag write FTag;
     property UseUTF8String: Boolean read FUseUTF8String write FUseUTF8String;
   end;
+
+  TFWZipWriterItemClass = class of TFWZipWriterItem;
 
   // Результат создания архива
   TBuildZipResult = 
@@ -114,13 +118,21 @@ type
     FUseUTF8String: Boolean;
     function GetItem(Index: Integer): TFWZipWriterItem;
   protected
+    function GetItemClass: TFWZipWriterItemClass; virtual;
+    function AddNewItem(Value: TFWZipWriterItem): Integer;
+    procedure FillItemCDFHeader(CurrentItem: TFWZipWriterItem;
+      var Value: TCentralDirectoryFileHeaderEx); virtual;
+    procedure CompressItem(CurrentItem: TFWZipWriterItem;
+      Index: Integer; StreamSizeBeforeCompress: Int64; Stream: TStream); virtual;
+    procedure FillExData(Stream: TStream; Index: Integer); virtual;
+  protected
     procedure DoProgress(ProgressState: TProgressState);
     procedure CompressorOnProcess(Sender: TObject);
   protected
     function CheckFileNameSlashes(const Value: string): string;
     function GetVersionToExtract(Index: Integer): Word;
     function GetCurrentFileTime: TFileTime;
-    procedure SaveItemToStream(Stream: TStream; Index: Integer);
+    procedure SaveItemToStream(Stream: TStream; Index: Integer); virtual;
     procedure SaveCentralDirectory(Stream: TStream);
     procedure SaveEndOfCentralDirectory(Stream: TStream);
     procedure SaveString(Stream: TStream; const Value: string;
@@ -131,7 +143,7 @@ type
   public
     constructor Create; overload;
     constructor Create(CompressionLevel: TCompressionLevel); overload;
-    constructor Create(UseDescryptors: Boolean; 
+    constructor Create(UseDescryptors: Boolean;
       CompressionLevel: TCompressionLevel;
       const DefaultPassword: string); overload;
     destructor Destroy; override;
@@ -359,8 +371,8 @@ begin
   FolderPath := CheckFileNameSlashes(FolderRelativeName);
   if FolderPath[Length(FolderPath)] <> ZIP_SLASH then
     FolderPath := FolderPath + ZIP_SLASH;
-  Item := TFWZipWriterItem.Create(Self, FolderPath, Attributes, FolderPath);
-  Result := FItems.Add(Item);
+  Item := GetItemClass.Create(Self, FolderPath, Attributes, FolderPath);
+  Result := AddNewItem(Item);
 end;
 
 //
@@ -387,7 +399,7 @@ begin
   else
     InitFileName := CheckFileNameSlashes(FileName);
 
-  Item := TFWZipWriterItem.Create(Self, FullFilePath, Attributes, InitFileName);
+  Item := GetItemClass.Create(Self, FullFilePath, Attributes, InitFileName);
   Item.CompressionLevel := FDefaultCompressionLevel;
   Item.Password := FDefaultPassword;
 
@@ -396,7 +408,7 @@ begin
   // режиме шифрования она не участвует в генерации заголовка инициализации
   Item.NeedDescriptor := FDefaultDescryptorState;
 
-  Result := FItems.Add(Item);
+  Result := AddNewItem(Item);
 end;
 
 //
@@ -558,7 +570,7 @@ begin
   Attributes.ftLastWriteTime := Attributes.ftCreationTime;
   Attributes.nFileSizeLow := Size and MAXDWORD;
   Attributes.nFileSizeHigh := Size shr 32;
-  Item := TFWZipWriterItem.Create(Self, '', Attributes, InitFileName);
+  Item := GetItemClass.Create(Self, '', Attributes, InitFileName);
   Item.CompressionLevel := FDefaultCompressionLevel;
   Item.Password := FDefaultPassword;
 
@@ -568,7 +580,15 @@ begin
   Item.NeedDescriptor := FDefaultDescryptorState;
 
   Item.ChangeDataStream(Value);
-  Result := FItems.Add(Item);
+  Result := AddNewItem(Item);
+end;
+
+//
+//  Вспомогательная функция для доступа к листу из наследников
+// =============================================================================
+function TFWZipWriter.AddNewItem(Value: TFWZipWriterItem): Integer;
+begin
+  Result := FItems.Add(Value);
 end;
 
 //
@@ -657,6 +677,11 @@ begin
           begin
             // возвращаем позицию в стриме на старое место
             Stream.Position := BeforeExceptPosition;
+
+            // если элемент использовал кастомные данные,
+            // то снимаем этот вариант заполнения и пусть извне решают
+            // что делать в этом случае
+            Item[I].UseExternalData := False;
 
             // запрашиваем пользователя, что делать с исключением?         
             ExceptAction := eaSkip;
@@ -799,6 +824,245 @@ begin
 end;
 
 //
+//  Процедура сжимет данные
+// =============================================================================
+procedure TFWZipWriter.CompressItem(CurrentItem: TFWZipWriterItem;
+  Index: Integer; StreamSizeBeforeCompress: Int64; Stream: TStream);
+
+
+  function CopyWithProgress(Src, Dst: TStream;
+    Cryptor: TFWZipCryptor): Cardinal;
+  var
+    Buff: Pointer;
+    Size, TotalSize: Integer;
+  begin
+    Result := $FFFFFFFF;
+    GetMem(Buff, MAXWORD);
+    try
+      Src.Position := 0;
+      FCompressedStream := Src;
+      DoProgress(psInitialization);
+      try
+        TotalSize := 0;
+        while True do
+        begin
+          Size := Src.Read(Buff^, MAXWORD);
+          Result := CRC32Calc(Result, Buff, Size);
+          if Size <> 0 then
+          begin
+            Inc(TotalSize, Size);
+            if Cryptor <> nil then
+              Cryptor.EncryptBuffer(Buff, Size);
+            Dst.WriteBuffer(Buff^, Size);
+            DoProgress(psInProgress);
+          end
+          else
+            Break;
+        end;
+        if TotalSize <> Src.Size then
+          raise EZipWriterWrite.CreateFmt(
+            'Ошибка записи данных элемента №%d "%s".', [Index, Item[Index].FileName]);
+      except
+        DoProgress(psException);
+        raise;
+      end;
+      DoProgress(psFinalization);
+    finally
+      FreeMem(Buff);
+    end;
+    Result := Result xor $FFFFFFFF;
+  end;
+
+var
+  F: TFileStream;
+  Compressor: TZCompressionStream;
+  Cryptor: TFWZipCryptor;
+  ZipItemStream: TFWZipItemStream;
+  CRC32Stream: TFWZipCRC32Stream;
+  EncryptedHeaderStream: TMemoryStream;
+begin
+  Cryptor := nil;
+  try
+    EncryptedHeaderStream := TMemoryStream.Create;
+    try
+      if CurrentItem.Password <> '' then
+      begin
+        Cryptor := TFWZipCryptor.Create(AnsiString(CurrentItem.Password));
+        Cryptor.GenerateEncryptionHeader(EncryptedHeaderStream,
+          CurrentItem.NeedDescriptor,
+          FCD[Index].Header.Crc32,
+          FCD[Index].Header.LastModFileTimeTime +
+          FCD[Index].Header.LastModFileTimeDate shl 16);
+        // резервируем место под EncryptedHeaderStream
+        Stream.Size := StreamSizeBeforeCompress + EncryptedHeaderSize;
+        Stream.Position := Stream.Size;
+      end;
+
+      // пишем сам сжатый файл
+      case FCD[Index].Header.CompressionMethod of
+        Z_NO_COMPRESSION:
+        begin
+          if CurrentItem.Data <> nil then
+            FCD[Index].Header.Crc32 :=
+              CopyWithProgress(CurrentItem.Data, Stream, Cryptor)
+          else
+          begin
+            try
+              F := TFileStream.Create(CurrentItem.FilePath,
+                fmOpenRead or fmShareDenyWrite);
+              try
+                FCD[Index].Header.Crc32 :=
+                  CopyWithProgress(F, Stream, Cryptor)
+              finally
+                F.Free;
+              end;
+            except
+              on E: Exception do
+                raise EZipWriterWrite.CreateFmt(
+                  'Ошибка доступа к данным элемента №%d "%s".' +
+                  sLineBreak + E.ClassName + ': ' + E.Message,
+                  [Index, CurrentItem.FileName]);
+            end;
+          end;
+          // Получаем размер сжатых данных
+          // В случае если использовалось шифрование в размере срузу будет
+          // учтен 12-ти байтный заголовок инициализации ключа расшифровки
+          FCD[Index].CompressedSize := Stream.Size - StreamSizeBeforeCompress;
+        end;
+        Z_DEFLATED:
+        begin
+          {$IFDEF USE_AUTOGENERATED_ZLIB_HEADER}
+          // позицию сдвигаем на два байта влево,
+          // таким образом мы затрем ненужный нам заголовок ZLib
+          Stream.Position := Stream.Position - 2;
+          {$ENDIF}
+          if CurrentItem.Data <> nil then
+          begin
+            // сохраняем ссылку на стрим с данными для рассчета прогресса
+            FCompressedStream := CurrentItem.Data;
+            ZipItemStream := TFWZipItemStream.Create(Stream, Cryptor, nil,
+              0, CurrentItem.Size);
+            try
+              Compressor := TZCompressionStream.Create(
+                ZipItemStream, CurrentItem.CompressionLevel,
+                defaultWindowBits, 8, zsDefault);
+              try
+                Compressor.OnProgress := CompressorOnProcess;
+                DoProgress(psInitialization);
+                try
+                  CRC32Stream := TFWZipCRC32Stream.Create(CurrentItem.Data);
+                  try
+                    Compressor.CopyFrom(CRC32Stream, 0);
+                    FCD[Index].Header.Crc32 := CRC32Stream.CRC32;
+                  finally
+                    CRC32Stream.Free;
+                  end;
+                except
+                  DoProgress(psException);
+                  raise;
+                end;
+                DoProgress(psFinalization);
+              finally
+                Compressor.Free;
+              end;
+            finally
+              ZipItemStream.Free;
+            end;
+          end
+          else
+          begin
+            // TFWZipItemStream выступает как посредник между результирующим
+            // стримом и TCompressionStream.
+            // Его задача зашифровать все проходящие через нешго данные
+            ZipItemStream := TFWZipItemStream.Create(Stream, Cryptor, nil,
+              0, CurrentItem.Size);
+            try
+              Compressor := TZCompressionStream.Create(
+                ZipItemStream, CurrentItem.CompressionLevel,
+                defaultWindowBits, 8, zsDefault);
+              try
+                try
+                  F := TFileStream.Create(CurrentItem.FilePath,
+                    fmOpenRead or fmShareDenyWrite);
+                  try
+                    // сохраняем ссылку на стрим с данными для рассчета прогресса
+                    FCompressedStream := F;
+                    F.Position := 0;
+                    Compressor.OnProgress := CompressorOnProcess;
+                    // TFWZipCRC32Stream выступает как посредник между
+                    // нераспакованными данными и TCompressionStream,
+                    // в котором происходит сжатие данных.
+                    // Его задача отследить все переданные через него
+                    // блоки данных и рассчитать их контрольную сумму
+                    // до того как они будут сжаты
+                    DoProgress(psInitialization);
+                    try
+                      CRC32Stream := TFWZipCRC32Stream.Create(F);
+                      try
+                        Compressor.CopyFrom(CRC32Stream, 0);
+                        FCD[Index].Header.Crc32 := CRC32Stream.CRC32;
+                      finally
+                        CRC32Stream.Free;
+                      end;
+                    except
+                      DoProgress(psException);
+                      raise;
+                    end;
+                    DoProgress(psFinalization);
+                  finally
+                    F.Free;
+                  end;
+                except
+                  on E: Exception do
+                    raise EZipWriterWrite.CreateFmt(
+                      'Ошибка доступа к данным элемента №%d "%s".' +
+                      sLineBreak + E.ClassName + ': ' + E.Message,
+                      [Index, CurrentItem.FileName]);
+                end;
+              finally
+                Compressor.Free;
+              end;
+            finally
+              ZipItemStream.Free;
+            end;
+          end;
+
+          {$IFDEF USE_AUTOGENERATED_ZLIB_HEADER}
+          // Rouse_ 14.02.2013
+          // Не знаю почему, но опытным путем установлено,
+          // что размер запакованых данных должен быть меньше на 4 байта
+          // при использовании автогенерируемого заголовка.
+          // Этот момент учитывается в ICSharpCode.SharpZipLibrary
+          // Распаковка в любом случае происходит нормально
+          if TrimPackedStreamSize then
+            Stream.Size := Stream.Size - 4;
+          {$ENDIF}
+
+          // Получаем размер сжатых данных
+          // В случае если использовалось шифрование в размере срузу будет
+          // учтен 12-ти байтный заголовок инициализации ключа расшифровки
+          FCD[Index].CompressedSize := Stream.Size - StreamSizeBeforeCompress;
+
+        end;
+      end;
+
+      // если файл зашифрован,
+      // записываем заголовок инициализации ключа расшифровки
+      if EncryptedHeaderStream.Size > 0 then
+      begin
+        Stream.Position := StreamSizeBeforeCompress;
+        Stream.CopyFrom(EncryptedHeaderStream, 0);
+      end;
+    finally
+      EncryptedHeaderStream.Free;
+    end;
+
+  finally
+    Cryptor.Free;
+  end;
+end;
+
+//
 //  Процедура вызывает событие OnProcess
 // =============================================================================
 procedure TFWZipWriter.CompressorOnProcess(Sender: TObject);
@@ -927,6 +1191,144 @@ begin
 end;
 
 //
+//  Запрашиваем данные о расширенных блоках данных для каждой записи
+// =============================================================================
+procedure TFWZipWriter.FillExData(Stream: TStream; Index: Integer);
+var
+  ExDataStream: TMemoryStream;
+  EmptyExData: Boolean;
+  UserExDataBlockCount, ExDataSize: Integer;
+  ExDataHeaderTag: Word;
+begin
+  if Assigned(FSaveExData) then
+  begin
+    ExDataStream := TMemoryStream.Create;
+    try
+      EmptyExData := False;
+      UserExDataBlockCount := 0;
+      while not EmptyExData do
+      begin
+        ExDataHeaderTag := 0;
+        ExDataStream.Clear;
+        FSaveExData(Self, Index, UserExDataBlockCount,
+          ExDataHeaderTag, ExDataStream);
+        Inc(UserExDataBlockCount);
+        EmptyExData := ExDataStream.Size = 0;
+        if not EmptyExData then
+        begin
+          if ExDataStream.Size > MAXWORD then
+            raise EZipWriter.Create(
+              'Размер каждого блока расширенных данных' +
+              ' не может превышать 65535 байт.')
+          else
+            ExDataSize := ExDataStream.Size;
+          if ExDataHeaderTag in
+            [0, SUPPORTED_EXDATA_ZIP64, SUPPORTED_EXDATA_NTFSTIME] then
+            raise EZipWriter.Create(
+              'Нельзя использовать зарезервированные тэги' +
+              ' блока расширенных данных.');
+          Stream.WriteBuffer(ExDataHeaderTag, 2);
+          Stream.WriteBuffer(ExDataSize, 2);
+          Stream.CopyFrom(ExDataStream, 0);
+        end;
+      end;
+    finally
+      ExDataStream.Free;
+    end;
+  end;
+end;
+
+//
+//  Инициализируем CentralDirectoryFileHeader элемента
+// =============================================================================
+procedure TFWZipWriter.FillItemCDFHeader(CurrentItem: TFWZipWriterItem;
+  var Value: TCentralDirectoryFileHeaderEx);
+var
+  SystemTime: TSystemTime;
+  LastWriteTime: TFileTime;
+  FileDate: Cardinal;
+begin
+  Value.Header.CentralFileHeaderSignature := CENTRAL_FILE_HEADER_SIGNATURE;
+  Value.Header.VersionMadeBy := CurrentVersionMadeBy;
+  Value.Header.VersionNeededToExtract := 0; // Рассчитывается позднее
+
+  Value.Header.GeneralPurposeBitFlag := 0;
+  if CurrentItem.Password <> '' then
+    Value.Header.GeneralPurposeBitFlag :=
+      Value.Header.GeneralPurposeBitFlag or PBF_CRYPTED;
+
+  case CurrentItem.CompressionLevel of
+    clNone:; // данный режим компрессии не поддерживается, сразу меняем на Store
+    clFastest:
+      Value.Header.GeneralPurposeBitFlag :=
+        Value.Header.GeneralPurposeBitFlag or PBF_COMPRESS_SUPERFAST;
+    clDefault:
+      Value.Header.GeneralPurposeBitFlag :=
+        Value.Header.GeneralPurposeBitFlag or PBF_COMPRESS_NORMAL;
+    clMax:
+      Value.Header.GeneralPurposeBitFlag :=
+        Value.Header.GeneralPurposeBitFlag or PBF_COMPRESS_MAXIMUM;
+  end;
+  if CurrentItem.NeedDescriptor then
+    Value.Header.GeneralPurposeBitFlag :=
+      Value.Header.GeneralPurposeBitFlag or PBF_DESCRIPTOR;
+
+  if CurrentItem.CompressionLevel = clNone then
+    Value.Header.CompressionMethod := Z_NO_COMPRESSION
+  else
+    Value.Header.CompressionMethod := Z_DEFLATED;
+
+  if not CurrentItem.NeedDescriptor then
+    if CurrentItem.Password <> '' then
+    begin
+      // в случае если дескрипторы отключены и включено шифрование элемента
+      // то необходимо рассчитать его контрольную сумму перед
+      // генерацией заголовка инициализации ключа шифрования
+      if CurrentItem.Data = nil then
+        Value.Header.Crc32 := FileCRC32(CurrentItem.FilePath)
+      else
+        Value.Header.Crc32 :=
+          CRC32Calc(CurrentItem.Data.Memory, CurrentItem.Data.Size);
+    end;
+  Value.UncompressedSize := CurrentItem.Size;
+
+  // Rouse_ 25.10.2013
+  // Правка небольшой ошибки замеченой Владиславом Нечепоренко
+  //FileTimeToSystemTime(CurrentItem.Attributes.ftLastWriteTime, SystemTyme);
+  FileTimeToLocalFileTime(CurrentItem.Attributes.ftLastWriteTime, LastWriteTime);
+  FileTimeToSystemTime(LastWriteTime, SystemTime);
+  FileDate := DateTimeToFileDate(SystemTimeToDateTime(SystemTime));
+
+  Value.Header.LastModFileTimeTime := FileDate and $FFFF;
+  Value.Header.LastModFileTimeDate := FileDate shr 16;
+
+  Value.Filename := CurrentItem.FileName;
+  Value.Header.FilenameLength :=
+    StringLength(CurrentItem.Filename, CurrentItem.UseUTF8String);
+  Value.Header.ExtraFieldLength := 0;
+  Value.FileComment := CurrentItem.Comment;
+  Value.Header.FileCommentLength :=
+    StringLength(CurrentItem.Comment, CurrentItem.UseUTF8String);
+  Value.Header.DiskNumberStart := 0;
+  Value.Header.InternalFileAttributes := 0;
+  Value.Header.ExternalFileAttributes :=
+    CurrentItem.Attributes.dwFileAttributes;
+  Value.Attributes := CurrentItem.Attributes;
+
+  if CurrentItem.UseUTF8String then
+    Value.Header.GeneralPurposeBitFlag :=
+      Value.Header.GeneralPurposeBitFlag or PBF_UTF8;
+end;
+
+//
+//  Добавляем возможность создавать наследников от базового класса
+// =============================================================================
+function TFWZipWriter.GetItemClass: TFWZipWriterItemClass;
+begin
+  Result := TFWZipWriterItem;
+end;
+
+//
 //  Функция рассчитывает минимальную версию для извлечения
 //  указанного элемента архива
 // =============================================================================
@@ -981,13 +1383,11 @@ end;
 // =============================================================================
 procedure TFWZipWriter.SaveCentralDirectory(Stream: TStream);
 var
-  I, UserExDataBlockCount: Integer;
+  I: Integer;
   ExDataHeader: TExDataHeaderAndSize;
   ExDataNTFS: TExDataNTFS;
   ZIP64Data: TMemoryStream;
-  TotalExDataStream, ExDataStream: TMemoryStream;
-  EmptyExData: Boolean;
-  ExDataHeaderTag, ExDataSize: Word;
+  TotalExDataStream: TMemoryStream;
 begin
   ZeroMemory(@ExDataNTFS, SizeOf(TExDataNTFS));
   for I := 0 to Count - 1 do
@@ -1050,42 +1450,7 @@ begin
       // Запрашиваем блоки ExData от пользователя
       TotalExDataStream := TMemoryStream.Create;
       try
-        if Assigned(FSaveExData) then
-        begin
-          ExDataStream := TMemoryStream.Create;
-          try
-            EmptyExData := False;
-            UserExDataBlockCount := 0;
-            while not EmptyExData do
-            begin
-              ExDataHeaderTag := 0;
-              ExDataStream.Clear;
-              FSaveExData(Self, I, UserExDataBlockCount,
-                ExDataHeaderTag, ExDataStream);
-              Inc(UserExDataBlockCount);
-              EmptyExData := ExDataStream.Size = 0;
-              if not EmptyExData then
-              begin
-                if ExDataStream.Size > MAXWORD then
-                  raise EZipWriter.Create(
-                    'Размер каждого блока расширенных данных' +
-                    ' не может превышать 65535 байт.')
-                else
-                  ExDataSize := ExDataStream.Size;
-                if ExDataHeaderTag in
-                  [0, SUPPORTED_EXDATA_ZIP64, SUPPORTED_EXDATA_NTFSTIME] then
-                  raise EZipWriter.Create(
-                    'Нельзя использовать зарезервированные тэги' +
-                    ' блока расширенных данных.');
-                TotalExDataStream.WriteBuffer(ExDataHeaderTag, 2);
-                TotalExDataStream.WriteBuffer(ExDataSize, 2);
-                TotalExDataStream.CopyFrom(ExDataStream, 0);
-              end;
-            end;
-          finally
-            ExDataStream.Free;
-          end;
-        end;
+        FillExData(TotalExDataStream, I);
 
         Inc(FCD[I].Header.ExtraFieldLength, TotalExDataStream.Size);
 
@@ -1213,72 +1578,20 @@ begin
 end;
 
 //
-//  Процедура проводит сжатие и сохранение указанного элемента архива
+//  Процедура проводит все процедуры подготовки, сжатия и сохранения указанного элемента архива
 // =============================================================================
 procedure TFWZipWriter.SaveItemToStream(Stream: TStream; Index: Integer);
-
-  function CopyWithProgress(Src, Dst: TStream;
-    Cryptor: TFWZipCryptor): Cardinal;
-  var
-    Buff: Pointer;
-    Size, TotalSize: Integer;
-  begin
-    Result := $FFFFFFFF;
-    GetMem(Buff, MAXWORD);
-    try
-      Src.Position := 0;
-      FCompressedStream := Src;
-      DoProgress(psInitialization);
-      try
-        TotalSize := 0;
-        while True do
-        begin
-          Size := Src.Read(Buff^, MAXWORD);
-          Result := CRC32Calc(Result, Buff, Size);
-          if Size <> 0 then
-          begin
-            Inc(TotalSize, Size);
-            if Cryptor <> nil then
-              Cryptor.EncryptBuffer(Buff, Size);
-            Dst.WriteBuffer(Buff^, Size);
-            DoProgress(psInProgress);
-          end
-          else
-            Break;
-        end;
-        if TotalSize <> Src.Size then
-          raise EZipWriterWrite.CreateFmt(
-            'Ошибка записи данных элемента №%d "%s".', [Index, Item[Index].FileName]);
-      except
-        DoProgress(psException);
-        raise;
-      end;
-      DoProgress(psFinalization);
-    finally
-      FreeMem(Buff);
-    end;
-    Result := Result xor $FFFFFFFF;
-  end;
-
 var
   CurrentItem: TFWZipWriterItem;
-  SystemTime: TSystemTime;
-  LastWriteTime: TFileTime;
-  FileDate: Cardinal;
-  F: TFileStream;
-  Compressor: TZCompressionStream;
   FileNameOffset, StreamSizeBeforeCompress: Int64;
-  Cryptor: TFWZipCryptor;
-  ZipItemStream: TFWZipItemStream;
-  CRC32Stream: TFWZipCRC32Stream;
-  EncryptedHeaderStream: TMemoryStream;
 begin
   CurrentItem := Item[Index];
 
   // проверка на дуракоустойчивость
-  if (CurrentItem.FilePath = '') and (CurrentItem.Data = nil) then
-    raise EZipWriter.CreateFmt('Данные элемента №%d "%s" отсутствуют',
-      [Index, CurrentItem.FileName]);
+  if not CurrentItem.UseExternalData then
+    if (CurrentItem.FilePath = '') and (CurrentItem.Data = nil) then
+      raise EZipWriter.CreateFmt('Данные элемента №%d "%s" отсутствуют',
+        [Index, CurrentItem.FileName]);
 
   FProcessedItemIndex := Index;
 
@@ -1289,77 +1602,8 @@ begin
 
     // Заполняем информацию в CentralDirectory
     // ===========================================================================
-    FCD[Index].Header.CentralFileHeaderSignature := CENTRAL_FILE_HEADER_SIGNATURE;
-    FCD[Index].Header.VersionMadeBy := CurrentVersionMadeBy;
-    FCD[Index].Header.VersionNeededToExtract := 0; // Рассчитывается позднее
-
-    FCD[Index].Header.GeneralPurposeBitFlag := 0;
-    if CurrentItem.Password <> '' then
-      FCD[Index].Header.GeneralPurposeBitFlag :=
-        FCD[Index].Header.GeneralPurposeBitFlag or PBF_CRYPTED;
-
-    case CurrentItem.CompressionLevel of
-      clNone:; // данный режим компрессии не поддерживается, сразу меняем на Store
-      clFastest:
-        FCD[Index].Header.GeneralPurposeBitFlag :=
-          FCD[Index].Header.GeneralPurposeBitFlag or PBF_COMPRESS_SUPERFAST;
-      clDefault:
-        FCD[Index].Header.GeneralPurposeBitFlag :=
-          FCD[Index].Header.GeneralPurposeBitFlag or PBF_COMPRESS_NORMAL;
-      clMax:
-        FCD[Index].Header.GeneralPurposeBitFlag :=
-          FCD[Index].Header.GeneralPurposeBitFlag or PBF_COMPRESS_MAXIMUM;
-    end;
-    if CurrentItem.NeedDescriptor then
-        FCD[Index].Header.GeneralPurposeBitFlag :=
-          FCD[Index].Header.GeneralPurposeBitFlag or PBF_DESCRIPTOR;
-
-    if CurrentItem.CompressionLevel = clNone then
-      FCD[Index].Header.CompressionMethod := Z_NO_COMPRESSION
-    else
-      FCD[Index].Header.CompressionMethod := Z_DEFLATED;
-
-    if not CurrentItem.NeedDescriptor then
-      if CurrentItem.Password <> '' then
-      begin
-        // в случае если дескрипторы отключены и включено шифрование элемента
-        // то необходимо рассчитать его контрольную сумму перед
-        // генерацией заголовка инициализации ключа шифрования
-        if CurrentItem.Data = nil then
-          FCD[Index].Header.Crc32 := FileCRC32(CurrentItem.FilePath)
-        else
-          FCD[Index].Header.Crc32 :=
-            CRC32Calc(CurrentItem.Data.Memory, CurrentItem.Data.Size);
-      end;
-    FCD[Index].UncompressedSize := CurrentItem.Size;
-
-    // Rouse_ 25.10.2013
-    // Правка небольшой ошибки замеченой Владиславом Нечепоренко
-    //FileTimeToSystemTime(CurrentItem.Attributes.ftLastWriteTime, SystemTyme);
-    FileTimeToLocalFileTime(CurrentItem.Attributes.ftLastWriteTime, LastWriteTime);
-    FileTimeToSystemTime(LastWriteTime, SystemTime);
-    FileDate := DateTimeToFileDate(SystemTimeToDateTime(SystemTime));
-
-    FCD[Index].Header.LastModFileTimeTime := FileDate and $FFFF;
-    FCD[Index].Header.LastModFileTimeDate := FileDate shr 16;
-
-    FCD[Index].Filename := CurrentItem.FileName;
-    FCD[Index].Header.FilenameLength :=
-      StringLength(CurrentItem.Filename, CurrentItem.UseUTF8String);
-    FCD[Index].Header.ExtraFieldLength := 0;
-    FCD[Index].FileComment := CurrentItem.Comment;
-    FCD[Index].Header.FileCommentLength :=
-      StringLength(CurrentItem.Comment, CurrentItem.UseUTF8String);
-    FCD[Index].Header.DiskNumberStart := 0;
-    FCD[Index].Header.InternalFileAttributes := 0;
-    FCD[Index].Header.ExternalFileAttributes :=
-      CurrentItem.Attributes.dwFileAttributes;
-    FCD[Index].Attributes := CurrentItem.Attributes;
+    FillItemCDFHeader(CurrentItem, FCD[Index]);
     FCD[Index].RelativeOffsetOfLocalHeader := Stream.Position;
-
-    if CurrentItem.UseUTF8String then
-      FCD[Index].Header.GeneralPurposeBitFlag :=
-        FCD[Index].Header.GeneralPurposeBitFlag or PBF_UTF8;
 
     // Помещаем данные в результирующий файл
     // ===========================================================================
@@ -1380,189 +1624,9 @@ begin
     Stream.Size := StreamSizeBeforeCompress;
     Stream.Position := Stream.Size;
 
+    // сжимаем данные
     if not CurrentItem.IsFolder then
-    begin
-      Cryptor := nil;
-      try
-        EncryptedHeaderStream := TMemoryStream.Create;
-        try
-          if CurrentItem.Password <> '' then
-          begin
-            Cryptor := TFWZipCryptor.Create(AnsiString(CurrentItem.Password));
-            Cryptor.GenerateEncryptionHeader(EncryptedHeaderStream,
-              CurrentItem.NeedDescriptor,
-              FCD[Index].Header.Crc32,
-              FCD[Index].Header.LastModFileTimeTime +
-              FCD[Index].Header.LastModFileTimeDate shl 16);
-            // резервируем место под EncryptedHeaderStream
-            Stream.Size := StreamSizeBeforeCompress + EncryptedHeaderSize;
-            Stream.Position := Stream.Size;
-          end;
-
-          // пишем сам сжатый файл
-          case FCD[Index].Header.CompressionMethod of
-            Z_NO_COMPRESSION:
-            begin
-              if CurrentItem.Data <> nil then
-                FCD[Index].Header.Crc32 :=
-                  CopyWithProgress(CurrentItem.Data, Stream, Cryptor)
-              else
-              begin
-                try
-                  F := TFileStream.Create(CurrentItem.FilePath,
-                    fmOpenRead or fmShareDenyWrite);
-                  try
-                    FCD[Index].Header.Crc32 :=
-                      CopyWithProgress(F, Stream, Cryptor)
-                  finally
-                    F.Free;
-                  end;
-                except
-                  on E: Exception do
-                    raise EZipWriterWrite.CreateFmt(
-                      'Ошибка доступа к данным элемента №%d "%s".' +
-                      sLineBreak + E.ClassName + ': ' + E.Message,
-                      [Index, CurrentItem.FileName]);
-                end;
-              end;
-              // Получаем размер сжатых данных
-              // В случае если использовалось шифрование в размере срузу будет
-              // учтен 12-ти байтный заголовок инициализации ключа расшифровки
-              FCD[Index].CompressedSize := Stream.Size - StreamSizeBeforeCompress;
-            end;
-            Z_DEFLATED:
-            begin
-              {$IFDEF USE_AUTOGENERATED_ZLIB_HEADER}
-              // позицию сдвигаем на два байта влево,
-              // таким образом мы затрем ненужный нам заголовок ZLib
-              Stream.Position := Stream.Position - 2;
-              {$ENDIF}
-              if CurrentItem.Data <> nil then
-              begin
-                // сохраняем ссылку на стрим с данными для рассчета прогресса
-                FCompressedStream := CurrentItem.Data;
-                ZipItemStream := TFWZipItemStream.Create(Stream, Cryptor, nil,
-                  0, CurrentItem.Size);
-                try
-                  Compressor := TZCompressionStream.Create(
-                    ZipItemStream, CurrentItem.CompressionLevel,
-                    defaultWindowBits, 8, zsDefault);
-                  try
-                    Compressor.OnProgress := CompressorOnProcess;
-                    DoProgress(psInitialization);
-                    try
-                      CRC32Stream := TFWZipCRC32Stream.Create(CurrentItem.Data);
-                      try
-                        Compressor.CopyFrom(CRC32Stream, 0);
-                        FCD[Index].Header.Crc32 := CRC32Stream.CRC32;
-                      finally
-                        CRC32Stream.Free;
-                      end;
-                    except
-                      DoProgress(psException);
-                      raise;
-                    end;
-                    DoProgress(psFinalization);
-                  finally
-                    Compressor.Free;
-                  end;
-                finally
-                  ZipItemStream.Free;
-                end;
-              end
-              else
-              begin
-                // TFWZipItemStream выступает как посредник между результирующим
-                // стримом и TCompressionStream.
-                // Его задача зашифровать все проходящие через нешго данные
-                ZipItemStream := TFWZipItemStream.Create(Stream, Cryptor, nil,
-                  0, CurrentItem.Size);
-                try
-                  Compressor := TZCompressionStream.Create(
-                    ZipItemStream, CurrentItem.CompressionLevel,
-                    defaultWindowBits, 8, zsDefault);
-                  try
-                    try
-                      F := TFileStream.Create(CurrentItem.FilePath,
-                        fmOpenRead or fmShareDenyWrite);
-                      try
-                        // сохраняем ссылку на стрим с данными для рассчета прогресса
-                        FCompressedStream := F;
-                        F.Position := 0;
-                        Compressor.OnProgress := CompressorOnProcess;
-                        // TFWZipCRC32Stream выступает как посредник между
-                        // нераспакованными данными и TCompressionStream,
-                        // в котором происходит сжатие данных.
-                        // Его задача отследить все переданные через него
-                        // блоки данных и рассчитать их контрольную сумму
-                        // до того как они будут сжаты
-                        DoProgress(psInitialization);
-                        try
-                          CRC32Stream := TFWZipCRC32Stream.Create(F);
-                          try
-                            Compressor.CopyFrom(CRC32Stream, 0);
-                            FCD[Index].Header.Crc32 := CRC32Stream.CRC32;
-                          finally
-                            CRC32Stream.Free;
-                          end;
-                        except
-                          DoProgress(psException);
-                          raise;
-                        end;
-                        DoProgress(psFinalization);
-                      finally
-                        F.Free;
-                      end;
-                    except
-                      on E: Exception do
-                        raise EZipWriterWrite.CreateFmt(
-                          'Ошибка доступа к данным элемента №%d "%s".' +
-                          sLineBreak + E.ClassName + ': ' + E.Message,
-                          [Index, CurrentItem.FileName]);
-                    end;
-                  finally
-                    Compressor.Free;
-                  end;
-                finally
-                  ZipItemStream.Free;
-                end;
-              end;
-
-              {$IFDEF USE_AUTOGENERATED_ZLIB_HEADER}
-              // Rouse_ 14.02.2013
-              // Не знаю почему, но опытным путем установлено,
-              // что размер запакованых данных должен быть меньше на 4 байта
-              // при использовании автогенерируемого заголовка.
-              // Этот момент учитывается в ICSharpCode.SharpZipLibrary
-              // Распаковка в любом случае происходит нормально
-              if TrimPackedStreamSize then
-                Stream.Size := Stream.Size - 4;
-              {$ENDIF}
-
-              // Получаем размер сжатых данных
-              // В случае если использовалось шифрование в размере срузу будет
-              // учтен 12-ти байтный заголовок инициализации ключа расшифровки
-              FCD[Index].CompressedSize := Stream.Size - StreamSizeBeforeCompress;
-
-            end;
-          end;
-
-          // если файл зашифрован,
-          // записываем заголовок инициализации ключа расшифровки
-          if EncryptedHeaderStream.Size > 0 then
-          begin
-            Stream.Position := StreamSizeBeforeCompress;
-            Stream.CopyFrom(EncryptedHeaderStream, 0);
-          end;
-        finally
-          EncryptedHeaderStream.Free;
-        end;
-
-      finally
-        Cryptor.Free;
-      end;
-
-    end;
+      CompressItem(CurrentItem, Index, StreamSizeBeforeCompress, Stream);
 
     Inc(FTotalProcessedCount, CurrentItem.Size);
 
