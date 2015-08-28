@@ -165,6 +165,7 @@ type
     function BuildZip(const ZipFilePath: string): TBuildZipResult; overload;
     function BuildZip(Stream: TStream): TBuildZipResult; overload;
     function Count: Integer;
+    procedure Clear;
     procedure DeleteItem(Index: Integer);
 
     // Свойство отвечает за добавление папки в виде TFWZipWriterItem
@@ -825,6 +826,14 @@ begin
   }
 
   Result := StringReplace(Value, '\', ZIP_SLASH, [rfReplaceAll]);
+end;
+
+//
+//  Очищаем все добавленные в архив элементы
+// =============================================================================
+procedure TFWZipWriter.Clear;
+begin
+  FItems.Clear;
 end;
 
 //

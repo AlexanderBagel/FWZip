@@ -60,7 +60,7 @@ type
   end;
   TExDataRecords = array of TExDataRecord;
 
-  // сдруктура для хранения подключенного архива и его блоков ExData
+  // структура для хранения подключенного архива и его блоков ExData
   TReaderData = record
     Reader: TFWZipReader;
     ExDataRecords: TExDataRecords;
