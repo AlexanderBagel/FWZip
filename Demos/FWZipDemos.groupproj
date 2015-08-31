@@ -30,6 +30,15 @@
         <Projects Include="ZipAnalizer2\ZipAnalizer2.dproj">
             <Dependencies/>
         </Projects>
+        <Projects Include="Modify ZIP\Split ZIP\SplitZip.dproj">
+            <Dependencies/>
+        </Projects>
+        <Projects Include="Modify ZIP\Merge two ZIP\MergeZip.dproj">
+            <Dependencies/>
+        </Projects>
+        <Projects Include="Modify ZIP\Replace data in ZIP\ReplaceZipItemData.dproj">
+            <Dependencies/>
+        </Projects>
     </ItemGroup>
     <ProjectExtensions>
         <Borland.Personality>Default.Personality.12</Borland.Personality>
@@ -119,14 +128,41 @@
     <Target Name="ZipAnalizer2:Make">
         <MSBuild Projects="ZipAnalizer2\ZipAnalizer2.dproj" Targets="Make"/>
     </Target>
+    <Target Name="SplitZip">
+        <MSBuild Projects="Modify ZIP\Split ZIP\SplitZip.dproj"/>
+    </Target>
+    <Target Name="SplitZip:Clean">
+        <MSBuild Projects="Modify ZIP\Split ZIP\SplitZip.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="SplitZip:Make">
+        <MSBuild Projects="Modify ZIP\Split ZIP\SplitZip.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="MergeZip">
+        <MSBuild Projects="Modify ZIP\Merge two ZIP\MergeZip.dproj"/>
+    </Target>
+    <Target Name="MergeZip:Clean">
+        <MSBuild Projects="Modify ZIP\Merge two ZIP\MergeZip.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="MergeZip:Make">
+        <MSBuild Projects="Modify ZIP\Merge two ZIP\MergeZip.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="ReplaceZipItemData">
+        <MSBuild Projects="Modify ZIP\Replace data in ZIP\ReplaceZipItemData.dproj"/>
+    </Target>
+    <Target Name="ReplaceZipItemData:Clean">
+        <MSBuild Projects="Modify ZIP\Replace data in ZIP\ReplaceZipItemData.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="ReplaceZipItemData:Make">
+        <MSBuild Projects="Modify ZIP\Replace data in ZIP\ReplaceZipItemData.dproj" Targets="Make"/>
+    </Target>
     <Target Name="Build">
-        <CallTarget Targets="CreateZIPDemo1;CreateZIPDemo2;ExctractZIPDemo1;ExctractZIPDemo2;FWZipPerfomance;BuildWithException;UseExDataBlob;ZipAnalizer;ZipAnalizer2"/>
+        <CallTarget Targets="CreateZIPDemo1;CreateZIPDemo2;ExctractZIPDemo1;ExctractZIPDemo2;FWZipPerfomance;BuildWithException;UseExDataBlob;ZipAnalizer;ZipAnalizer2;SplitZip;MergeZip;ReplaceZipItemData"/>
     </Target>
     <Target Name="Clean">
-        <CallTarget Targets="CreateZIPDemo1:Clean;CreateZIPDemo2:Clean;ExctractZIPDemo1:Clean;ExctractZIPDemo2:Clean;FWZipPerfomance:Clean;BuildWithException:Clean;UseExDataBlob:Clean;ZipAnalizer:Clean;ZipAnalizer2:Clean"/>
+        <CallTarget Targets="CreateZIPDemo1:Clean;CreateZIPDemo2:Clean;ExctractZIPDemo1:Clean;ExctractZIPDemo2:Clean;FWZipPerfomance:Clean;BuildWithException:Clean;UseExDataBlob:Clean;ZipAnalizer:Clean;ZipAnalizer2:Clean;SplitZip:Clean;MergeZip:Clean;ReplaceZipItemData:Clean"/>
     </Target>
     <Target Name="Make">
-        <CallTarget Targets="CreateZIPDemo1:Make;CreateZIPDemo2:Make;ExctractZIPDemo1:Make;ExctractZIPDemo2:Make;FWZipPerfomance:Make;BuildWithException:Make;UseExDataBlob:Make;ZipAnalizer:Make;ZipAnalizer2:Make"/>
+        <CallTarget Targets="CreateZIPDemo1:Make;CreateZIPDemo2:Make;ExctractZIPDemo1:Make;ExctractZIPDemo2:Make;FWZipPerfomance:Make;BuildWithException:Make;UseExDataBlob:Make;ZipAnalizer:Make;ZipAnalizer2:Make;SplitZip:Make;MergeZip:Make;ReplaceZipItemData:Make"/>
     </Target>
     <Import Project="$(BDS)\Bin\CodeGear.Group.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')"/>
 </Project>

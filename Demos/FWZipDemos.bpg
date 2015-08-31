@@ -10,8 +10,9 @@ DCC = $(ROOT)\bin\dcc32.exe $**
 BRCC = $(ROOT)\bin\brcc32.exe $**
 #------------------------------------------------------------------------------
 PROJECTS = CreateZIPDemo1.exe CreateZIPDemo2.exe ExctractZIPDemo1.exe \
-  ExctractZIPDemo2.exe FWZipPerfomance.exe BuildWithException.exe \
-  UseExDataBlob.exe ZipAnalizer.exe ZipAnalizer2.exe
+  ExctractZIPDemo2.exe MergeZip.exe ReplaceZipItemData.exe SplitZip.exe \
+  FWZipPerfomance.exe BuildWithException.exe UseExDataBlob.exe ZipAnalizer.exe \
+  ZipAnalizer2.exe
 #------------------------------------------------------------------------------
 default: $(PROJECTS)
 #------------------------------------------------------------------------------
@@ -26,6 +27,15 @@ ExctractZIPDemo1.exe: Extract ZIP 1\ExctractZIPDemo1.dpr
   $(DCC)
 
 ExctractZIPDemo2.exe: Extract ZIP 2\ExctractZIPDemo2.dpr
+  $(DCC)
+
+MergeZip.exe: Modify ZIP\Merge two ZIP\MergeZip.dpr
+  $(DCC)
+
+ReplaceZipItemData.exe: Modify ZIP\Replace data in ZIP\ReplaceZipItemData.dpr
+  $(DCC)
+
+SplitZip.exe: Modify ZIP\Split ZIP\SplitZip.dpr
   $(DCC)
 
 FWZipPerfomance.exe: PerfomanceTest\FWZipPerfomance.dpr
