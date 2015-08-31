@@ -590,6 +590,8 @@ end;
 // =============================================================================
 constructor TFWZipReaderItem.InitFromStream(Owner: TFWZipReader;
   Index: Integer; Value: TStream);
+var
+  Len: Integer;
 begin
   inherited Create;
 
@@ -610,10 +612,18 @@ begin
   LoadStringValue(FFileHeader.FileName, FFileHeader.Header.FilenameLength, True);
 
   FIsFolder := FFileHeader.Header.ExternalFileAttributes and faDirectory <> 0;
-  if FFileHeader.Header.FilenameLength > 0 then
-    FIsFolder := FIsFolder or
-      (FFileHeader.FileName[FFileHeader.Header.FilenameLength] = ZIP_SLASH);
 
+  // Rouse_ 31.08.2015
+  // Если используем UTF8 то FilenameLength это размер в байтах а не в символах
+  // поэтому вместо этого:
+  //if FFileHeader.Header.FilenameLength > 0 then
+  //  FIsFolder := FIsFolder or
+  //    (FFileHeader.FileName[FFileHeader.Header.FilenameLength] = ZIP_SLASH);
+  // пишем вот так:
+  Len := Length(FFileHeader.FileName);
+  if Len > 0 then
+    FIsFolder := FIsFolder or
+      (FFileHeader.FileName[Len] = ZIP_SLASH);
 
   // Следующие 4 параметра могут быть выставлены в -1 из-за переполнения
   // и их реальные значения будут содержаться в блоке расширенных данных.
