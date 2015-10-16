@@ -6,7 +6,7 @@
 //  * Purpose   : Набор классов для распаковки ZIP архива
 //  * Author    : Александр (Rouse_) Багель
 //  * Copyright : © Fangorn Wizards Lab 1998 - 2015.
-//  * Version   : 1.0.11
+//  * Version   : 1.0.12
 //  * Home Page : http://rouse.drkb.ru
 //  * Home Blog : http://alexander-bagel.blogspot.ru
 //  ****************************************************************************
@@ -662,7 +662,7 @@ var
 
   function GetOffset(Value: Integer): Pointer;
   begin
-    Result := Pointer(Integer(EOFBuff) - Value);
+    Result := Pointer(UInt64(EOFBuff) - Value);
   end;
 
 var
@@ -677,7 +677,7 @@ begin
       raise EZipReaderRead.CreateFmt(
         'Отсутствуют данные поля ExtraField элемента №%d "%s"', [ItemIndex, FileName]);
 
-    EOFBuff := Pointer(Integer(Buff) + BuffCount);
+    EOFBuff := Pointer(UInt64(Buff) + BuffCount);
     while BuffCount > 0 do
     begin
       HeaderID := PWord(GetOffset(BuffCount))^;
