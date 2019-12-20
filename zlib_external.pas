@@ -1,4 +1,4 @@
-{*****************************************************************************
+п»ї{*****************************************************************************
 *  ZLib.pas (zlib 1.2.3)                                                     *
 *                                                                            *
 *  copyright (c) 2002-2005 Roberto Della Pasqua (www.dellapasqua.com)        *
@@ -45,7 +45,7 @@
 
 unit zlib_external deprecated;
 
-{$MESSAGE WARN 'Модуль zlib_external устарел, ипользуйте директиву USE_ZLIB_EX и обновленные модули ZLib, см. пункт 11 Readme.txt'}
+{$MESSAGE WARN 'РњРѕРґСѓР»СЊ zlib_external СѓСЃС‚Р°СЂРµР», РёРїРѕР»СЊР·СѓР№С‚Рµ РґРёСЂРµРєС‚РёРІСѓ USE_ZLIB_EX Рё РѕР±РЅРѕРІР»РµРЅРЅС‹Рµ РјРѕРґСѓР»Рё ZLib, СЃРј. РїСѓРЅРєС‚ 11 Readme.txt'}
 
 interface
 

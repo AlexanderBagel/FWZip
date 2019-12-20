@@ -1,13 +1,13 @@
-////////////////////////////////////////////////////////////////////////////////
+п»ї////////////////////////////////////////////////////////////////////////////////
 //
 //  ****************************************************************************
 //  * Project   : FWZip
 //  * Unit Name : FWZipStream
-//  * Purpose   : Вспомогательные стримы для поддержки шифрования на лету,
-//  *           : и усеченного заголовка ZLib
-//  * Author    : Александр (Rouse_) Багель
-//  * Copyright : © Fangorn Wizards Lab 1998 - 2015.
-//  * Version   : 1.0.11
+//  * Purpose   : Р’СЃРїРѕРјРѕРіР°С‚РµР»СЊРЅС‹Рµ СЃС‚СЂРёРјС‹ РґР»СЏ РїРѕРґРґРµСЂР¶РєРё С€РёС„СЂРѕРІР°РЅРёСЏ РЅР° Р»РµС‚Сѓ,
+//  *           : Рё СѓСЃРµС‡РµРЅРЅРѕРіРѕ Р·Р°РіРѕР»РѕРІРєР° ZLib
+//  * Author    : РђР»РµРєСЃР°РЅРґСЂ (Rouse_) Р‘Р°РіРµР»СЊ
+//  * Copyright : В© Fangorn Wizards Lab 1998 - 2017.
+//  * Version   : 1.0.12
 //  * Home Page : http://rouse.drkb.ru
 //  * Home Blog : http://alexander-bagel.blogspot.ru
 //  ****************************************************************************
@@ -15,27 +15,27 @@
 //  * Latest Source  : https://github.com/AlexanderBagel/FWZip
 //  ****************************************************************************
 //
-//  Используемые источники:
+//  РСЃРїРѕР»СЊР·СѓРµРјС‹Рµ РёСЃС‚РѕС‡РЅРёРєРё:
 //  ftp://ftp.info-zip.org/pub/infozip/doc/appnote-iz-latest.zip
 //  http://zlib.net/zlib-1.2.5.tar.gz
 //  http://www.base2ti.com/
 //
 //
-//  Описание идеи модуля:
-//  При помещении в архив сжатого блока данных методом Deflate у него
-//  отрезается двухбайтный заголовок в котором указаны параметры сжатия.
-//  Т.е. в архив помещаются сами данные в чистом виде.
-//  Для распаковки необходимо данный заголовок восстановить.
-//  Данный класс позволяет добавить данный заголовок "на лету"
-//  абсолютно прозрачно для внешнего кода.
-//  Сам заголовок генерируется в конструкторе и подставляется в методе Read.
-//  Так-же класс, выступая посредником между двумя стримами,
-//  позволяет производить шифрование и дешифровку передаваемых данных.
-//  Шифрование производится в методе Write, в этот момент класс является
-//  посредником между TCompressionStream и результирующим стримом.
-//  Дешифрование осуществляется в методе Read, в этот момент класс является
-//  посредником между стримом со сжатыми и
-//  пошифрованными данными и TDecompressionStream.
+//  РћРїРёСЃР°РЅРёРµ РёРґРµРё РјРѕРґСѓР»СЏ:
+//  РџСЂРё РїРѕРјРµС‰РµРЅРёРё РІ Р°СЂС…РёРІ СЃР¶Р°С‚РѕРіРѕ Р±Р»РѕРєР° РґР°РЅРЅС‹С… РјРµС‚РѕРґРѕРј Deflate Сѓ РЅРµРіРѕ
+//  РѕС‚СЂРµР·Р°РµС‚СЃСЏ РґРІСѓС…Р±Р°Р№С‚РЅС‹Р№ Р·Р°РіРѕР»РѕРІРѕРє РІ РєРѕС‚РѕСЂРѕРј СѓРєР°Р·Р°РЅС‹ РїР°СЂР°РјРµС‚СЂС‹ СЃР¶Р°С‚РёСЏ.
+//  Рў.Рµ. РІ Р°СЂС…РёРІ РїРѕРјРµС‰Р°СЋС‚СЃСЏ СЃР°РјРё РґР°РЅРЅС‹Рµ РІ С‡РёСЃС‚РѕРј РІРёРґРµ.
+//  Р”Р»СЏ СЂР°СЃРїР°РєРѕРІРєРё РЅРµРѕР±С…РѕРґРёРјРѕ РґР°РЅРЅС‹Р№ Р·Р°РіРѕР»РѕРІРѕРє РІРѕСЃСЃС‚Р°РЅРѕРІРёС‚СЊ.
+//  Р”Р°РЅРЅС‹Р№ РєР»Р°СЃСЃ РїРѕР·РІРѕР»СЏРµС‚ РґРѕР±Р°РІРёС‚СЊ РґР°РЅРЅС‹Р№ Р·Р°РіРѕР»РѕРІРѕРє "РЅР° Р»РµС‚Сѓ"
+//  Р°Р±СЃРѕР»СЋС‚РЅРѕ РїСЂРѕР·СЂР°С‡РЅРѕ РґР»СЏ РІРЅРµС€РЅРµРіРѕ РєРѕРґР°.
+//  РЎР°Рј Р·Р°РіРѕР»РѕРІРѕРє РіРµРЅРµСЂРёСЂСѓРµС‚СЃСЏ РІ РєРѕРЅСЃС‚СЂСѓРєС‚РѕСЂРµ Рё РїРѕРґСЃС‚Р°РІР»СЏРµС‚СЃСЏ РІ РјРµС‚РѕРґРµ Read.
+//  РўР°Рє-Р¶Рµ РєР»Р°СЃСЃ, РІС‹СЃС‚СѓРїР°СЏ РїРѕСЃСЂРµРґРЅРёРєРѕРј РјРµР¶РґСѓ РґРІСѓРјСЏ СЃС‚СЂРёРјР°РјРё,
+//  РїРѕР·РІРѕР»СЏРµС‚ РїСЂРѕРёР·РІРѕРґРёС‚СЊ С€РёС„СЂРѕРІР°РЅРёРµ Рё РґРµС€РёС„СЂРѕРІРєСѓ РїРµСЂРµРґР°РІР°РµРјС‹С… РґР°РЅРЅС‹С….
+//  РЁРёС„СЂРѕРІР°РЅРёРµ РїСЂРѕРёР·РІРѕРґРёС‚СЃСЏ РІ РјРµС‚РѕРґРµ Write, РІ СЌС‚РѕС‚ РјРѕРјРµРЅС‚ РєР»Р°СЃСЃ СЏРІР»СЏРµС‚СЃСЏ
+//  РїРѕСЃСЂРµРґРЅРёРєРѕРј РјРµР¶РґСѓ TCompressionStream Рё СЂРµР·СѓР»СЊС‚РёСЂСѓСЋС‰РёРј СЃС‚СЂРёРјРѕРј.
+//  Р”РµС€РёС„СЂРѕРІР°РЅРёРµ РѕСЃСѓС‰РµСЃС‚РІР»СЏРµС‚СЃСЏ РІ РјРµС‚РѕРґРµ Read, РІ СЌС‚РѕС‚ РјРѕРјРµРЅС‚ РєР»Р°СЃСЃ СЏРІР»СЏРµС‚СЃСЏ
+//  РїРѕСЃСЂРµРґРЅРёРєРѕРј РјРµР¶РґСѓ СЃС‚СЂРёРјРѕРј СЃРѕ СЃР¶Р°С‚С‹РјРё Рё
+//  РїРѕС€РёС„СЂРѕРІР°РЅРЅС‹РјРё РґР°РЅРЅС‹РјРё Рё TDecompressionStream.
 //
 
 unit FWZipStream;
@@ -46,6 +46,7 @@ interface
 
 uses
   Classes,
+  SysUtils,
   FWZipConsts,
   FWZipCrypt,
   FWZipCrc32,
@@ -72,7 +73,31 @@ type
     function Write(const Buffer; Count: Longint): Longint; override;
   end;
 
+  EFWZipItemItemUnpackedStreamException = class(Exception);
+
+  // Р’РёСЂС‚СѓР°Р»СЊРЅС‹Р№ СЃС‚СЂРёРј РґР°РЅРЅС‹С….
+  // РСЃРїРѕР»СЊР·СѓРµС‚СЃСЏ РґР»СЏ Р±РѕР»РµРµ РїСЂРёРІС‹С‡РЅРѕР№ СЂР°Р±РѕС‚С‹ СЃ РЅРµР·Р°РїР°РєРѕРІР°РЅРЅС‹Рј Р±Р»РѕРєРѕРј РґР°РЅРЅС‹С…,
+  // СЂР°СЃРїРѕР»РѕР¶РµРЅРЅРѕРіРѕ РІ Р°СЂС…РёРІРµ
+  TFWZipItemItemUnpackedStream = class(TStream)
+  private
+    FOwnerStream: TStream;
+    FOffset: Int64;
+    FSize, FPosition: Integer;
+  protected
+    function GetSize: Int64; override;
+    procedure SetSize(NewSize: Longint); override;
+  public
+    constructor Create; overload;
+    constructor Create(Owner: TStream; Offset: Int64; Size: Integer); overload;
+    function Read(var Buffer; Count: Longint): Longint; override;
+    function Write(const Buffer; Count: Longint): Longint; override;
+    function Seek(Offset: Longint; Origin: Word): Longint; override;
+  end;
+
 implementation
+
+const
+  E_READONLY = 'TFWZipItemItemUnpackedStream СЂР°Р±РѕС‚Р°РµС‚ С‚РѕР»СЊРєРѕ РІ СЂРµР¶РёРјРµ ReadOnly';
 
 { TFWZipItemStream }
 
@@ -89,14 +114,14 @@ begin
   FPosition := 0;
 
   // Rouse_ 30.10.2013
-  // Устаревший код
+  // РЈСЃС‚Р°СЂРµРІС€РёР№ РєРѕРґ
   {$IFDEF USE_AUTOGENERATED_ZLIB_HEADER}
 
   // Rouse_ 17.03.2011
-  // Размерчик все-же нужно править увеличикая на размер заголовка
+  // Р Р°Р·РјРµСЂС‡РёРє РІСЃРµ-Р¶Рµ РЅСѓР¶РЅРѕ РїСЂР°РІРёС‚СЊ СѓРІРµР»РёС‡РёРєР°СЏ РЅР° СЂР°Р·РјРµСЂ Р·Р°РіРѕР»РѕРІРєР°
   Inc(FSize, 2);
-  // Восстанавливаем пропущенный заголовок ZLib стрима
-  // см. deflate.c - int ZEXPORT deflate (strm, flush)
+  // Р’РѕСЃСЃС‚Р°РЅР°РІР»РёРІР°РµРј РїСЂРѕРїСѓС‰РµРЅРЅС‹Р№ Р·Р°РіРѕР»РѕРІРѕРє ZLib СЃС‚СЂРёРјР°
+  // СЃРј. deflate.c - int ZEXPORT deflate (strm, flush)
 
   // uInt header = (Z_DEFLATED + ((s->w_bits-8)<<4)) << 8;
   FHeader := (Z_DEFLATED + (7 {32k Window size} shl 4)) shl 8;
@@ -110,9 +135,9 @@ begin
   // else
   //     level_flags = 3;
   //
-  // сам CompressLevel (level_flags)
-  // берется из уже заполненного GeneralPurposeBitFlag
-  // здесь мы из битовой маски восстанавливаем оригинальные значения
+  // СЃР°Рј CompressLevel (level_flags)
+  // Р±РµСЂРµС‚СЃСЏ РёР· СѓР¶Рµ Р·Р°РїРѕР»РЅРµРЅРЅРѕРіРѕ GeneralPurposeBitFlag
+  // Р·РґРµСЃСЊ РјС‹ РёР· Р±РёС‚РѕРІРѕР№ РјР°СЃРєРё РІРѕСЃСЃС‚Р°РЅР°РІР»РёРІР°РµРј РѕСЂРёРіРёРЅР°Р»СЊРЅС‹Рµ Р·РЅР°С‡РµРЅРёСЏ
 
   case CompressLevel of
     PBF_COMPRESS_SUPERFAST:
@@ -129,7 +154,7 @@ begin
   FHeader := FHeader or (CompressLevel shl 6);
 
   // if (s->strstart != 0) header |= PRESET_DICT;
-  // словарь не используется - оставляем без изменений
+  // СЃР»РѕРІР°СЂСЊ РЅРµ РёСЃРїРѕР»СЊР·СѓРµС‚СЃСЏ - РѕСЃС‚Р°РІР»СЏРµРј Р±РµР· РёР·РјРµРЅРµРЅРёР№
 
   // header += 31 - (header % 31);
   Inc(FHeader, 31 - (FHeader mod 31));
@@ -150,12 +175,12 @@ var
   DecryptBuff: Pointer;
 begin
   // Rouse_ 30.10.2013
-  // Устаревший код
+  // РЈСЃС‚Р°СЂРµРІС€РёР№ РєРѕРґ
   {$IFDEF USE_AUTOGENERATED_ZLIB_HEADER}
   if FPosition = 0 then
   begin
-    // если зачитываются данные с самого начала
-    // необходимо перед ними разместить заголовок ZLib
+    // РµСЃР»Рё Р·Р°С‡РёС‚С‹РІР°СЋС‚СЃСЏ РґР°РЅРЅС‹Рµ СЃ СЃР°РјРѕРіРѕ РЅР°С‡Р°Р»Р°
+    // РЅРµРѕР±С…РѕРґРёРјРѕ РїРµСЂРµРґ РЅРёРјРё СЂР°Р·РјРµСЃС‚РёС‚СЊ Р·Р°РіРѕР»РѕРІРѕРє ZLib
     P := @FHeader;
     Move(P^, Buffer, 2);
     FOwner.Position := FStart;
@@ -166,7 +191,7 @@ begin
     FOwner.Position := FStart;
     if FDecryptor <> nil then
     begin
-      // в случае если файл зашифрован, производим расшифровку блока
+      // РІ СЃР»СѓС‡Р°Рµ РµСЃР»Рё С„Р°Р№Р» Р·Р°С€РёС„СЂРѕРІР°РЅ, РїСЂРѕРёР·РІРѕРґРёРј СЂР°СЃС€РёС„СЂРѕРІРєСѓ Р±Р»РѕРєР°
       GetMem(DecryptBuff, Count - 2);
       try
         Result := FOwner.Read(DecryptBuff^, Count - 2);
@@ -192,7 +217,7 @@ begin
       Count := Size - Position;
     if FDecryptor <> nil then
     begin
-      // в случае если файл зашифрован, производим расшифровку блока
+      // РІ СЃР»СѓС‡Р°Рµ РµСЃР»Рё С„Р°Р№Р» Р·Р°С€РёС„СЂРѕРІР°РЅ, РїСЂРѕРёР·РІРѕРґРёРј СЂР°СЃС€РёС„СЂРѕРІРєСѓ Р±Р»РѕРєР°
       GetMem(DecryptBuff, Count);
       try
         Result := FOwner.Read(DecryptBuff^, Count);
@@ -232,15 +257,15 @@ begin
     Result := FOwner.Write(Buffer, Count)
   else
   begin
-    // криптуем буфер
+    // РєСЂРёРїС‚СѓРµРј Р±СѓС„РµСЂ
     GetMem(EncryptBuffer, Count);
     try
       Move(Buffer, EncryptBuffer^, Count);
 
       // Rouse_ 31.10.2013
-      // Устаревший код
+      // РЈСЃС‚Р°СЂРµРІС€РёР№ РєРѕРґ
       {$IFDEF USE_AUTOGENERATED_ZLIB_HEADER}
-      // Шифровать блок нужно пропустив двубайтный заголовок ZLib
+      // РЁРёС„СЂРѕРІР°С‚СЊ Р±Р»РѕРє РЅСѓР¶РЅРѕ РїСЂРѕРїСѓСЃС‚РёРІ РґРІСѓР±Р°Р№С‚РЅС‹Р№ Р·Р°РіРѕР»РѕРІРѕРє ZLib
       if FPosition = 0 then
       begin
         Inc(EncryptBuffer, 2);
@@ -256,6 +281,62 @@ begin
     end;
   end;
   Inc(FPosition, Result);
+end;
+
+{ TFWZipItemItemUnpackedStream }
+
+constructor TFWZipItemItemUnpackedStream.Create;
+begin
+  raise EFWZipItemItemUnpackedStreamException.Create(
+    'РќРµРІРµСЂРЅС‹Р№ РІС‹Р·РѕРІ РєРѕРЅСЃС‚СЂСѓРєС‚РѕСЂР°');
+end;
+
+constructor TFWZipItemItemUnpackedStream.Create(Owner: TStream; Offset: Int64;
+  Size: Integer);
+begin
+  FOwnerStream := Owner;
+  FOffset := Offset;
+  FSize := Size;
+end;
+
+function TFWZipItemItemUnpackedStream.GetSize: Int64;
+begin
+  Result := FSize;
+end;
+
+function TFWZipItemItemUnpackedStream.Read(var Buffer; Count: Longint): Longint;
+begin
+  if FPosition + Count > FSize then
+     Count := FSize - FPosition;
+  FOwnerStream.Position := FOffset + FPosition;
+  Result := FOwnerStream.Read(Buffer, Count);
+  Inc(FPosition, Result);
+end;
+
+function TFWZipItemItemUnpackedStream.Seek(Offset: Longint;
+  Origin: Word): Longint;
+begin
+  case Origin of
+    soFromBeginning: FPosition := Offset;
+    soFromCurrent: Inc(FPosition, Offset);
+    soFromEnd: FPosition := Size + Offset;
+  end;
+  if FPosition < 0 then
+    FPosition := 0;
+  if FPosition > FSize then
+    FPosition := FSize;
+  Result := FPosition;
+end;
+
+procedure TFWZipItemItemUnpackedStream.SetSize(NewSize: Longint);
+begin
+  raise EFWZipItemItemUnpackedStreamException.Create(E_READONLY);
+end;
+
+function TFWZipItemItemUnpackedStream.Write(const Buffer;
+  Count: Longint): Longint;
+begin
+  raise EFWZipItemItemUnpackedStreamException.Create(E_READONLY);
 end;
 
 end.

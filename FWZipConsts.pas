@@ -1,12 +1,12 @@
-////////////////////////////////////////////////////////////////////////////////
+ï»¿////////////////////////////////////////////////////////////////////////////////
 //
 //  ****************************************************************************
 //  * Project   : FWZip
 //  * Unit Name : FWZipConsts
-//  * Purpose   : Òèïû è êîíñòàíòû èñïîëüçóåìûå äëÿ ðàáîòû ñ ZIP àðõèâàìè
-//  * Author    : Àëåêñàíäð (Rouse_) Áàãåëü
-//  * Copyright : © Fangorn Wizards Lab 1998 - 2015.
-//  * Version   : 1.0.11
+//  * Purpose   : Ð¢Ð¸Ð¿Ñ‹ Ð¸ ÐºÐ¾Ð½ÑÑ‚Ð°Ð½Ñ‚Ñ‹ Ð¸ÑÐ¿Ð¾Ð»ÑŒÐ·ÑƒÐµÐ¼Ñ‹Ðµ Ð´Ð»Ñ Ñ€Ð°Ð±Ð¾Ñ‚Ñ‹ Ñ ZIP Ð°Ñ€Ñ…Ð¸Ð²Ð°Ð¼Ð¸
+//  * Author    : ÐÐ»ÐµÐºÑÐ°Ð½Ð´Ñ€ (Rouse_) Ð‘Ð°Ð³ÐµÐ»ÑŒ
+//  * Copyright : Â© Fangorn Wizards Lab 1998 - 2019.
+//  * Version   : 1.0.12
 //  * Home Page : http://rouse.drkb.ru
 //  * Home Blog : http://alexander-bagel.blogspot.ru
 //  ****************************************************************************
@@ -14,7 +14,7 @@
 //  * Latest Source  : https://github.com/AlexanderBagel/FWZip
 //  ****************************************************************************
 //
-//  Èñïîëüçóåìûå èñòî÷íèêè:
+//  Ð˜ÑÐ¿Ð¾Ð»ÑŒÐ·ÑƒÐµÐ¼Ñ‹Ðµ Ð¸ÑÑ‚Ð¾Ñ‡Ð½Ð¸ÐºÐ¸:
 //  ftp://ftp.info-zip.org/pub/infozip/doc/appnote-iz-latest.zip
 //  http://zlib.net/zlib-1.2.5.tar.gz
 //  http://www.base2ti.com/
@@ -220,7 +220,7 @@ const
 
   ZIP_SLASH = '/';
 
-  // Ôëàãè äëÿ GeneralPurposeBitFlag
+  // Ð¤Ð»Ð°Ð³Ð¸ Ð´Ð»Ñ GeneralPurposeBitFlag
   PBF_CRYPTED = 1;
 
   // (For Methods 8 and 9 - Deflating)
@@ -234,7 +234,7 @@ const
 
   PBF_UTF8 = $800;
 
-  // êîíñòàíòû ïîääåðæèâàåìûõ ïîëåé ExData
+  // ÐºÐ¾Ð½ÑÑ‚Ð°Ð½Ñ‚Ñ‹ Ð¿Ð¾Ð´Ð´ÐµÑ€Ð¶Ð¸Ð²Ð°ÐµÐ¼Ñ‹Ñ… Ð¿Ð¾Ð»ÐµÐ¹ ExData
   SUPPORTED_EXDATA_ZIP64 = 1;
   SUPPORTED_EXDATA_NTFSTIME = 10;
 
@@ -242,12 +242,12 @@ const
 
 type
   TProgressState = (
-    psStart,            // íà÷àëî ðàñïàêîâêè ýëåìåíòà, ðåçóëüòèðóþùèé ôàéë åùå íå ñîçäàí
-    psInitialization,   // ðåçóëüòèðóþùèé ôàéë ñîçäàí è çàëî÷åí, ïðîèçâîäèòñÿ ïîäãîòîâêà ê ðàñïàêîâêå
-    psInProgress,       // èäåò ðàñïàêîâêà
-    psFinalization,     // ðàñïàêîâêà çàâåðøåíà, ñåé÷àñ áóäóò ðàçðóøåíû âñå ñëóæåáíûå îáúåêòû, ðåçóëüòèðóþùèé ôàéë âñå åùå çàëî÷åí
-    psEnd,              // îïåðàöèÿ ðàñïàêîâêè ïîëíîñòüþ çàâåðøåíà, ðåçóëüòèðóþùèé ôàéë äîñòóïåí íà ÷òåíèå/çàïèñü
-    psException         // îøèáêà
+    psStart,            // Ð½Ð°Ñ‡Ð°Ð»Ð¾ Ñ€Ð°ÑÐ¿Ð°ÐºÐ¾Ð²ÐºÐ¸ ÑÐ»ÐµÐ¼ÐµÐ½Ñ‚Ð°, Ñ€ÐµÐ·ÑƒÐ»ÑŒÑ‚Ð¸Ñ€ÑƒÑŽÑ‰Ð¸Ð¹ Ñ„Ð°Ð¹Ð» ÐµÑ‰Ðµ Ð½Ðµ ÑÐ¾Ð·Ð´Ð°Ð½
+    psInitialization,   // Ñ€ÐµÐ·ÑƒÐ»ÑŒÑ‚Ð¸Ñ€ÑƒÑŽÑ‰Ð¸Ð¹ Ñ„Ð°Ð¹Ð» ÑÐ¾Ð·Ð´Ð°Ð½ Ð¸ Ð·Ð°Ð»Ð¾Ñ‡ÐµÐ½, Ð¿Ñ€Ð¾Ð¸Ð·Ð²Ð¾Ð´Ð¸Ñ‚ÑÑ Ð¿Ð¾Ð´Ð³Ð¾Ñ‚Ð¾Ð²ÐºÐ° Ðº Ñ€Ð°ÑÐ¿Ð°ÐºÐ¾Ð²ÐºÐµ
+    psInProgress,       // Ð¸Ð´ÐµÑ‚ Ñ€Ð°ÑÐ¿Ð°ÐºÐ¾Ð²ÐºÐ°
+    psFinalization,     // Ñ€Ð°ÑÐ¿Ð°ÐºÐ¾Ð²ÐºÐ° Ð·Ð°Ð²ÐµÑ€ÑˆÐµÐ½Ð°, ÑÐµÐ¹Ñ‡Ð°Ñ Ð±ÑƒÐ´ÑƒÑ‚ Ñ€Ð°Ð·Ñ€ÑƒÑˆÐµÐ½Ñ‹ Ð²ÑÐµ ÑÐ»ÑƒÐ¶ÐµÐ±Ð½Ñ‹Ðµ Ð¾Ð±ÑŠÐµÐºÑ‚Ñ‹, Ñ€ÐµÐ·ÑƒÐ»ÑŒÑ‚Ð¸Ñ€ÑƒÑŽÑ‰Ð¸Ð¹ Ñ„Ð°Ð¹Ð» Ð²ÑÐµ ÐµÑ‰Ðµ Ð·Ð°Ð»Ð¾Ñ‡ÐµÐ½
+    psEnd,              // Ð¾Ð¿ÐµÑ€Ð°Ñ†Ð¸Ñ Ñ€Ð°ÑÐ¿Ð°ÐºÐ¾Ð²ÐºÐ¸ Ð¿Ð¾Ð»Ð½Ð¾ÑÑ‚ÑŒÑŽ Ð·Ð°Ð²ÐµÑ€ÑˆÐµÐ½Ð°, Ñ€ÐµÐ·ÑƒÐ»ÑŒÑ‚Ð¸Ñ€ÑƒÑŽÑ‰Ð¸Ð¹ Ñ„Ð°Ð¹Ð» Ð´Ð¾ÑÑ‚ÑƒÐ¿ÐµÐ½ Ð½Ð° Ñ‡Ñ‚ÐµÐ½Ð¸Ðµ/Ð·Ð°Ð¿Ð¸ÑÑŒ
+    psException         // Ð¾ÑˆÐ¸Ð±ÐºÐ°
     );
 
   TZipProgressEvent = procedure(Sender: TObject; const FileName: string;
@@ -261,15 +261,15 @@ type
   TZipLoadExDataEvent = procedure(Sender: TObject; ItemIndex: Integer;
     Tag: Word; Data: TStream) of object;
 
-  // Òèïû ïîâåäåíèÿ TFWZipWriter ïðè îøèáêå â ïðîöåññå ñîçäàíèÿ àðõèâà
+  // Ð¢Ð¸Ð¿Ñ‹ Ð¿Ð¾Ð²ÐµÐ´ÐµÐ½Ð¸Ñ TFWZipWriter Ð¿Ñ€Ð¸ Ð¾ÑˆÐ¸Ð±ÐºÐµ Ð² Ð¿Ñ€Ð¾Ñ†ÐµÑÑÐµ ÑÐ¾Ð·Ð´Ð°Ð½Ð¸Ñ Ð°Ñ€Ñ…Ð¸Ð²Ð°
   TExceptionAction =
   (
-    eaRetry,                // ïîâòîðèòü ïîïûòêó
-    eaSkip,                 // ïðîïóñòèòü òåêóùèé ýëåìåíò
-    eaAbort,                // îñòàíîâèòü ñîçäàíèå àðõèâà
-    eaUseNewFilePath,       // èñïîëüçîâàòü íîâûé ïóòü ê ôàéëó (ïàð. NewFilePath)
-    eaUseNewFilePathAndDel, // òî-æå ÷òî è acUseNewFilePath, òîëüêî ôàéë óäàëÿåòñÿ ïîñëå èñïîëüçîâàíèÿ
-    eaUseNewFileData        // èñïîëüçîâàòü ñîäåðæèìîå ôàéëà èç ñòðèìà (ïàð. NewFileData)
+    eaRetry,                // Ð¿Ð¾Ð²Ñ‚Ð¾Ñ€Ð¸Ñ‚ÑŒ Ð¿Ð¾Ð¿Ñ‹Ñ‚ÐºÑƒ
+    eaSkip,                 // Ð¿Ñ€Ð¾Ð¿ÑƒÑÑ‚Ð¸Ñ‚ÑŒ Ñ‚ÐµÐºÑƒÑ‰Ð¸Ð¹ ÑÐ»ÐµÐ¼ÐµÐ½Ñ‚
+    eaAbort,                // Ð¾ÑÑ‚Ð°Ð½Ð¾Ð²Ð¸Ñ‚ÑŒ ÑÐ¾Ð·Ð´Ð°Ð½Ð¸Ðµ Ð°Ñ€Ñ…Ð¸Ð²Ð°
+    eaUseNewFilePath,       // Ð¸ÑÐ¿Ð¾Ð»ÑŒÐ·Ð¾Ð²Ð°Ñ‚ÑŒ Ð½Ð¾Ð²Ñ‹Ð¹ Ð¿ÑƒÑ‚ÑŒ Ðº Ñ„Ð°Ð¹Ð»Ñƒ (Ð¿Ð°Ñ€. NewFilePath)
+    eaUseNewFilePathAndDel, // Ñ‚Ð¾-Ð¶Ðµ Ñ‡Ñ‚Ð¾ Ð¸ acUseNewFilePath, Ñ‚Ð¾Ð»ÑŒÐºÐ¾ Ñ„Ð°Ð¹Ð» ÑƒÐ´Ð°Ð»ÑÐµÑ‚ÑÑ Ð¿Ð¾ÑÐ»Ðµ Ð¸ÑÐ¿Ð¾Ð»ÑŒÐ·Ð¾Ð²Ð°Ð½Ð¸Ñ
+    eaUseNewFileData        // Ð¸ÑÐ¿Ð¾Ð»ÑŒÐ·Ð¾Ð²Ð°Ñ‚ÑŒ ÑÐ¾Ð´ÐµÑ€Ð¶Ð¸Ð¼Ð¾Ðµ Ñ„Ð°Ð¹Ð»Ð° Ð¸Ð· ÑÑ‚Ñ€Ð¸Ð¼Ð° (Ð¿Ð°Ñ€. NewFileData)
   );
 
   TZipBuildExceptionEvent = procedure(Sender: TObject;
@@ -281,13 +281,13 @@ type
     E: Exception; const ItemIndex: Integer;
     var Handled: Boolean) of object;
 
-  // Òèïû ïîâåäåíèÿ TFWZipReader ïðè êîíôëèêòå èìåí ôàéëîâ
+  // Ð¢Ð¸Ð¿Ñ‹ Ð¿Ð¾Ð²ÐµÐ´ÐµÐ½Ð¸Ñ TFWZipReader Ð¿Ñ€Ð¸ ÐºÐ¾Ð½Ñ„Ð»Ð¸ÐºÑ‚Ðµ Ð¸Ð¼ÐµÐ½ Ñ„Ð°Ð¹Ð»Ð¾Ð²
   TDuplicateAction =
   (
-    daSkip,                // ïðîïóñòèòü ôàéë
-    daOverwrite,           // ïåðåçàïèñàòü
-    daUseNewFilePath,      // ñîõðàíèòü ñ íîâûì èìåíåì
-    daAbort                // îòìåíèòü ðàñïàêîâêó
+    daSkip,                // Ð¿Ñ€Ð¾Ð¿ÑƒÑÑ‚Ð¸Ñ‚ÑŒ Ñ„Ð°Ð¹Ð»
+    daOverwrite,           // Ð¿ÐµÑ€ÐµÐ·Ð°Ð¿Ð¸ÑÐ°Ñ‚ÑŒ
+    daUseNewFilePath,      // ÑÐ¾Ñ…Ñ€Ð°Ð½Ð¸Ñ‚ÑŒ Ñ Ð½Ð¾Ð²Ñ‹Ð¼ Ð¸Ð¼ÐµÐ½ÐµÐ¼
+    daAbort                // Ð¾Ñ‚Ð¼ÐµÐ½Ð¸Ñ‚ÑŒ Ñ€Ð°ÑÐ¿Ð°ÐºÐ¾Ð²ÐºÑƒ
   );
 
   TZipDuplicateEvent = procedure(Sender: TObject;
@@ -343,6 +343,8 @@ const
 
   CurrentVersionMadeBy = 63;
 
+  LongNamePrefix = '\\?\';
+
   function IsAttributesPresent(Value: TWin32FileAttributeData): Boolean;
   function FileSizeToInt64(FileSizeLo, FileSizeHi: DWORD): Int64;
   function PathCanonicalize(Value: string): string;
@@ -369,6 +371,23 @@ begin
   Inc(Result, FileSizeLo);
 end;
 
+function IncludeLongNamePrefix(const Value: string): string;
+var
+  NeedAdd: Boolean;
+begin
+  NeedAdd := True;
+  if Length(Value) >= 4 then
+    NeedAdd := not(
+      (Value[1] = LongNamePrefix[1]) and
+      (Value[2] = LongNamePrefix[2]) and
+      (Value[3] = LongNamePrefix[3]) and
+      (Value[4] = LongNamePrefix[4]));
+  if NeedAdd then
+    Result := LongNamePrefix + Value
+  else
+    Result := Value;
+end;
+
 function PathCanonicalize(Value: string): string;
 begin
   if Value = '' then
@@ -379,12 +398,16 @@ begin
   if Value[1] = '.' then
     Value := IncludeTrailingPathDelimiter(GetCurrentDir) + Value;
   SetLength(Result, MAX_PATH);
+  if
   {$IFDEF UNICODE}
-  PathCanonicalizeW(PWideChar(Result), PWideChar(Value));
+  PathCanonicalizeW(PWideChar(Result), PWideChar(Value))
   {$ELSE}
-  PathCanonicalizeA(PAnsiChar(Result), PAnsiChar(Value));
-  {$ENDIF}
-  Result := PChar(Result);
+  PathCanonicalizeA(PAnsiChar(Result), PAnsiChar(Value))
+  {$ENDIF} then
+    Result := PChar(Result)
+  else
+    Result := Value;
+  Result := IncludeLongNamePrefix(Result);
 end;
 
 function MakeUniqueName(const Value: string): string;
@@ -417,30 +440,30 @@ function FileSizeToStr(Value: Int64): string;
 begin
   if Value < 1024 then
   begin
-    Result := Format('%d áàéò', [Value]);
+    Result := Format('%d Ð±Ð°Ð¹Ñ‚', [Value]);
     Exit;
   end;
   Value := Value div 1024;
   if Value < 1024 then
   begin
-    Result := Format('%d êèëîáàéò', [Value]);
+    Result := Format('%d ÐºÐ¸Ð»Ð¾Ð±Ð°Ð¹Ñ‚', [Value]);
     Exit;
   end;
   Value := Value div 1024;
   if Value < 1024 then
   begin
-    Result := Format('%d ìåãàáàéò', [Value]);
+    Result := Format('%d Ð¼ÐµÐ³Ð°Ð±Ð°Ð¹Ñ‚', [Value]);
     Exit;
   end;
   Value := Value div 1024;
   if Value < 1024 then
   begin
-    Result := Format('%d ãèãàáàéò', [Value]);
+    Result := Format('%d Ð³Ð¸Ð³Ð°Ð±Ð°Ð¹Ñ‚', [Value]);
     Exit;
   end;
-  // íó à ÷åì áîã íå øóòèò? :)
+  // Ð½Ñƒ Ð° Ñ‡ÐµÐ¼ Ð±Ð¾Ð³ Ð½Ðµ ÑˆÑƒÑ‚Ð¸Ñ‚? :)
   Value := Value div 1024;
-  Result := Format('%d òåðàáàéò', [Value]);
+  Result := Format('%d Ñ‚ÐµÑ€Ð°Ð±Ð°Ð¹Ñ‚', [Value]);
 end;
 
 end.

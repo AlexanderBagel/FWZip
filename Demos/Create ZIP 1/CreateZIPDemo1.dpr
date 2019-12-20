@@ -6,8 +6,8 @@
 //  * Purpose   : Демонстрация создания архива используя различные
 //  *           : варианты добавления данных
 //  * Author    : Александр (Rouse_) Багель
-//  * Copyright : © Fangorn Wizards Lab 1998 - 2013.
-//  * Version   : 1.0.10
+//  * Copyright : © Fangorn Wizards Lab 1998 - 2019.
+//  * Version   : 1.0.12
 //  * Home Page : http://rouse.drkb.ru
 //  * Home Blog : http://alexander-bagel.blogspot.ru
 //  ****************************************************************************
@@ -69,11 +69,16 @@ begin
         CheckResult(ItemIndex);
         // Можно добавить коментарий к самому элементу
         Zip.Item[ItemIndex].Comment := 'Мой тестовый комментарий';
-
-        //TCompressionStream.Create(clDefault, S);
       finally
         S.Free;
       end;
+
+      // Создаем и добавляем текстовый файл в корень архива (AddStream)
+      // владельцем стрима данных бдет сам архив
+      S := TStringStream.Create('Тестовый текстовый файл №2');
+      S.Position := 0;
+      ItemIndex := Zip.AddStream('test2.txt', S, soOwned);
+      CheckResult(ItemIndex);
 
       // Для сохранении файла в определенной папке
       // достаточно указать ее наличие в пути к файлу, например вот так

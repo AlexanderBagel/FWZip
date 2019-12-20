@@ -1,14 +1,14 @@
-////////////////////////////////////////////////////////////////////////////////
+п»ї////////////////////////////////////////////////////////////////////////////////
 //
 //  ****************************************************************************
 //  * Project   : FWZip
 //  * Unit Name : FWZipZLib
-//  * Purpose   : Базовые стримы сжатия и распаковки.
-//  *           : Вынесено из ZLibEx в отдельный модуль
-//  *           : для совместимости со старыми версиями Delphi
-//  * Author    : Александр (Rouse_) Багель
-//  * Copyright : © Fangorn Wizards Lab 1998 - 2015.
-//  * Version   : 1.0.11
+//  * Purpose   : Р‘Р°Р·РѕРІС‹Рµ СЃС‚СЂРёРјС‹ СЃР¶Р°С‚РёСЏ Рё СЂР°СЃРїР°РєРѕРІРєРё.
+//  *           : Р’С‹РЅРµСЃРµРЅРѕ РёР· ZLibEx РІ РѕС‚РґРµР»СЊРЅС‹Р№ РјРѕРґСѓР»СЊ
+//  *           : РґР»СЏ СЃРѕРІРјРµСЃС‚РёРјРѕСЃС‚Рё СЃРѕ СЃС‚Р°СЂС‹РјРё РІРµСЂСЃРёСЏРјРё Delphi
+//  * Author    : РђР»РµРєСЃР°РЅРґСЂ (Rouse_) Р‘Р°РіРµР»СЊ
+//  * Copyright : В© Fangorn Wizards Lab 1998 - 2017.
+//  * Version   : 1.0.12
 //  * Home Page : http://rouse.drkb.ru
 //  * Home Blog : http://alexander-bagel.blogspot.ru
 //  ****************************************************************************
@@ -16,7 +16,7 @@
 //  * Latest Source  : https://github.com/AlexanderBagel/FWZip
 //  ****************************************************************************
 //
-//  Используемые источники:
+//  РСЃРїРѕР»СЊР·СѓРµРјС‹Рµ РёСЃС‚РѕС‡РЅРёРєРё:
 //  ftp://ftp.info-zip.org/pub/infozip/doc/appnote-iz-latest.zip
 //  http://zlib.net/zlib-1.2.5.tar.gz
 //  http://www.base2ti.com/
@@ -240,9 +240,12 @@ type
   {** TZDecompressionStream *********************************************************************}
 
   TZDecompressionStream = class(TCustomZStream)
+  private
+    FSource: TStream;
   public
     constructor Create(source: TStream); overload;
     constructor Create(source: TStream; windowBits: Integer); overload;
+    constructor Create(source: TStream; windowBits: Integer; StreamOwned: Boolean); overload;
 
     destructor  Destroy; override;
 
@@ -589,10 +592,18 @@ begin
   {$ENDIF}
 end;
 
+constructor TZDecompressionStream.Create(source: TStream; windowBits: Integer;
+  StreamOwned: Boolean);
+begin
+  if StreamOwned  then
+    FSource := source;
+  Create(source, windowBits);
+end;
+
 destructor TZDecompressionStream.Destroy;
 begin
   ZInflateEnd(FZStream);
-
+  FSource.Free;
   inherited Destroy;
 end;
 

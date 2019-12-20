@@ -1,12 +1,12 @@
-////////////////////////////////////////////////////////////////////////////////
+п»ї////////////////////////////////////////////////////////////////////////////////
 //
 //  ****************************************************************************
 //  * Project   : FWZip
 //  * Unit Name : FWZipWriter
-//  * Purpose   : Класс для создания ZIP архива
-//  * Author    : Александр (Rouse_) Багель
-//  * Copyright : © Fangorn Wizards Lab 1998 - 2015.
-//  * Version   : 1.0.11
+//  * Purpose   : РљР»Р°СЃСЃ РґР»СЏ СЃРѕР·РґР°РЅРёСЏ ZIP Р°СЂС…РёРІР°
+//  * Author    : РђР»РµРєСЃР°РЅРґСЂ (Rouse_) Р‘Р°РіРµР»СЊ
+//  * Copyright : В© Fangorn Wizards Lab 1998 - 2019.
+//  * Version   : 1.0.12
 //  * Home Page : http://rouse.drkb.ru
 //  * Home Blog : http://alexander-bagel.blogspot.ru
 //  ****************************************************************************
@@ -14,7 +14,7 @@
 //  * Latest Source  : https://github.com/AlexanderBagel/FWZip
 //  ****************************************************************************
 //
-//  Используемые источники:
+//  РСЃРїРѕР»СЊР·СѓРµРјС‹Рµ РёСЃС‚РѕС‡РЅРёРєРё:
 //  ftp://ftp.info-zip.org/pub/infozip/doc/appnote-iz-latest.zip
 //  http://zlib.net/zlib-1.2.5.tar.gz
 //  http://www.base2ti.com/
@@ -43,26 +43,26 @@ type
   TFWZipWriterItem = class
   private
     FOwner: TFWZipWriter;
-    FComment: string;                // коментарий к элементу
-    FFilePath: string;               // путь к внешнему файлу (или см. TFWZipWriterItemEx.Data)
-    FFileName: string;               // имя элемента в архиве - не может быть пустым
-    FPassword: string;               // пароль
-    FCmpLevel: TCompressionLevel;    // уровень сжатия
-    FNeedDescriptor: Boolean;        // флаг определяет способ хранения данных
-                                     // о элементе, (дескриптор или локальный заголовок)
+    FComment: string;                // РєРѕРјРµРЅС‚Р°СЂРёР№ Рє СЌР»РµРјРµРЅС‚Сѓ
+    FFilePath: string;               // РїСѓС‚СЊ Рє РІРЅРµС€РЅРµРјСѓ С„Р°Р№Р»Сѓ (РёР»Рё СЃРј. TFWZipWriterItemEx.Data)
+    FFileName: string;               // РёРјСЏ СЌР»РµРјРµРЅС‚Р° РІ Р°СЂС…РёРІРµ - РЅРµ РјРѕР¶РµС‚ Р±С‹С‚СЊ РїСѓСЃС‚С‹Рј
+    FPassword: string;               // РїР°СЂРѕР»СЊ
+    FCmpLevel: TCompressionLevel;    // СѓСЂРѕРІРµРЅСЊ СЃР¶Р°С‚РёСЏ
+    FNeedDescriptor: Boolean;        // С„Р»Р°Рі РѕРїСЂРµРґРµР»СЏРµС‚ СЃРїРѕСЃРѕР± С…СЂР°РЅРµРЅРёСЏ РґР°РЅРЅС‹С…
+                                     // Рѕ СЌР»РµРјРµРЅС‚Рµ, (РґРµСЃРєСЂРёРїС‚РѕСЂ РёР»Рё Р»РѕРєР°Р»СЊРЅС‹Р№ Р·Р°РіРѕР»РѕРІРѕРє)
     FSize: Int64;
-    FData: TMemoryStream;            // Данные элемента в случае если файл
-                                     // отсутствует на диске
-    FAttributes:                     // Внешние аттрибуты файла
+    FData: TStream;                  // Р”Р°РЅРЅС‹Рµ СЌР»РµРјРµРЅС‚Р° РІ СЃР»СѓС‡Р°Рµ РµСЃР»Рё С„Р°Р№Р»
+                                     // РѕС‚СЃСѓС‚СЃС‚РІСѓРµС‚ РЅР° РґРёСЃРєРµ
+    FAttributes:                     // Р’РЅРµС€РЅРёРµ Р°С‚С‚СЂРёР±СѓС‚С‹ С„Р°Р№Р»Р°
       TWin32FileAttributeData;
     FTag: Integer;
     FUseUTF8String: Boolean;
-    FUseExternalData: Boolean;       // Флаг указывающий на то что данные будут передаваться снаружи
+    FUseExternalData: Boolean;       // Р¤Р»Р°Рі СѓРєР°Р·С‹РІР°СЋС‰РёР№ РЅР° С‚Рѕ С‡С‚Рѕ РґР°РЅРЅС‹Рµ Р±СѓРґСѓС‚ РїРµСЂРµРґР°РІР°С‚СЊСЃСЏ СЃРЅР°СЂСѓР¶Рё
     procedure SetBool(const Value: Boolean);
     procedure SetCmpLevel(const Value: TCompressionLevel);
     procedure SetString(const Index: Integer; const Value: string);
   protected
-    property Data: TMemoryStream read FData;
+    property Data: TStream read FData;
     property UseExternalData: Boolean read FUseExternalData write FUseExternalData;
   public
     constructor Create(Owner: TFWZipWriter;
@@ -70,7 +70,8 @@ type
       InitAttributes: TWin32FileAttributeData;
       const InitFileName: string = ''); virtual;
     destructor Destroy; override;
-    procedure ChangeDataStream(Value: TStream);
+    procedure ChangeDataStream(Value: TStream;
+      AOwnerShip: TStreamOwnership = soReference);
     procedure ChangeAttributes(Value: TWin32FileAttributeData);
     function IsFolder: Boolean;
     property Comment: string index 0 read FComment write SetString;
@@ -87,13 +88,13 @@ type
 
   TFWZipWriterItemClass = class of TFWZipWriterItem;
 
-  // Результат создания архива
+  // Р РµР·СѓР»СЊС‚Р°С‚ СЃРѕР·РґР°РЅРёСЏ Р°СЂС…РёРІР°
   TBuildZipResult = 
   (
-    brDone,         // архив создан успешно
-    brFailed,       // ошибка создания архива
-    brAborted,      // создание архива отменено пользователем
-    brPartialBuild  // некоторые элементы пропущены из-за возникших ошибок
+    brDone,         // Р°СЂС…РёРІ СЃРѕР·РґР°РЅ СѓСЃРїРµС€РЅРѕ
+    brFailed,       // РѕС€РёР±РєР° СЃРѕР·РґР°РЅРёСЏ Р°СЂС…РёРІР°
+    brAborted,      // СЃРѕР·РґР°РЅРёРµ Р°СЂС…РёРІР° РѕС‚РјРµРЅРµРЅРѕ РїРѕР»СЊР·РѕРІР°С‚РµР»РµРј
+    brPartialBuild  // РЅРµРєРѕС‚РѕСЂС‹Рµ СЌР»РµРјРµРЅС‚С‹ РїСЂРѕРїСѓС‰РµРЅС‹ РёР·-Р·Р° РІРѕР·РЅРёРєС€РёС… РѕС€РёР±РѕРє
   );
 
   TFWZipWriter = class
@@ -130,6 +131,8 @@ type
     procedure CompressorOnProcess(Sender: TObject);
   protected
     function CheckFileNameSlashes(const Value: string): string;
+    function CreateItemFromStream(const FileName: string;
+      Value: TStream; AOwnerShip: TStreamOwnership): TFWZipWriterItem;
     function GetVersionToExtract(Index: Integer): Word;
     function GetCurrentFileTime: TFileTime;
     procedure SaveItemToStream(Stream: TStream; Index: Integer); virtual;
@@ -155,7 +158,8 @@ type
     function AddFile(const FilePath: string;
       Attributes: TWin32FileAttributeData;
       const FileName: string = ''): Integer; overload;
-    function AddStream(const FileName: string; Value: TStream): Integer;
+    function AddStream(const FileName: string; Value: TStream;
+      AOwnerShip: TStreamOwnership = soReference): Integer;
     function AddFiles(Value: TStringList): Integer;
     function AddFilesAndFolders(Value: TStringList; SubFolders: Boolean = True): Integer;
     function AddFolder(const Path: string;
@@ -167,17 +171,19 @@ type
     function Count: Integer;
     procedure Clear;
     procedure DeleteItem(Index: Integer);
+    function InsertStream(const FileName: string; Index: Integer;
+      Value: TStream; AOwnerShip: TStreamOwnership = soReference): Integer;
 
-    // Свойство отвечает за добавление папки в виде TFWZipWriterItem
-    // непосредственно перед добавлением данных из указаной папки
+    // РЎРІРѕР№СЃС‚РІРѕ РѕС‚РІРµС‡Р°РµС‚ Р·Р° РґРѕР±Р°РІР»РµРЅРёРµ РїР°РїРєРё РІ РІРёРґРµ TFWZipWriterItem
+    // РЅРµРїРѕСЃСЂРµРґСЃС‚РІРµРЅРЅРѕ РїРµСЂРµРґ РґРѕР±Р°РІР»РµРЅРёРµРј РґР°РЅРЅС‹С… РёР· СѓРєР°Р·Р°РЅРѕР№ РїР°РїРєРё
     property AlwaysAddEmptyFolder: Boolean read FAlwaysAddEmptyFolder
       write FAlwaysAddEmptyFolder;
 
     property Item[Index: Integer]: TFWZipWriterItem read GetItem; default;
     property Comment: string read FComment write FComment;
 
-    // Свойство работает только при включенной директиве USE_AUTOGENERATED_ZLIB_HEADER
-    // В остальных случаях не влияет на архив и оставлено для совместимости
+    // РЎРІРѕР№СЃС‚РІРѕ СЂР°Р±РѕС‚Р°РµС‚ С‚РѕР»СЊРєРѕ РїСЂРё РІРєР»СЋС‡РµРЅРЅРѕР№ РґРёСЂРµРєС‚РёРІРµ USE_AUTOGENERATED_ZLIB_HEADER
+    // Р’ РѕСЃС‚Р°Р»СЊРЅС‹С… СЃР»СѓС‡Р°СЏС… РЅРµ РІР»РёСЏРµС‚ РЅР° Р°СЂС…РёРІ Рё РѕСЃС‚Р°РІР»РµРЅРѕ РґР»СЏ СЃРѕРІРјРµСЃС‚РёРјРѕСЃС‚Рё
     property TrimPackedStreamSize: Boolean read FTrimPackedStreamSize
       write FTrimPackedStreamSize; // deprecated;
 
@@ -196,7 +202,7 @@ implementation
 { TFWZipWriterItem }
 
 //
-//  Процедура изменяет аттрибуты элемента архива
+//  РџСЂРѕС†РµРґСѓСЂР° РёР·РјРµРЅСЏРµС‚ Р°С‚С‚СЂРёР±СѓС‚С‹ СЌР»РµРјРµРЅС‚Р° Р°СЂС…РёРІР°
 // =============================================================================
 procedure TFWZipWriterItem.ChangeAttributes(Value: TWin32FileAttributeData);
 begin
@@ -205,25 +211,30 @@ begin
 end;
 
 //
-//  Процедура изменяет блок данных об элементе. Автоматически чистится имя к файлу.
-//  Данные при сжатии будут браться из поля FData
+//  РџСЂРѕС†РµРґСѓСЂР° РёР·РјРµРЅСЏРµС‚ Р±Р»РѕРє РґР°РЅРЅС‹С… РѕР± СЌР»РµРјРµРЅС‚Рµ. РђРІС‚РѕРјР°С‚РёС‡РµСЃРєРё С‡РёСЃС‚РёС‚СЃСЏ РёРјСЏ Рє С„Р°Р№Р»Сѓ.
+//  Р”Р°РЅРЅС‹Рµ РїСЂРё СЃР¶Р°С‚РёРё Р±СѓРґСѓС‚ Р±СЂР°С‚СЊСЃСЏ РёР· РїРѕР»СЏ FData
 // =============================================================================
-procedure TFWZipWriterItem.ChangeDataStream(Value: TStream);
+procedure TFWZipWriterItem.ChangeDataStream(Value: TStream;
+  AOwnership: TStreamOwnership);
 begin
   if not FOwner.BuildState then
     if Value.Size <> 0 then
     begin
-      if FData = nil then
+      FreeAndNil(FData);
+      if AOwnership = soOwned then
+        FData := Value
+      else
+      begin
         FData := TMemoryStream.Create;
-      FData.Clear;
-      FData.CopyFrom(Value, 0);
+        FData.CopyFrom(Value, 0);
+      end;
       FSize := FData.Size;
       FFilePath := '';
     end;
 end;
 
 //
-//  Стандартный конструктор класса
+//  РЎС‚Р°РЅРґР°СЂС‚РЅС‹Р№ РєРѕРЅСЃС‚СЂСѓРєС‚РѕСЂ РєР»Р°СЃСЃР°
 // =============================================================================
 constructor TFWZipWriterItem.Create(Owner: TFWZipWriter;
   const InitFilePath: string;
@@ -241,7 +252,7 @@ begin
 end;
 
 //
-//  Стандартный деструктор класса
+//  РЎС‚Р°РЅРґР°СЂС‚РЅС‹Р№ РґРµСЃС‚СЂСѓРєС‚РѕСЂ РєР»Р°СЃСЃР°
 // =============================================================================
 destructor TFWZipWriterItem.Destroy;
 begin
@@ -250,7 +261,7 @@ begin
 end;
 
 //
-//  Функция проверяет - является ли элемент папкой?
+//  Р¤СѓРЅРєС†РёСЏ РїСЂРѕРІРµСЂСЏРµС‚ - СЏРІР»СЏРµС‚СЃСЏ Р»Рё СЌР»РµРјРµРЅС‚ РїР°РїРєРѕР№?
 // =============================================================================
 function TFWZipWriterItem.IsFolder: Boolean;
 begin
@@ -260,7 +271,7 @@ begin
 end;
 
 //
-//  Процедура изменяет флаг дескриптора элемента
+//  РџСЂРѕС†РµРґСѓСЂР° РёР·РјРµРЅСЏРµС‚ С„Р»Р°Рі РґРµСЃРєСЂРёРїС‚РѕСЂР° СЌР»РµРјРµРЅС‚Р°
 // =============================================================================
 procedure TFWZipWriterItem.SetBool(const Value: Boolean);
 begin
@@ -269,7 +280,7 @@ begin
 end;
 
 //
-//  Процедура изменяет степень сжатия элемента
+//  РџСЂРѕС†РµРґСѓСЂР° РёР·РјРµРЅСЏРµС‚ СЃС‚РµРїРµРЅСЊ СЃР¶Р°С‚РёСЏ СЌР»РµРјРµРЅС‚Р°
 // =============================================================================
 procedure TFWZipWriterItem.SetCmpLevel(const Value: TCompressionLevel);
 begin
@@ -278,9 +289,9 @@ begin
 end;
 
 //
-//  Процедура изменяет строковые свойства элемента.
-//  При изменении пути к файлу, автоматически рассчитываются
-//  новые аттрибуты файла и очишается стрим FData за ненадобностью
+//  РџСЂРѕС†РµРґСѓСЂР° РёР·РјРµРЅСЏРµС‚ СЃС‚СЂРѕРєРѕРІС‹Рµ СЃРІРѕР№СЃС‚РІР° СЌР»РµРјРµРЅС‚Р°.
+//  РџСЂРё РёР·РјРµРЅРµРЅРёРё РїСѓС‚Рё Рє С„Р°Р№Р»Сѓ, Р°РІС‚РѕРјР°С‚РёС‡РµСЃРєРё СЂР°СЃСЃС‡РёС‚С‹РІР°СЋС‚СЃСЏ
+//  РЅРѕРІС‹Рµ Р°С‚С‚СЂРёР±СѓС‚С‹ С„Р°Р№Р»Р° Рё РѕС‡РёС€Р°РµС‚СЃСЏ СЃС‚СЂРёРј FData Р·Р° РЅРµРЅР°РґРѕР±РЅРѕСЃС‚СЊСЋ
 // =============================================================================
 procedure TFWZipWriterItem.SetString(const Index: Integer;
   const Value: string);
@@ -294,8 +305,8 @@ begin
       begin
         if FileExists(Value) then
         begin
-          // Изменяем только в том случае если объект доступен
-          // и мы смогли снять его аттрибуты
+          // РР·РјРµРЅСЏРµРј С‚РѕР»СЊРєРѕ РІ С‚РѕРј СЃР»СѓС‡Р°Рµ РµСЃР»Рё РѕР±СЉРµРєС‚ РґРѕСЃС‚СѓРїРµРЅ
+          // Рё РјС‹ СЃРјРѕРіР»Рё СЃРЅСЏС‚СЊ РµРіРѕ Р°С‚С‚СЂРёР±СѓС‚С‹
           if GetFileAttributesEx(PChar(Value),
             GetFileExInfoStandard, @Attributes) then
           begin
@@ -308,9 +319,11 @@ begin
         end;
       end;
       2:
-        if Length(Value) >= MAX_PATH then
-          raise EZipWriterItem.Create('Слишком длинный путь.')
-        else
+      // Rouse_ 20.12.2019
+      // Р”Р°РµРј РІРѕР·РјРѕР¶РЅРѕСЃС‚СЊ СЂР°Р±РѕС‚С‹ СЃ РґР»РёРЅРЅС‹РјРё РїСѓС‚СЏРјРё
+//        if Length(Value) >= MAX_PATH then
+//          raise EZipWriterItem.Create('РЎР»РёС€РєРѕРј РґР»РёРЅРЅС‹Р№ РїСѓС‚СЊ.')
+//        else
           FFileName := Value;
       3: FPassword := Value;
     end;
@@ -319,12 +332,12 @@ end;
 { TFWZipWriter }
 
 //
-//  Функция добавляет очередной файл в список.
-//  В качестве результата возвращает индекс элемента в списке.
-//  Параметры:
-//  FilePath - путь к файлу
-//  FileName - наименование файла в архиве
-//    (включая относительный путь от корня архива)
+//  Р¤СѓРЅРєС†РёСЏ РґРѕР±Р°РІР»СЏРµС‚ РѕС‡РµСЂРµРґРЅРѕР№ С„Р°Р№Р» РІ СЃРїРёСЃРѕРє.
+//  Р’ РєР°С‡РµСЃС‚РІРµ СЂРµР·СѓР»СЊС‚Р°С‚Р° РІРѕР·РІСЂР°С‰Р°РµС‚ РёРЅРґРµРєСЃ СЌР»РµРјРµРЅС‚Р° РІ СЃРїРёСЃРєРµ.
+//  РџР°СЂР°РјРµС‚СЂС‹:
+//  FilePath - РїСѓС‚СЊ Рє С„Р°Р№Р»Сѓ
+//  FileName - РЅР°РёРјРµРЅРѕРІР°РЅРёРµ С„Р°Р№Р»Р° РІ Р°СЂС…РёРІРµ
+//    (РІРєР»СЋС‡Р°СЏ РѕС‚РЅРѕСЃРёС‚РµР»СЊРЅС‹Р№ РїСѓС‚СЊ РѕС‚ РєРѕСЂРЅСЏ Р°СЂС…РёРІР°)
 // =============================================================================
 function TFWZipWriter.AddFile(const FilePath,
   FileName: string): Integer;
@@ -334,19 +347,19 @@ var
 begin
   Result := -1;
   FullFilePath := PathCanonicalize(FilePath);
-  // Добавляем только в том случае если объект доступен
-  // и мы смогли снять его аттрибуты
+  // Р”РѕР±Р°РІР»СЏРµРј С‚РѕР»СЊРєРѕ РІ С‚РѕРј СЃР»СѓС‡Р°Рµ РµСЃР»Рё РѕР±СЉРµРєС‚ РґРѕСЃС‚СѓРїРµРЅ
+  // Рё РјС‹ СЃРјРѕРіР»Рё СЃРЅСЏС‚СЊ РµРіРѕ Р°С‚С‚СЂРёР±СѓС‚С‹
   if GetFileAttributesEx(PChar(FullFilePath),
     GetFileExInfoStandard, @Attributes) then
     Result := AddFile(FullFilePath, Attributes, FileName);
 end;
 
 //
-//  Функция добавляет пустую папку в список.
-//  В качестве результата возвращает индекс элемента в списке.
-//  Параметры:
-//  FolderRelativeName - наименование папки в архиве
-//    (включая относительный путь от корня архива)
+//  Р¤СѓРЅРєС†РёСЏ РґРѕР±Р°РІР»СЏРµС‚ РїСѓСЃС‚СѓСЋ РїР°РїРєСѓ РІ СЃРїРёСЃРѕРє.
+//  Р’ РєР°С‡РµСЃС‚РІРµ СЂРµР·СѓР»СЊС‚Р°С‚Р° РІРѕР·РІСЂР°С‰Р°РµС‚ РёРЅРґРµРєСЃ СЌР»РµРјРµРЅС‚Р° РІ СЃРїРёСЃРєРµ.
+//  РџР°СЂР°РјРµС‚СЂС‹:
+//  FolderRelativeName - РЅР°РёРјРµРЅРѕРІР°РЅРёРµ РїР°РїРєРё РІ Р°СЂС…РёРІРµ
+//    (РІРєР»СЋС‡Р°СЏ РѕС‚РЅРѕСЃРёС‚РµР»СЊРЅС‹Р№ РїСѓС‚СЊ РѕС‚ РєРѕСЂРЅСЏ Р°СЂС…РёРІР°)
 // =============================================================================
 function TFWZipWriter.AddEmptyFolder(const FolderRelativeName: string): Integer;
 var
@@ -358,12 +371,12 @@ begin
 end;
 
 //
-//  Функция добавляет пустую папку в список.
-//  В качестве результата возвращает индекс элемента в списке.
-//  Параметры:
-//  FolderRelativeName - наименование папки в архиве
-//    (включая относительный путь от корня архива)
-//  Attributes - аттрибуты папки
+//  Р¤СѓРЅРєС†РёСЏ РґРѕР±Р°РІР»СЏРµС‚ РїСѓСЃС‚СѓСЋ РїР°РїРєСѓ РІ СЃРїРёСЃРѕРє.
+//  Р’ РєР°С‡РµСЃС‚РІРµ СЂРµР·СѓР»СЊС‚Р°С‚Р° РІРѕР·РІСЂР°С‰Р°РµС‚ РёРЅРґРµРєСЃ СЌР»РµРјРµРЅС‚Р° РІ СЃРїРёСЃРєРµ.
+//  РџР°СЂР°РјРµС‚СЂС‹:
+//  FolderRelativeName - РЅР°РёРјРµРЅРѕРІР°РЅРёРµ РїР°РїРєРё РІ Р°СЂС…РёРІРµ
+//    (РІРєР»СЋС‡Р°СЏ РѕС‚РЅРѕСЃРёС‚РµР»СЊРЅС‹Р№ РїСѓС‚СЊ РѕС‚ РєРѕСЂРЅСЏ Р°СЂС…РёРІР°)
+//  Attributes - Р°С‚С‚СЂРёР±СѓС‚С‹ РїР°РїРєРё
 // =============================================================================
 function TFWZipWriter.AddEmptyFolder(const FolderRelativeName: string;
   Attributes: TWin32FileAttributeData): Integer;
@@ -381,13 +394,13 @@ begin
 end;
 
 //
-//  Функция добавляет очередной файл в список.
-//  В качестве результата возвращает индекс элемента в списке.
-//  Параметры:
-//  FilePath - путь к файлу
-//  Attributes - аттрибуты файла
-//  FileName - наименование файла в архиве
-//    (включая относительный путь от корня архива)
+//  Р¤СѓРЅРєС†РёСЏ РґРѕР±Р°РІР»СЏРµС‚ РѕС‡РµСЂРµРґРЅРѕР№ С„Р°Р№Р» РІ СЃРїРёСЃРѕРє.
+//  Р’ РєР°С‡РµСЃС‚РІРµ СЂРµР·СѓР»СЊС‚Р°С‚Р° РІРѕР·РІСЂР°С‰Р°РµС‚ РёРЅРґРµРєСЃ СЌР»РµРјРµРЅС‚Р° РІ СЃРїРёСЃРєРµ.
+//  РџР°СЂР°РјРµС‚СЂС‹:
+//  FilePath - РїСѓС‚СЊ Рє С„Р°Р№Р»Сѓ
+//  Attributes - Р°С‚С‚СЂРёР±СѓС‚С‹ С„Р°Р№Р»Р°
+//  FileName - РЅР°РёРјРµРЅРѕРІР°РЅРёРµ С„Р°Р№Р»Р° РІ Р°СЂС…РёРІРµ
+//    (РІРєР»СЋС‡Р°СЏ РѕС‚РЅРѕСЃРёС‚РµР»СЊРЅС‹Р№ РїСѓС‚СЊ РѕС‚ РєРѕСЂРЅСЏ Р°СЂС…РёРІР°)
 // =============================================================================
 function TFWZipWriter.AddFile(const FilePath: string;
   Attributes: TWin32FileAttributeData; const FileName: string): Integer;
@@ -395,7 +408,7 @@ var
   Item: TFWZipWriterItem;
   InitFileName, FullFilePath: string;
 begin
-  // Проверка что нам передали. папку или файл?
+  // РџСЂРѕРІРµСЂРєР° С‡С‚Рѕ РЅР°Рј РїРµСЂРµРґР°Р»Рё. РїР°РїРєСѓ РёР»Рё С„Р°Р№Р»?
   Result := -1;
   FullFilePath := PathCanonicalize(FilePath);
   if not FileExists(FullFilePath) then Exit;
@@ -408,22 +421,22 @@ begin
   Item.CompressionLevel := FDefaultCompressionLevel;
   Item.Password := FDefaultPassword;
 
-  // в случае наличия дескриптора мы можем
-  // производить расчет контрольной суммы на лету, т.к. при включенном
-  // режиме шифрования она не участвует в генерации заголовка инициализации
+  // РІ СЃР»СѓС‡Р°Рµ РЅР°Р»РёС‡РёСЏ РґРµСЃРєСЂРёРїС‚РѕСЂР° РјС‹ РјРѕР¶РµРј
+  // РїСЂРѕРёР·РІРѕРґРёС‚СЊ СЂР°СЃС‡РµС‚ РєРѕРЅС‚СЂРѕР»СЊРЅРѕР№ СЃСѓРјРјС‹ РЅР° Р»РµС‚Сѓ, С‚.Рє. РїСЂРё РІРєР»СЋС‡РµРЅРЅРѕРј
+  // СЂРµР¶РёРјРµ С€РёС„СЂРѕРІР°РЅРёСЏ РѕРЅР° РЅРµ СѓС‡Р°СЃС‚РІСѓРµС‚ РІ РіРµРЅРµСЂР°С†РёРё Р·Р°РіРѕР»РѕРІРєР° РёРЅРёС†РёР°Р»РёР·Р°С†РёРё
   Item.NeedDescriptor := FDefaultDescryptorState;
 
   Result := AddNewItem(Item);
 end;
 
 //
-//  Функция добавляет набор файлов в список.
-//  В качестве результата возвращает количество успешно добавленных элементов.
-//  Параметры:
-//  Value - пути к файлам
-//  Value.ValueFromIndex[I] содержит полный путь к файлу
-//  Value.Names[I] содержит имя файла с которым он будет
-//  помещен в архив (необязательный параметр)
+//  Р¤СѓРЅРєС†РёСЏ РґРѕР±Р°РІР»СЏРµС‚ РЅР°Р±РѕСЂ С„Р°Р№Р»РѕРІ РІ СЃРїРёСЃРѕРє.
+//  Р’ РєР°С‡РµСЃС‚РІРµ СЂРµР·СѓР»СЊС‚Р°С‚Р° РІРѕР·РІСЂР°С‰Р°РµС‚ РєРѕР»РёС‡РµСЃС‚РІРѕ СѓСЃРїРµС€РЅРѕ РґРѕР±Р°РІР»РµРЅРЅС‹С… СЌР»РµРјРµРЅС‚РѕРІ.
+//  РџР°СЂР°РјРµС‚СЂС‹:
+//  Value - РїСѓС‚Рё Рє С„Р°Р№Р»Р°Рј
+//  Value.ValueFromIndex[I] СЃРѕРґРµСЂР¶РёС‚ РїРѕР»РЅС‹Р№ РїСѓС‚СЊ Рє С„Р°Р№Р»Сѓ
+//  Value.Names[I] СЃРѕРґРµСЂР¶РёС‚ РёРјСЏ С„Р°Р№Р»Р° СЃ РєРѕС‚РѕСЂС‹Рј РѕРЅ Р±СѓРґРµС‚
+//  РїРѕРјРµС‰РµРЅ РІ Р°СЂС…РёРІ (РЅРµРѕР±СЏР·Р°С‚РµР»СЊРЅС‹Р№ РїР°СЂР°РјРµС‚СЂ)
 // =============================================================================
 function TFWZipWriter.AddFiles(Value: TStringList): Integer;
 var
@@ -436,17 +449,17 @@ begin
 end;
 
 //
-//  Функция добавляет набор файлов и папок в список.
-//  В качестве результата возвращает количество успешно добавленных элементов.
-//  Параметры:
-//  Value - пути к файлам и папкам из которых будут добавляться данные
-//    Value.ValueFromIndex[I] для папки содержит полный путь к папке
-//    Value.Names[I] для папки содержит путь относительно корня архива
-//      (необязательный параметр)
-//    Value.ValueFromIndex[I] для файла содержит полный путь к файлу
-//    Value.Names[I] для файла содержит имя файла с которым он будет
-//      помещен в архив (необязательный параметр)
-//  SubFolders - добавлять данные из подпапок или нет.
+//  Р¤СѓРЅРєС†РёСЏ РґРѕР±Р°РІР»СЏРµС‚ РЅР°Р±РѕСЂ С„Р°Р№Р»РѕРІ Рё РїР°РїРѕРє РІ СЃРїРёСЃРѕРє.
+//  Р’ РєР°С‡РµСЃС‚РІРµ СЂРµР·СѓР»СЊС‚Р°С‚Р° РІРѕР·РІСЂР°С‰Р°РµС‚ РєРѕР»РёС‡РµСЃС‚РІРѕ СѓСЃРїРµС€РЅРѕ РґРѕР±Р°РІР»РµРЅРЅС‹С… СЌР»РµРјРµРЅС‚РѕРІ.
+//  РџР°СЂР°РјРµС‚СЂС‹:
+//  Value - РїСѓС‚Рё Рє С„Р°Р№Р»Р°Рј Рё РїР°РїРєР°Рј РёР· РєРѕС‚РѕСЂС‹С… Р±СѓРґСѓС‚ РґРѕР±Р°РІР»СЏС‚СЊСЃСЏ РґР°РЅРЅС‹Рµ
+//    Value.ValueFromIndex[I] РґР»СЏ РїР°РїРєРё СЃРѕРґРµСЂР¶РёС‚ РїРѕР»РЅС‹Р№ РїСѓС‚СЊ Рє РїР°РїРєРµ
+//    Value.Names[I] РґР»СЏ РїР°РїРєРё СЃРѕРґРµСЂР¶РёС‚ РїСѓС‚СЊ РѕС‚РЅРѕСЃРёС‚РµР»СЊРЅРѕ РєРѕСЂРЅСЏ Р°СЂС…РёРІР°
+//      (РЅРµРѕР±СЏР·Р°С‚РµР»СЊРЅС‹Р№ РїР°СЂР°РјРµС‚СЂ)
+//    Value.ValueFromIndex[I] РґР»СЏ С„Р°Р№Р»Р° СЃРѕРґРµСЂР¶РёС‚ РїРѕР»РЅС‹Р№ РїСѓС‚СЊ Рє С„Р°Р№Р»Сѓ
+//    Value.Names[I] РґР»СЏ С„Р°Р№Р»Р° СЃРѕРґРµСЂР¶РёС‚ РёРјСЏ С„Р°Р№Р»Р° СЃ РєРѕС‚РѕСЂС‹Рј РѕРЅ Р±СѓРґРµС‚
+//      РїРѕРјРµС‰РµРЅ РІ Р°СЂС…РёРІ (РЅРµРѕР±СЏР·Р°С‚РµР»СЊРЅС‹Р№ РїР°СЂР°РјРµС‚СЂ)
+//  SubFolders - РґРѕР±Р°РІР»СЏС‚СЊ РґР°РЅРЅС‹Рµ РёР· РїРѕРґРїР°РїРѕРє РёР»Рё РЅРµС‚.
 // =============================================================================
 function TFWZipWriter.AddFilesAndFolders(Value: TStringList;
   SubFolders: Boolean): Integer;
@@ -467,11 +480,11 @@ begin
 end;
 
 //
-//  Функция добавляет файлы из указаной папки
-//  В качестве результата возвращает количество успешно добавленных элементов.
-//  Параметры:
-//  Path - путь к папке из которой будут добавляться данные
-//  SubFolders - добавлять данные из подпапок или нет.
+//  Р¤СѓРЅРєС†РёСЏ РґРѕР±Р°РІР»СЏРµС‚ С„Р°Р№Р»С‹ РёР· СѓРєР°Р·Р°РЅРѕР№ РїР°РїРєРё
+//  Р’ РєР°С‡РµСЃС‚РІРµ СЂРµР·СѓР»СЊС‚Р°С‚Р° РІРѕР·РІСЂР°С‰Р°РµС‚ РєРѕР»РёС‡РµСЃС‚РІРѕ СѓСЃРїРµС€РЅРѕ РґРѕР±Р°РІР»РµРЅРЅС‹С… СЌР»РµРјРµРЅС‚РѕРІ.
+//  РџР°СЂР°РјРµС‚СЂС‹:
+//  Path - РїСѓС‚СЊ Рє РїР°РїРєРµ РёР· РєРѕС‚РѕСЂРѕР№ Р±СѓРґСѓС‚ РґРѕР±Р°РІР»СЏС‚СЊСЃСЏ РґР°РЅРЅС‹Рµ
+//  SubFolders - РґРѕР±Р°РІР»СЏС‚СЊ РґР°РЅРЅС‹Рµ РёР· РїРѕРґРїР°РїРѕРє РёР»Рё РЅРµС‚.
 // =============================================================================
 function TFWZipWriter.AddFolder(const Path: string; SubFolders: Boolean): Integer;
 begin
@@ -481,14 +494,14 @@ begin
 end;
 
 //
-//  Расширенный вариант AddFolder
-//  Функция добавляет файлы из указаной папки
-//  В качестве результата возвращает количество успешно добавленных элементов.
-//  Параметры:
-//  RelativePath - путь к элементу в архиве относительно корня.
-//  Path - путь к папке из которой будут добавляться данные
-//  Mask - маска отбора файлов
-//  SubFolders - добавлять данные из подпапок или нет.
+//  Р Р°СЃС€РёСЂРµРЅРЅС‹Р№ РІР°СЂРёР°РЅС‚ AddFolder
+//  Р¤СѓРЅРєС†РёСЏ РґРѕР±Р°РІР»СЏРµС‚ С„Р°Р№Р»С‹ РёР· СѓРєР°Р·Р°РЅРѕР№ РїР°РїРєРё
+//  Р’ РєР°С‡РµСЃС‚РІРµ СЂРµР·СѓР»СЊС‚Р°С‚Р° РІРѕР·РІСЂР°С‰Р°РµС‚ РєРѕР»РёС‡РµСЃС‚РІРѕ СѓСЃРїРµС€РЅРѕ РґРѕР±Р°РІР»РµРЅРЅС‹С… СЌР»РµРјРµРЅС‚РѕРІ.
+//  РџР°СЂР°РјРµС‚СЂС‹:
+//  RelativePath - РїСѓС‚СЊ Рє СЌР»РµРјРµРЅС‚Сѓ РІ Р°СЂС…РёРІРµ РѕС‚РЅРѕСЃРёС‚РµР»СЊРЅРѕ РєРѕСЂРЅСЏ.
+//  Path - РїСѓС‚СЊ Рє РїР°РїРєРµ РёР· РєРѕС‚РѕСЂРѕР№ Р±СѓРґСѓС‚ РґРѕР±Р°РІР»СЏС‚СЊСЃСЏ РґР°РЅРЅС‹Рµ
+//  Mask - РјР°СЃРєР° РѕС‚Р±РѕСЂР° С„Р°Р№Р»РѕРІ
+//  SubFolders - РґРѕР±Р°РІР»СЏС‚СЊ РґР°РЅРЅС‹Рµ РёР· РїРѕРґРїР°РїРѕРє РёР»Рё РЅРµС‚.
 // =============================================================================
 function TFWZipWriter.AddFolder(const RelativePath, Path, Mask: string;
   SubFolders: Boolean): Integer;
@@ -498,9 +511,9 @@ var
   Attributes: TWin32FileAttributeData;
 begin
   Result := 0;
-  // обычное рекурсивное сканирование папки
-  // единственный нюанс - параметр RelativePath
-  // в котором передается путь к файлу или папке относительно корневой папки
+  // РѕР±С‹С‡РЅРѕРµ СЂРµРєСѓСЂСЃРёРІРЅРѕРµ СЃРєР°РЅРёСЂРѕРІР°РЅРёРµ РїР°РїРєРё
+  // РµРґРёРЅСЃС‚РІРµРЅРЅС‹Р№ РЅСЋР°РЅСЃ - РїР°СЂР°РјРµС‚СЂ RelativePath
+  // РІ РєРѕС‚РѕСЂРѕРј РїРµСЂРµРґР°РµС‚СЃСЏ РїСѓС‚СЊ Рє С„Р°Р№Р»Сѓ РёР»Рё РїР°РїРєРµ РѕС‚РЅРѕСЃРёС‚РµР»СЊРЅРѕ РєРѕСЂРЅРµРІРѕР№ РїР°РїРєРё
   if RelativePath = '' then
     TrailingRelativePath := ''
   else
@@ -527,7 +540,7 @@ begin
       if SR.Name = '.' then
       begin
         // Rouse_ 14.02.2013
-        // Если включено добавление пустых папок, то добавляем сначала требуемую запись
+        // Р•СЃР»Рё РІРєР»СЋС‡РµРЅРѕ РґРѕР±Р°РІР»РµРЅРёРµ РїСѓСЃС‚С‹С… РїР°РїРѕРє, С‚Рѕ РґРѕР±Р°РІР»СЏРµРј СЃРЅР°С‡Р°Р»Р° С‚СЂРµР±СѓРµРјСѓСЋ Р·Р°РїРёСЃСЊ
         if AlwaysAddEmptyFolder then
           AddEmptyFolder(TrailingRelativePath, Attributes);
         Continue;
@@ -554,42 +567,20 @@ begin
 end;
 
 //
-//  Функция добавляет в архив данные из переданного стрима.
-//  В качестве результата возвращает индекс элемента в списке
+//  Р¤СѓРЅРєС†РёСЏ РґРѕР±Р°РІР»СЏРµС‚ РІ Р°СЂС…РёРІ РґР°РЅРЅС‹Рµ РёР· РїРµСЂРµРґР°РЅРЅРѕРіРѕ СЃС‚СЂРёРјР°.
+//  Р’ РєР°С‡РµСЃС‚РІРµ СЂРµР·СѓР»СЊС‚Р°С‚Р° РІРѕР·РІСЂР°С‰Р°РµС‚ РёРЅРґРµРєСЃ СЌР»РµРјРµРЅС‚Р° РІ СЃРїРёСЃРєРµ
 // =============================================================================
 function TFWZipWriter.AddStream(const FileName: string;
-  Value: TStream): Integer;
+  Value: TStream; AOwnerShip: TStreamOwnership): Integer;
 var
-  Size: Int64;
-  InitFileName: string;
   Item: TFWZipWriterItem;
-  Attributes: TWin32FileAttributeData;
 begin
-  // проверка на дубли
-  InitFileName := CheckFileNameSlashes(FileName);
-
-  Size := Value.Size;
-  ZeroMemory(@Attributes, SizeOf(TWin32FileAttributeData));
-  Attributes.ftCreationTime := GetCurrentFileTime;
-  Attributes.ftLastAccessTime := Attributes.ftCreationTime;
-  Attributes.ftLastWriteTime := Attributes.ftCreationTime;
-  Attributes.nFileSizeLow := Size and MAXDWORD;
-  Attributes.nFileSizeHigh := Size shr 32;
-  Item := GetItemClass.Create(Self, '', Attributes, InitFileName);
-  Item.CompressionLevel := FDefaultCompressionLevel;
-  Item.Password := FDefaultPassword;
-
-  // в случае наличия дескриптора мы можем
-  // производить расчет контрольной суммы на лету, т.к. при включенном
-  // режиме шифрования она не участвует в генерации заголовка инициализации
-  Item.NeedDescriptor := FDefaultDescryptorState;
-
-  Item.ChangeDataStream(Value);
+  Item := CreateItemFromStream(FileName, Value, AOwnerShip);
   Result := AddNewItem(Item);
 end;
 
 //
-//  Вспомогательная функция для доступа к листу из наследников
+//  Р’СЃРїРѕРјРѕРіР°С‚РµР»СЊРЅР°СЏ С„СѓРЅРєС†РёСЏ РґР»СЏ РґРѕСЃС‚СѓРїР° Рє Р»РёСЃС‚Сѓ РёР· РЅР°СЃР»РµРґРЅРёРєРѕРІ
 // =============================================================================
 function TFWZipWriter.AddNewItem(Value: TFWZipWriterItem): Integer;
 begin
@@ -597,7 +588,7 @@ begin
 end;
 
 //
-//  Процедура формирует архив и сохраняет его в указанный стрим.
+//  РџСЂРѕС†РµРґСѓСЂР° С„РѕСЂРјРёСЂСѓРµС‚ Р°СЂС…РёРІ Рё СЃРѕС…СЂР°РЅСЏРµС‚ РµРіРѕ РІ СѓРєР°Р·Р°РЅРЅС‹Р№ СЃС‚СЂРёРј.
 // =============================================================================
 function TFWZipWriter.BuildZip(Stream: TStream): TBuildZipResult;
 var
@@ -615,20 +606,20 @@ begin
     Result := brFailed;
     if Count > 0 then
     begin
-      // Выставляем размеры CentralDirectory
+      // Р’С‹СЃС‚Р°РІР»СЏРµРј СЂР°Р·РјРµСЂС‹ CentralDirectory
       SetLength(FCD, Count);
 
-      // Рассчитываем общий размер элементов для отображения прогресса
+      // Р Р°СЃСЃС‡РёС‚С‹РІР°РµРј РѕР±С‰РёР№ СЂР°Р·РјРµСЂ СЌР»РµРјРµРЅС‚РѕРІ РґР»СЏ РѕС‚РѕР±СЂР°Р¶РµРЅРёСЏ РїСЂРѕРіСЂРµСЃСЃР°
       FTotalSizeCount := 0;
       FTotalProcessedCount := 0;
       for I := 0 to Count - 1 do
         Inc(FTotalSizeCount, Item[I].Size);
 
-      // Сжимаем все файлы архива и помещаем их в финальный стрим
-      // при этом резервируется место под LocalHeader и DataDescryptor
-      // т.к. размер запакованного файла будет известен только после этапа
-      // архивации и не понятно куда помещать значение:
-      // в LocalHeader, DataDescryptor или в ZIP64 блок данных в CentralDirectory
+      // РЎР¶РёРјР°РµРј РІСЃРµ С„Р°Р№Р»С‹ Р°СЂС…РёРІР° Рё РїРѕРјРµС‰Р°РµРј РёС… РІ С„РёРЅР°Р»СЊРЅС‹Р№ СЃС‚СЂРёРј
+      // РїСЂРё СЌС‚РѕРј СЂРµР·РµСЂРІРёСЂСѓРµС‚СЃСЏ РјРµСЃС‚Рѕ РїРѕРґ LocalHeader Рё DataDescryptor
+      // С‚.Рє. СЂР°Р·РјРµСЂ Р·Р°РїР°РєРѕРІР°РЅРЅРѕРіРѕ С„Р°Р№Р»Р° Р±СѓРґРµС‚ РёР·РІРµСЃС‚РµРЅ С‚РѕР»СЊРєРѕ РїРѕСЃР»Рµ СЌС‚Р°РїР°
+      // Р°СЂС…РёРІР°С†РёРё Рё РЅРµ РїРѕРЅСЏС‚РЅРѕ РєСѓРґР° РїРѕРјРµС‰Р°С‚СЊ Р·РЅР°С‡РµРЅРёРµ:
+      // РІ LocalHeader, DataDescryptor РёР»Рё РІ ZIP64 Р±Р»РѕРє РґР°РЅРЅС‹С… РІ CentralDirectory
       FExceptionCount := 0;
       BeforeExceptPosition := 0;
       TotalCount := 0;
@@ -645,8 +636,8 @@ begin
           Inc(TotalCount);
           Inc(I);
 
-          // в случае если это повторная попытка сжатия и был применен
-          // аттрибут acUseNewFilePathAndDel, то необходимо удалить файл.
+          // РІ СЃР»СѓС‡Р°Рµ РµСЃР»Рё СЌС‚Рѕ РїРѕРІС‚РѕСЂРЅР°СЏ РїРѕРїС‹С‚РєР° СЃР¶Р°С‚РёСЏ Рё Р±С‹Р» РїСЂРёРјРµРЅРµРЅ
+          // Р°С‚С‚СЂРёР±СѓС‚ acUseNewFilePathAndDel, С‚Рѕ РЅРµРѕР±С…РѕРґРёРјРѕ СѓРґР°Р»РёС‚СЊ С„Р°Р№Р».
           if DeletePackedFile then
           begin
             DeletePackedFile := False;
@@ -655,9 +646,9 @@ begin
             DeleteFile(NewFilePath);
           end;
 
-          // если путь к файлу был временно изменен из-за применения аттрибутов
-          // acUseNewFilePath или acUseNewFilePathAndDel,
-          // необходимо восстановить старое значение
+          // РµСЃР»Рё РїСѓС‚СЊ Рє С„Р°Р№Р»Сѓ Р±С‹Р» РІСЂРµРјРµРЅРЅРѕ РёР·РјРµРЅРµРЅ РёР·-Р·Р° РїСЂРёРјРµРЅРµРЅРёСЏ Р°С‚С‚СЂРёР±СѓС‚РѕРІ
+          // acUseNewFilePath РёР»Рё acUseNewFilePathAndDel,
+          // РЅРµРѕР±С…РѕРґРёРјРѕ РІРѕСЃСЃС‚Р°РЅРѕРІРёС‚СЊ СЃС‚Р°СЂРѕРµ Р·РЅР°С‡РµРЅРёРµ
           if OldPathName <> '' then
           begin
             FBuildState := False;
@@ -671,7 +662,7 @@ begin
 
         except
 
-          // Если пользователь отменил создание архива, выходим из цикла
+          // Р•СЃР»Рё РїРѕР»СЊР·РѕРІР°С‚РµР»СЊ РѕС‚РјРµРЅРёР» СЃРѕР·РґР°РЅРёРµ Р°СЂС…РёРІР°, РІС‹С…РѕРґРёРј РёР· С†РёРєР»Р°
           on E: EAbort do
           begin
             Result := brAborted;
@@ -680,15 +671,15 @@ begin
 
           on E: Exception do
           begin
-            // возвращаем позицию в стриме на старое место
+            // РІРѕР·РІСЂР°С‰Р°РµРј РїРѕР·РёС†РёСЋ РІ СЃС‚СЂРёРјРµ РЅР° СЃС‚Р°СЂРѕРµ РјРµСЃС‚Рѕ
             Stream.Position := BeforeExceptPosition;
 
-            // если элемент использовал кастомные данные,
-            // то снимаем этот вариант заполнения и пусть извне решают
-            // что делать в этом случае
+            // РµСЃР»Рё СЌР»РµРјРµРЅС‚ РёСЃРїРѕР»СЊР·РѕРІР°Р» РєР°СЃС‚РѕРјРЅС‹Рµ РґР°РЅРЅС‹Рµ,
+            // С‚Рѕ СЃРЅРёРјР°РµРј СЌС‚РѕС‚ РІР°СЂРёР°РЅС‚ Р·Р°РїРѕР»РЅРµРЅРёСЏ Рё РїСѓСЃС‚СЊ РёР·РІРЅРµ СЂРµС€Р°СЋС‚
+            // С‡С‚Рѕ РґРµР»Р°С‚СЊ РІ СЌС‚РѕРј СЃР»СѓС‡Р°Рµ
             Item[I].UseExternalData := False;
 
-            // запрашиваем пользователя, что делать с исключением?         
+            // Р·Р°РїСЂР°С€РёРІР°РµРј РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ, С‡С‚Рѕ РґРµР»Р°С‚СЊ СЃ РёСЃРєР»СЋС‡РµРЅРёРµРј?         
             ExceptAction := eaSkip;
             NewFilePath := ''; 
             
@@ -699,38 +690,38 @@ begin
                 FBuidException(Self, E, I, ExceptAction, 
                   NewFilePath, NewFileData);
                   
-              // обрабатываем выбор польтзователя
+              // РѕР±СЂР°Р±Р°С‚С‹РІР°РµРј РІС‹Р±РѕСЂ РїРѕР»СЊС‚Р·РѕРІР°С‚РµР»СЏ
               case ExceptAction of
 
-                // повторить попытку
+                // РїРѕРІС‚РѕСЂРёС‚СЊ РїРѕРїС‹С‚РєСѓ
                 eaRetry:
                   Continue;
 
-                // пропустить элемент
+                // РїСЂРѕРїСѓСЃС‚РёС‚СЊ СЌР»РµРјРµРЅС‚
                 eaSkip:
                 begin
-                  // то помечаем элемент центральной директории.
-                  // Он не будет обрабатываться при сохранениии.
+                  // С‚Рѕ РїРѕРјРµС‡Р°РµРј СЌР»РµРјРµРЅС‚ С†РµРЅС‚СЂР°Р»СЊРЅРѕР№ РґРёСЂРµРєС‚РѕСЂРёРё.
+                  // РћРЅ РЅРµ Р±СѓРґРµС‚ РѕР±СЂР°Р±Р°С‚С‹РІР°С‚СЊСЃСЏ РїСЂРё СЃРѕС…СЂР°РЅРµРЅРёРёРё.
                   FCD[I].ExceptOnWrite := True;
-                  // Также увеличим число исключений, для правильной записи
-                  // количества элементов архива в корневой директории
+                  // РўР°РєР¶Рµ СѓРІРµР»РёС‡РёРј С‡РёСЃР»Рѕ РёСЃРєР»СЋС‡РµРЅРёР№, РґР»СЏ РїСЂР°РІРёР»СЊРЅРѕР№ Р·Р°РїРёСЃРё
+                  // РєРѕР»РёС‡РµСЃС‚РІР° СЌР»РµРјРµРЅС‚РѕРІ Р°СЂС…РёРІР° РІ РєРѕСЂРЅРµРІРѕР№ РґРёСЂРµРєС‚РѕСЂРёРё
                   Inc(FExceptionCount); 
                   Inc(I);
                   Result := brPartialBuild;                                
                 end;
 
-                // остановить создание архива
+                // РѕСЃС‚Р°РЅРѕРІРёС‚СЊ СЃРѕР·РґР°РЅРёРµ Р°СЂС…РёРІР°
                 eaAbort:
                 begin
                   Result := brAborted;
                   Exit;                  
                 end;
 
-                // использовать данные из другого файла
+                // РёСЃРїРѕР»СЊР·РѕРІР°С‚СЊ РґР°РЅРЅС‹Рµ РёР· РґСЂСѓРіРѕРіРѕ С„Р°Р№Р»Р°
                 eaUseNewFilePath, eaUseNewFilePathAndDel:
                 begin
-                  // запоминаем текущий путь к файлу,
-                  // для последующего восстановления
+                  // Р·Р°РїРѕРјРёРЅР°РµРј С‚РµРєСѓС‰РёР№ РїСѓС‚СЊ Рє С„Р°Р№Р»Сѓ,
+                  // РґР»СЏ РїРѕСЃР»РµРґСѓСЋС‰РµРіРѕ РІРѕСЃСЃС‚Р°РЅРѕРІР»РµРЅРёСЏ
                   OldPathName := Item[I].FilePath;
                   FBuildState := False;
                   try
@@ -738,13 +729,13 @@ begin
                   finally
                     FBuildState := True;
                   end;
-                  // выставляем флаг, что при завершени сжатия,
-                  // файл слудет удалить
+                  // РІС‹СЃС‚Р°РІР»СЏРµРј С„Р»Р°Рі, С‡С‚Рѕ РїСЂРё Р·Р°РІРµСЂС€РµРЅРё СЃР¶Р°С‚РёСЏ,
+                  // С„Р°Р№Р» СЃР»СѓРґРµС‚ СѓРґР°Р»РёС‚СЊ
                   DeletePackedFile := ExceptAction = eaUseNewFilePathAndDel;
                   Continue;
                 end;
                 
-                // использовать данные из стрима
+                // РёСЃРїРѕР»СЊР·РѕРІР°С‚СЊ РґР°РЅРЅС‹Рµ РёР· СЃС‚СЂРёРјР°
                 eaUseNewFileData:
                 begin
                   FBuildState := False;
@@ -765,8 +756,8 @@ begin
         end;
       end;
 
-      // Если в архив не добавлен ни один из элементов,
-      // то возвращаем размер стрима на прежнее значение и выходим с ошибкой
+      // Р•СЃР»Рё РІ Р°СЂС…РёРІ РЅРµ РґРѕР±Р°РІР»РµРЅ РЅРё РѕРґРёРЅ РёР· СЌР»РµРјРµРЅС‚РѕРІ,
+      // С‚Рѕ РІРѕР·РІСЂР°С‰Р°РµРј СЂР°Р·РјРµСЂ СЃС‚СЂРёРјР° РЅР° РїСЂРµР¶РЅРµРµ Р·РЅР°С‡РµРЅРёРµ Рё РІС‹С…РѕРґРёРј СЃ РѕС€РёР±РєРѕР№
       if TotalCount = 0 then
       begin
         Stream.Size := Stream.Position;
@@ -774,16 +765,16 @@ begin
         Exit;
       end;
 
-      // Теперь размеры сжатых файлов известны,
-      // обновляем LocalHeader и DataDescryptor
+      // РўРµРїРµСЂСЊ СЂР°Р·РјРµСЂС‹ СЃР¶Р°С‚С‹С… С„Р°Р№Р»РѕРІ РёР·РІРµСЃС‚РЅС‹,
+      // РѕР±РЅРѕРІР»СЏРµРј LocalHeader Рё DataDescryptor
       UpdateLocalHeaders(Stream);
 
-      // Записываем CentralDirectory
+      // Р—Р°РїРёСЃС‹РІР°РµРј CentralDirectory
       SaveCentralDirectory(Stream);
 
-      // Пишем структуру EndOfCentralDirectory при этом при необходимости
-      // формируются и пишутся также структуры Zip64EOFCentralDirectoryRecord
-      // и Zip64EOFCentralDirectoryLocator
+      // РџРёС€РµРј СЃС‚СЂСѓРєС‚СѓСЂСѓ EndOfCentralDirectory РїСЂРё СЌС‚РѕРј РїСЂРё РЅРµРѕР±С…РѕРґРёРјРѕСЃС‚Рё
+      // С„РѕСЂРјРёСЂСѓСЋС‚СЃСЏ Рё РїРёС€СѓС‚СЃСЏ С‚Р°РєР¶Рµ СЃС‚СЂСѓРєС‚СѓСЂС‹ Zip64EOFCentralDirectoryRecord
+      // Рё Zip64EOFCentralDirectoryLocator
       SaveEndOfCentralDirectory(Stream);
     end;
   finally
@@ -792,7 +783,7 @@ begin
 end;
 
 //
-//  Процедура формирует архив и сохраняет его в указанный файл.
+//  РџСЂРѕС†РµРґСѓСЂР° С„РѕСЂРјРёСЂСѓРµС‚ Р°СЂС…РёРІ Рё СЃРѕС…СЂР°РЅСЏРµС‚ РµРіРѕ РІ СѓРєР°Р·Р°РЅРЅС‹Р№ С„Р°Р№Р».
 // =============================================================================
 function TFWZipWriter.BuildZip(const ZipFilePath: string): TBuildZipResult;
 var
@@ -812,7 +803,7 @@ begin
 end;
 
 //
-//  Функция проводит проверку правильности наименования файла в архиве
+//  Р¤СѓРЅРєС†РёСЏ РїСЂРѕРІРѕРґРёС‚ РїСЂРѕРІРµСЂРєСѓ РїСЂР°РІРёР»СЊРЅРѕСЃС‚Рё РЅР°РёРјРµРЅРѕРІР°РЅРёСЏ С„Р°Р№Р»Р° РІ Р°СЂС…РёРІРµ
 // =============================================================================
 function TFWZipWriter.CheckFileNameSlashes(const Value: string): string;
 begin
@@ -829,7 +820,7 @@ begin
 end;
 
 //
-//  Очищаем все добавленные в архив элементы
+//  РћС‡РёС‰Р°РµРј РІСЃРµ РґРѕР±Р°РІР»РµРЅРЅС‹Рµ РІ Р°СЂС…РёРІ СЌР»РµРјРµРЅС‚С‹
 // =============================================================================
 procedure TFWZipWriter.Clear;
 begin
@@ -837,7 +828,7 @@ begin
 end;
 
 //
-//  Процедура сжимет данные
+//  РџСЂРѕС†РµРґСѓСЂР° СЃР¶РёРјРµС‚ РґР°РЅРЅС‹Рµ
 // =============================================================================
 procedure TFWZipWriter.CompressItem(CurrentItem: TFWZipWriterItem;
   Index: Integer; StreamSizeBeforeCompress: Int64; Stream: TStream);
@@ -874,7 +865,7 @@ procedure TFWZipWriter.CompressItem(CurrentItem: TFWZipWriterItem;
         end;
         if TotalSize <> Src.Size then
           raise EZipWriterWrite.CreateFmt(
-            'Ошибка записи данных элемента №%d "%s".', [Index, Item[Index].FileName]);
+            'РћС€РёР±РєР° Р·Р°РїРёСЃРё РґР°РЅРЅС‹С… СЌР»РµРјРµРЅС‚Р° в„–%d "%s".', [Index, Item[Index].FileName]);
       except
         DoProgress(psException);
         raise;
@@ -906,12 +897,12 @@ begin
           FCD[Index].Header.Crc32,
           FCD[Index].Header.LastModFileTimeTime +
           FCD[Index].Header.LastModFileTimeDate shl 16);
-        // резервируем место под EncryptedHeaderStream
+        // СЂРµР·РµСЂРІРёСЂСѓРµРј РјРµСЃС‚Рѕ РїРѕРґ EncryptedHeaderStream
         Stream.Size := StreamSizeBeforeCompress + EncryptedHeaderSize;
         Stream.Position := Stream.Size;
       end;
 
-      // пишем сам сжатый файл
+      // РїРёС€РµРј СЃР°Рј СЃР¶Р°С‚С‹Р№ С„Р°Р№Р»
       case FCD[Index].Header.CompressionMethod of
         Z_NO_COMPRESSION:
         begin
@@ -922,7 +913,7 @@ begin
           begin
             try
               F := TFileStream.Create(CurrentItem.FilePath,
-                fmOpenRead or fmShareDenyWrite);
+                fmOpenRead or fmShareDenyNone);
               try
                 FCD[Index].Header.Crc32 :=
                   CopyWithProgress(F, Stream, Cryptor)
@@ -932,26 +923,26 @@ begin
             except
               on E: Exception do
                 raise EZipWriterWrite.CreateFmt(
-                  'Ошибка доступа к данным элемента №%d "%s".' +
+                  'РћС€РёР±РєР° РґРѕСЃС‚СѓРїР° Рє РґР°РЅРЅС‹Рј СЌР»РµРјРµРЅС‚Р° в„–%d "%s".' +
                   sLineBreak + E.ClassName + ': ' + E.Message,
                   [Index, CurrentItem.FileName]);
             end;
           end;
-          // Получаем размер сжатых данных
-          // В случае если использовалось шифрование в размере срузу будет
-          // учтен 12-ти байтный заголовок инициализации ключа расшифровки
+          // РџРѕР»СѓС‡Р°РµРј СЂР°Р·РјРµСЂ СЃР¶Р°С‚С‹С… РґР°РЅРЅС‹С…
+          // Р’ СЃР»СѓС‡Р°Рµ РµСЃР»Рё РёСЃРїРѕР»СЊР·РѕРІР°Р»РѕСЃСЊ С€РёС„СЂРѕРІР°РЅРёРµ РІ СЂР°Р·РјРµСЂРµ СЃСЂСѓР·Сѓ Р±СѓРґРµС‚
+          // СѓС‡С‚РµРЅ 12-С‚Рё Р±Р°Р№С‚РЅС‹Р№ Р·Р°РіРѕР»РѕРІРѕРє РёРЅРёС†РёР°Р»РёР·Р°С†РёРё РєР»СЋС‡Р° СЂР°СЃС€РёС„СЂРѕРІРєРё
           FCD[Index].CompressedSize := Stream.Size - StreamSizeBeforeCompress;
         end;
         Z_DEFLATED:
         begin
           {$IFDEF USE_AUTOGENERATED_ZLIB_HEADER}
-          // позицию сдвигаем на два байта влево,
-          // таким образом мы затрем ненужный нам заголовок ZLib
+          // РїРѕР·РёС†РёСЋ СЃРґРІРёРіР°РµРј РЅР° РґРІР° Р±Р°Р№С‚Р° РІР»РµРІРѕ,
+          // С‚Р°РєРёРј РѕР±СЂР°Р·РѕРј РјС‹ Р·Р°С‚СЂРµРј РЅРµРЅСѓР¶РЅС‹Р№ РЅР°Рј Р·Р°РіРѕР»РѕРІРѕРє ZLib
           Stream.Position := Stream.Position - 2;
           {$ENDIF}
           if CurrentItem.Data <> nil then
           begin
-            // сохраняем ссылку на стрим с данными для рассчета прогресса
+            // СЃРѕС…СЂР°РЅСЏРµРј СЃСЃС‹Р»РєСѓ РЅР° СЃС‚СЂРёРј СЃ РґР°РЅРЅС‹РјРё РґР»СЏ СЂР°СЃСЃС‡РµС‚Р° РїСЂРѕРіСЂРµСЃСЃР°
             FCompressedStream := CurrentItem.Data;
             ZipItemStream := TFWZipItemStream.Create(Stream, Cryptor, nil,
               0, CurrentItem.Size);
@@ -984,9 +975,9 @@ begin
           end
           else
           begin
-            // TFWZipItemStream выступает как посредник между результирующим
-            // стримом и TCompressionStream.
-            // Его задача зашифровать все проходящие через нешго данные
+            // TFWZipItemStream РІС‹СЃС‚СѓРїР°РµС‚ РєР°Рє РїРѕСЃСЂРµРґРЅРёРє РјРµР¶РґСѓ СЂРµР·СѓР»СЊС‚РёСЂСѓСЋС‰РёРј
+            // СЃС‚СЂРёРјРѕРј Рё TCompressionStream.
+            // Р•РіРѕ Р·Р°РґР°С‡Р° Р·Р°С€РёС„СЂРѕРІР°С‚СЊ РІСЃРµ РїСЂРѕС…РѕРґСЏС‰РёРµ С‡РµСЂРµР· РЅРµС€РіРѕ РґР°РЅРЅС‹Рµ
             ZipItemStream := TFWZipItemStream.Create(Stream, Cryptor, nil,
               0, CurrentItem.Size);
             try
@@ -996,18 +987,18 @@ begin
               try
                 try
                   F := TFileStream.Create(CurrentItem.FilePath,
-                    fmOpenRead or fmShareDenyWrite);
+                    fmOpenRead or fmShareDenyNone);
                   try
-                    // сохраняем ссылку на стрим с данными для рассчета прогресса
+                    // СЃРѕС…СЂР°РЅСЏРµРј СЃСЃС‹Р»РєСѓ РЅР° СЃС‚СЂРёРј СЃ РґР°РЅРЅС‹РјРё РґР»СЏ СЂР°СЃСЃС‡РµС‚Р° РїСЂРѕРіСЂРµСЃСЃР°
                     FCompressedStream := F;
                     F.Position := 0;
                     Compressor.OnProgress := CompressorOnProcess;
-                    // TFWZipCRC32Stream выступает как посредник между
-                    // нераспакованными данными и TCompressionStream,
-                    // в котором происходит сжатие данных.
-                    // Его задача отследить все переданные через него
-                    // блоки данных и рассчитать их контрольную сумму
-                    // до того как они будут сжаты
+                    // TFWZipCRC32Stream РІС‹СЃС‚СѓРїР°РµС‚ РєР°Рє РїРѕСЃСЂРµРґРЅРёРє РјРµР¶РґСѓ
+                    // РЅРµСЂР°СЃРїР°РєРѕРІР°РЅРЅС‹РјРё РґР°РЅРЅС‹РјРё Рё TCompressionStream,
+                    // РІ РєРѕС‚РѕСЂРѕРј РїСЂРѕРёСЃС…РѕРґРёС‚ СЃР¶Р°С‚РёРµ РґР°РЅРЅС‹С….
+                    // Р•РіРѕ Р·Р°РґР°С‡Р° РѕС‚СЃР»РµРґРёС‚СЊ РІСЃРµ РїРµСЂРµРґР°РЅРЅС‹Рµ С‡РµСЂРµР· РЅРµРіРѕ
+                    // Р±Р»РѕРєРё РґР°РЅРЅС‹С… Рё СЂР°СЃСЃС‡РёС‚Р°С‚СЊ РёС… РєРѕРЅС‚СЂРѕР»СЊРЅСѓСЋ СЃСѓРјРјСѓ
+                    // РґРѕ С‚РѕРіРѕ РєР°Рє РѕРЅРё Р±СѓРґСѓС‚ СЃР¶Р°С‚С‹
                     DoProgress(psInitialization);
                     try
                       CRC32Stream := TFWZipCRC32Stream.Create(F);
@@ -1028,7 +1019,7 @@ begin
                 except
                   on E: Exception do
                     raise EZipWriterWrite.CreateFmt(
-                      'Ошибка доступа к данным элемента №%d "%s".' +
+                      'РћС€РёР±РєР° РґРѕСЃС‚СѓРїР° Рє РґР°РЅРЅС‹Рј СЌР»РµРјРµРЅС‚Р° в„–%d "%s".' +
                       sLineBreak + E.ClassName + ': ' + E.Message,
                       [Index, CurrentItem.FileName]);
                 end;
@@ -1042,25 +1033,25 @@ begin
 
           {$IFDEF USE_AUTOGENERATED_ZLIB_HEADER}
           // Rouse_ 14.02.2013
-          // Не знаю почему, но опытным путем установлено,
-          // что размер запакованых данных должен быть меньше на 4 байта
-          // при использовании автогенерируемого заголовка.
-          // Этот момент учитывается в ICSharpCode.SharpZipLibrary
-          // Распаковка в любом случае происходит нормально
+          // РќРµ Р·РЅР°СЋ РїРѕС‡РµРјСѓ, РЅРѕ РѕРїС‹С‚РЅС‹Рј РїСѓС‚РµРј СѓСЃС‚Р°РЅРѕРІР»РµРЅРѕ,
+          // С‡С‚Рѕ СЂР°Р·РјРµСЂ Р·Р°РїР°РєРѕРІР°РЅС‹С… РґР°РЅРЅС‹С… РґРѕР»Р¶РµРЅ Р±С‹С‚СЊ РјРµРЅСЊС€Рµ РЅР° 4 Р±Р°Р№С‚Р°
+          // РїСЂРё РёСЃРїРѕР»СЊР·РѕРІР°РЅРёРё Р°РІС‚РѕРіРµРЅРµСЂРёСЂСѓРµРјРѕРіРѕ Р·Р°РіРѕР»РѕРІРєР°.
+          // Р­С‚РѕС‚ РјРѕРјРµРЅС‚ СѓС‡РёС‚С‹РІР°РµС‚СЃСЏ РІ ICSharpCode.SharpZipLibrary
+          // Р Р°СЃРїР°РєРѕРІРєР° РІ Р»СЋР±РѕРј СЃР»СѓС‡Р°Рµ РїСЂРѕРёСЃС…РѕРґРёС‚ РЅРѕСЂРјР°Р»СЊРЅРѕ
           if TrimPackedStreamSize then
             Stream.Size := Stream.Size - 4;
           {$ENDIF}
 
-          // Получаем размер сжатых данных
-          // В случае если использовалось шифрование в размере срузу будет
-          // учтен 12-ти байтный заголовок инициализации ключа расшифровки
+          // РџРѕР»СѓС‡Р°РµРј СЂР°Р·РјРµСЂ СЃР¶Р°С‚С‹С… РґР°РЅРЅС‹С…
+          // Р’ СЃР»СѓС‡Р°Рµ РµСЃР»Рё РёСЃРїРѕР»СЊР·РѕРІР°Р»РѕСЃСЊ С€РёС„СЂРѕРІР°РЅРёРµ РІ СЂР°Р·РјРµСЂРµ СЃСЂСѓР·Сѓ Р±СѓРґРµС‚
+          // СѓС‡С‚РµРЅ 12-С‚Рё Р±Р°Р№С‚РЅС‹Р№ Р·Р°РіРѕР»РѕРІРѕРє РёРЅРёС†РёР°Р»РёР·Р°С†РёРё РєР»СЋС‡Р° СЂР°СЃС€РёС„СЂРѕРІРєРё
           FCD[Index].CompressedSize := Stream.Size - StreamSizeBeforeCompress;
 
         end;
       end;
 
-      // если файл зашифрован,
-      // записываем заголовок инициализации ключа расшифровки
+      // РµСЃР»Рё С„Р°Р№Р» Р·Р°С€РёС„СЂРѕРІР°РЅ,
+      // Р·Р°РїРёСЃС‹РІР°РµРј Р·Р°РіРѕР»РѕРІРѕРє РёРЅРёС†РёР°Р»РёР·Р°С†РёРё РєР»СЋС‡Р° СЂР°СЃС€РёС„СЂРѕРІРєРё
       if EncryptedHeaderStream.Size > 0 then
       begin
         Stream.Position := StreamSizeBeforeCompress;
@@ -1076,7 +1067,7 @@ begin
 end;
 
 //
-//  Процедура вызывает событие OnProcess
+//  РџСЂРѕС†РµРґСѓСЂР° РІС‹Р·С‹РІР°РµС‚ СЃРѕР±С‹С‚РёРµ OnProcess
 // =============================================================================
 procedure TFWZipWriter.CompressorOnProcess(Sender: TObject);
 begin
@@ -1084,7 +1075,7 @@ begin
 end;
 
 //
-//  Функция возвращает количество добавленных элементов архива
+//  Р¤СѓРЅРєС†РёСЏ РІРѕР·РІСЂР°С‰Р°РµС‚ РєРѕР»РёС‡РµСЃС‚РІРѕ РґРѕР±Р°РІР»РµРЅРЅС‹С… СЌР»РµРјРµРЅС‚РѕРІ Р°СЂС…РёРІР°
 // =============================================================================
 function TFWZipWriter.Count: Integer;
 begin
@@ -1092,7 +1083,7 @@ begin
 end;
 
 //
-//  Стандартный конструктор класса
+//  РЎС‚Р°РЅРґР°СЂС‚РЅС‹Р№ РєРѕРЅСЃС‚СЂСѓРєС‚РѕСЂ РєР»Р°СЃСЃР°
 // =============================================================================
 constructor TFWZipWriter.Create;
 begin
@@ -1100,9 +1091,9 @@ begin
 end;
 
 //
-//  Расширенный конструктор класса,
-//  в котором можно указать степень сжатия,
-//  используемую для всех элементов по умолчанию.
+//  Р Р°СЃС€РёСЂРµРЅРЅС‹Р№ РєРѕРЅСЃС‚СЂСѓРєС‚РѕСЂ РєР»Р°СЃСЃР°,
+//  РІ РєРѕС‚РѕСЂРѕРј РјРѕР¶РЅРѕ СѓРєР°Р·Р°С‚СЊ СЃС‚РµРїРµРЅСЊ СЃР¶Р°С‚РёСЏ,
+//  РёСЃРїРѕР»СЊР·СѓРµРјСѓСЋ РґР»СЏ РІСЃРµС… СЌР»РµРјРµРЅС‚РѕРІ РїРѕ СѓРјРѕР»С‡Р°РЅРёСЋ.
 // =============================================================================
 constructor TFWZipWriter.Create(CompressionLevel: TCompressionLevel);
 begin
@@ -1110,8 +1101,8 @@ begin
 end;
 
 //
-//  Расширенный конструктор класса,
-//  в котором можно изменить настройки элементов будующего архива по умолчнию.
+//  Р Р°СЃС€РёСЂРµРЅРЅС‹Р№ РєРѕРЅСЃС‚СЂСѓРєС‚РѕСЂ РєР»Р°СЃСЃР°,
+//  РІ РєРѕС‚РѕСЂРѕРј РјРѕР¶РЅРѕ РёР·РјРµРЅРёС‚СЊ РЅР°СЃС‚СЂРѕР№РєРё СЌР»РµРјРµРЅС‚РѕРІ Р±СѓРґСѓСЋС‰РµРіРѕ Р°СЂС…РёРІР° РїРѕ СѓРјРѕР»С‡РЅРёСЋ.
 // =============================================================================
 constructor TFWZipWriter.Create(UseDescryptors: Boolean;
   CompressionLevel: TCompressionLevel; const DefaultPassword: string);
@@ -1126,7 +1117,39 @@ begin
 end;
 
 //
-//  Процедура удаляет ненужный элемент архива
+//  Р¤СѓРЅРєС†РёСЏ СЃРѕР·РґР°РµС‚ РЅРѕ РЅРµ РґРѕР±Р°РІР»СЏРµС‚ РІ РјР°СЃРёРІ Р·Р°РїРёСЃРµР№ РЅРѕРІС‹Р№ СЌР»РµРјРµРЅС‚
+// =============================================================================
+function TFWZipWriter.CreateItemFromStream(const FileName: string;
+  Value: TStream; AOwnerShip: TStreamOwnership): TFWZipWriterItem;
+var
+  Size: Int64;
+  InitFileName: string;
+  Attributes: TWin32FileAttributeData;
+begin
+  // РїСЂРѕРІРµСЂРєР° РЅР° РґСѓР±Р»Рё
+  InitFileName := CheckFileNameSlashes(FileName);
+
+  Size := Value.Size;
+  ZeroMemory(@Attributes, SizeOf(TWin32FileAttributeData));
+  Attributes.ftCreationTime := GetCurrentFileTime;
+  Attributes.ftLastAccessTime := Attributes.ftCreationTime;
+  Attributes.ftLastWriteTime := Attributes.ftCreationTime;
+  Attributes.nFileSizeLow := Size and MAXDWORD;
+  Attributes.nFileSizeHigh := Size shr 32;
+  Result := GetItemClass.Create(Self, '', Attributes, InitFileName);
+  Result.CompressionLevel := FDefaultCompressionLevel;
+  Result.Password := FDefaultPassword;
+
+  // РІ СЃР»СѓС‡Р°Рµ РЅР°Р»РёС‡РёСЏ РґРµСЃРєСЂРёРїС‚РѕСЂР° РјС‹ РјРѕР¶РµРј
+  // РїСЂРѕРёР·РІРѕРґРёС‚СЊ СЂР°СЃС‡РµС‚ РєРѕРЅС‚СЂРѕР»СЊРЅРѕР№ СЃСѓРјРјС‹ РЅР° Р»РµС‚Сѓ, С‚.Рє. РїСЂРё РІРєР»СЋС‡РµРЅРЅРѕРј
+  // СЂРµР¶РёРјРµ С€РёС„СЂРѕРІР°РЅРёСЏ РѕРЅР° РЅРµ СѓС‡Р°СЃС‚РІСѓРµС‚ РІ РіРµРЅРµСЂР°С†РёРё Р·Р°РіРѕР»РѕРІРєР° РёРЅРёС†РёР°Р»РёР·Р°С†РёРё
+  Result.NeedDescriptor := FDefaultDescryptorState;
+
+  Result.ChangeDataStream(Value, AOwnerShip);
+end;
+
+//
+//  РџСЂРѕС†РµРґСѓСЂР° СѓРґР°Р»СЏРµС‚ РЅРµРЅСѓР¶РЅС‹Р№ СЌР»РµРјРµРЅС‚ Р°СЂС…РёРІР°
 // =============================================================================
 procedure TFWZipWriter.DeleteItem(Index: Integer);
 begin
@@ -1134,7 +1157,7 @@ begin
 end;
 
 //
-//  Стандартный деструктор класса
+//  РЎС‚Р°РЅРґР°СЂС‚РЅС‹Р№ РґРµСЃС‚СЂСѓРєС‚РѕСЂ РєР»Р°СЃСЃР°
 // =============================================================================
 destructor TFWZipWriter.Destroy;
 begin
@@ -1143,7 +1166,7 @@ begin
 end;
 
 //
-//  Вызов внешнего события о прогрессе сжатия
+//  Р’С‹Р·РѕРІ РІРЅРµС€РЅРµРіРѕ СЃРѕР±С‹С‚РёСЏ Рѕ РїСЂРѕРіСЂРµСЃСЃРµ СЃР¶Р°С‚РёСЏ
 // =============================================================================
 procedure TFWZipWriter.DoProgress(ProgressState: TProgressState);
 var
@@ -1179,7 +1202,7 @@ begin
 end;
 
 //
-//  Рассчитываем длину строки с учетом UTF8
+//  Р Р°СЃСЃС‡РёС‚С‹РІР°РµРј РґР»РёРЅСѓ СЃС‚СЂРѕРєРё СЃ СѓС‡РµС‚РѕРј UTF8
 // =============================================================================
 function TFWZipWriter.StringLength(const Value: string; UTF8String: Boolean): Integer;
 begin
@@ -1190,7 +1213,7 @@ begin
 end;
 
 //
-//  Функция возвращает текущее время в формате TFileTime
+//  Р¤СѓРЅРєС†РёСЏ РІРѕР·РІСЂР°С‰Р°РµС‚ С‚РµРєСѓС‰РµРµ РІСЂРµРјСЏ РІ С„РѕСЂРјР°С‚Рµ TFileTime
 // =============================================================================
 function TFWZipWriter.GetCurrentFileTime: TFileTime;
 var
@@ -1202,7 +1225,7 @@ begin
 end;
 
 //
-//  Обработчик свойства Items
+//  РћР±СЂР°Р±РѕС‚С‡РёРє СЃРІРѕР№СЃС‚РІР° Items
 // =============================================================================
 function TFWZipWriter.GetItem(Index: Integer): TFWZipWriterItem;
 begin
@@ -1210,7 +1233,7 @@ begin
 end;
 
 //
-//  Запрашиваем данные о расширенных блоках данных для каждой записи
+//  Р—Р°РїСЂР°С€РёРІР°РµРј РґР°РЅРЅС‹Рµ Рѕ СЂР°СЃС€РёСЂРµРЅРЅС‹С… Р±Р»РѕРєР°С… РґР°РЅРЅС‹С… РґР»СЏ РєР°Р¶РґРѕР№ Р·Р°РїРёСЃРё
 // =============================================================================
 procedure TFWZipWriter.FillExData(Stream: TStream; Index: Integer);
 var
@@ -1237,15 +1260,15 @@ begin
         begin
           if ExDataStream.Size > MAXWORD then
             raise EZipWriter.Create(
-              'Размер каждого блока расширенных данных' +
-              ' не может превышать 65535 байт.')
+              'Р Р°Р·РјРµСЂ РєР°Р¶РґРѕРіРѕ Р±Р»РѕРєР° СЂР°СЃС€РёСЂРµРЅРЅС‹С… РґР°РЅРЅС‹С…' +
+              ' РЅРµ РјРѕР¶РµС‚ РїСЂРµРІС‹С€Р°С‚СЊ 65535 Р±Р°Р№С‚.')
           else
             ExDataSize := ExDataStream.Size;
           if ExDataHeaderTag in
             [0, SUPPORTED_EXDATA_ZIP64, SUPPORTED_EXDATA_NTFSTIME] then
             raise EZipWriter.Create(
-              'Нельзя использовать зарезервированные тэги' +
-              ' блока расширенных данных.');
+              'РќРµР»СЊР·СЏ РёСЃРїРѕР»СЊР·РѕРІР°С‚СЊ Р·Р°СЂРµР·РµСЂРІРёСЂРѕРІР°РЅРЅС‹Рµ С‚СЌРіРё' +
+              ' Р±Р»РѕРєР° СЂР°СЃС€РёСЂРµРЅРЅС‹С… РґР°РЅРЅС‹С….');
           Stream.WriteBuffer(ExDataHeaderTag, 2);
           Stream.WriteBuffer(ExDataSize, 2);
           Stream.CopyFrom(ExDataStream, 0);
@@ -1258,7 +1281,7 @@ begin
 end;
 
 //
-//  Инициализируем CentralDirectoryFileHeader элемента
+//  РРЅРёС†РёР°Р»РёР·РёСЂСѓРµРј CentralDirectoryFileHeader СЌР»РµРјРµРЅС‚Р°
 // =============================================================================
 procedure TFWZipWriter.FillItemCDFHeader(CurrentItem: TFWZipWriterItem;
   var Value: TCentralDirectoryFileHeaderEx);
@@ -1266,10 +1289,11 @@ var
   SystemTime: TSystemTime;
   LastWriteTime: TFileTime;
   FileDate: Cardinal;
+  Buff: array of Byte;
 begin
   Value.Header.CentralFileHeaderSignature := CENTRAL_FILE_HEADER_SIGNATURE;
   Value.Header.VersionMadeBy := CurrentVersionMadeBy;
-  Value.Header.VersionNeededToExtract := 0; // Рассчитывается позднее
+  Value.Header.VersionNeededToExtract := 0; // Р Р°СЃСЃС‡РёС‚С‹РІР°РµС‚СЃСЏ РїРѕР·РґРЅРµРµ
 
   Value.Header.GeneralPurposeBitFlag := 0;
   if CurrentItem.Password <> '' then
@@ -1277,7 +1301,7 @@ begin
       Value.Header.GeneralPurposeBitFlag or PBF_CRYPTED;
 
   case CurrentItem.CompressionLevel of
-    clNone:; // данный режим компрессии не поддерживается, сразу меняем на Store
+    clNone:; // РґР°РЅРЅС‹Р№ СЂРµР¶РёРј РєРѕРјРїСЂРµСЃСЃРёРё РЅРµ РїРѕРґРґРµСЂР¶РёРІР°РµС‚СЃСЏ, СЃСЂР°Р·Сѓ РјРµРЅСЏРµРј РЅР° Store
     clFastest:
       Value.Header.GeneralPurposeBitFlag :=
         Value.Header.GeneralPurposeBitFlag or PBF_COMPRESS_SUPERFAST;
@@ -1300,19 +1324,24 @@ begin
   if not CurrentItem.NeedDescriptor then
     if CurrentItem.Password <> '' then
     begin
-      // в случае если дескрипторы отключены и включено шифрование элемента
-      // то необходимо рассчитать его контрольную сумму перед
-      // генерацией заголовка инициализации ключа шифрования
+      // РІ СЃР»СѓС‡Р°Рµ РµСЃР»Рё РґРµСЃРєСЂРёРїС‚РѕСЂС‹ РѕС‚РєР»СЋС‡РµРЅС‹ Рё РІРєР»СЋС‡РµРЅРѕ С€РёС„СЂРѕРІР°РЅРёРµ СЌР»РµРјРµРЅС‚Р°
+      // С‚Рѕ РЅРµРѕР±С…РѕРґРёРјРѕ СЂР°СЃСЃС‡РёС‚Р°С‚СЊ РµРіРѕ РєРѕРЅС‚СЂРѕР»СЊРЅСѓСЋ СЃСѓРјРјСѓ РїРµСЂРµРґ
+      // РіРµРЅРµСЂР°С†РёРµР№ Р·Р°РіРѕР»РѕРІРєР° РёРЅРёС†РёР°Р»РёР·Р°С†РёРё РєР»СЋС‡Р° С€РёС„СЂРѕРІР°РЅРёСЏ
       if CurrentItem.Data = nil then
         Value.Header.Crc32 := FileCRC32(CurrentItem.FilePath)
       else
+      begin
+        CurrentItem.Data.Position := 0;
+        SetLength(Buff, CurrentItem.Data.Size);
+        CurrentItem.Data.Read(Buff[0], CurrentItem.Data.Size);
         Value.Header.Crc32 :=
-          CRC32Calc(CurrentItem.Data.Memory, CurrentItem.Data.Size);
+          CRC32Calc(@Buff[0], CurrentItem.Data.Size);
+      end;
     end;
   Value.UncompressedSize := CurrentItem.Size;
 
   // Rouse_ 25.10.2013
-  // Правка небольшой ошибки замеченой Владиславом Нечепоренко
+  // РџСЂР°РІРєР° РЅРµР±РѕР»СЊС€РѕР№ РѕС€РёР±РєРё Р·Р°РјРµС‡РµРЅРѕР№ Р’Р»Р°РґРёСЃР»Р°РІРѕРј РќРµС‡РµРїРѕСЂРµРЅРєРѕ
   //FileTimeToSystemTime(CurrentItem.Attributes.ftLastWriteTime, SystemTyme);
   FileTimeToLocalFileTime(CurrentItem.Attributes.ftLastWriteTime, LastWriteTime);
   FileTimeToSystemTime(LastWriteTime, SystemTime);
@@ -1340,7 +1369,7 @@ begin
 end;
 
 //
-//  Добавляем возможность создавать наследников от базового класса
+//  Р”РѕР±Р°РІР»СЏРµРј РІРѕР·РјРѕР¶РЅРѕСЃС‚СЊ СЃРѕР·РґР°РІР°С‚СЊ РЅР°СЃР»РµРґРЅРёРєРѕРІ РѕС‚ Р±Р°Р·РѕРІРѕРіРѕ РєР»Р°СЃСЃР°
 // =============================================================================
 function TFWZipWriter.GetItemClass: TFWZipWriterItemClass;
 begin
@@ -1348,8 +1377,8 @@ begin
 end;
 
 //
-//  Функция рассчитывает минимальную версию для извлечения
-//  указанного элемента архива
+//  Р¤СѓРЅРєС†РёСЏ СЂР°СЃСЃС‡РёС‚С‹РІР°РµС‚ РјРёРЅРёРјР°Р»СЊРЅСѓСЋ РІРµСЂСЃРёСЋ РґР»СЏ РёР·РІР»РµС‡РµРЅРёСЏ
+//  СѓРєР°Р·Р°РЅРЅРѕРіРѕ СЌР»РµРјРµРЅС‚Р° Р°СЂС…РёРІР°
 // =============================================================================
 function TFWZipWriter.GetVersionToExtract(Index: Integer): Word;
 begin
@@ -1377,17 +1406,17 @@ begin
           6.2 - Central directory encryption
 }
 
-  // TGSZIPWriter поддерживает следующие расширения стандарта:
-  // 1. использование директорий (версия для извлечения - 2.0)
-  // 2. использование ZIP64 расширения (версия для извлечения - 4.5)
+  // TGSZIPWriter РїРѕРґРґРµСЂР¶РёРІР°РµС‚ СЃР»РµРґСѓСЋС‰РёРµ СЂР°СЃС€РёСЂРµРЅРёСЏ СЃС‚Р°РЅРґР°СЂС‚Р°:
+  // 1. РёСЃРїРѕР»СЊР·РѕРІР°РЅРёРµ РґРёСЂРµРєС‚РѕСЂРёР№ (РІРµСЂСЃРёСЏ РґР»СЏ РёР·РІР»РµС‡РµРЅРёСЏ - 2.0)
+  // 2. РёСЃРїРѕР»СЊР·РѕРІР°РЅРёРµ ZIP64 СЂР°СЃС€РёСЂРµРЅРёСЏ (РІРµСЂСЃРёСЏ РґР»СЏ РёР·РІР»РµС‡РµРЅРёСЏ - 4.5)
 
-  // Для определения, нужно ли нам использовать ZIP64 необходимо проверить
-  // следующие параметры:
-  // размер каждого элемента архива сжатого и не сжатого,
-  // оффсет на начало блока данных для каждого элемента
-  // если любое из этих значений выходит за значение MAXDWORD,
-  // или количество элементов архива выходит за значение MAXWORD,
-  // нам необходимо применять ZIP64
+  // Р”Р»СЏ РѕРїСЂРµРґРµР»РµРЅРёСЏ, РЅСѓР¶РЅРѕ Р»Рё РЅР°Рј РёСЃРїРѕР»СЊР·РѕРІР°С‚СЊ ZIP64 РЅРµРѕР±С…РѕРґРёРјРѕ РїСЂРѕРІРµСЂРёС‚СЊ
+  // СЃР»РµРґСѓСЋС‰РёРµ РїР°СЂР°РјРµС‚СЂС‹:
+  // СЂР°Р·РјРµСЂ РєР°Р¶РґРѕРіРѕ СЌР»РµРјРµРЅС‚Р° Р°СЂС…РёРІР° СЃР¶Р°С‚РѕРіРѕ Рё РЅРµ СЃР¶Р°С‚РѕРіРѕ,
+  // РѕС„С„СЃРµС‚ РЅР° РЅР°С‡Р°Р»Рѕ Р±Р»РѕРєР° РґР°РЅРЅС‹С… РґР»СЏ РєР°Р¶РґРѕРіРѕ СЌР»РµРјРµРЅС‚Р°
+  // РµСЃР»Рё Р»СЋР±РѕРµ РёР· СЌС‚РёС… Р·РЅР°С‡РµРЅРёР№ РІС‹С…РѕРґРёС‚ Р·Р° Р·РЅР°С‡РµРЅРёРµ MAXDWORD,
+  // РёР»Рё РєРѕР»РёС‡РµСЃС‚РІРѕ СЌР»РµРјРµРЅС‚РѕРІ Р°СЂС…РёРІР° РІС‹С…РѕРґРёС‚ Р·Р° Р·РЅР°С‡РµРЅРёРµ MAXWORD,
+  // РЅР°Рј РЅРµРѕР±С…РѕРґРёРјРѕ РїСЂРёРјРµРЅСЏС‚СЊ ZIP64
 
   Result := 20;
   if (FCD[Index].UncompressedSize >= MAXDWORD) or
@@ -1398,7 +1427,21 @@ begin
 end;
 
 //
-//  Процедура проводит сохранение секции CentralDirectory
+//  Р¤СѓРЅРєС†РёСЏ РґРѕР±Р°РІР»СЏРµС‚ РІ Р°СЂС…РёРІ РґР°РЅРЅС‹Рµ РёР· РїРµСЂРµРґР°РЅРЅРѕРіРѕ СЃС‚СЂРёРјР°.
+//  Р’ РєР°С‡РµСЃС‚РІРµ СЂРµР·СѓР»СЊС‚Р°С‚Р° РІРѕР·РІСЂР°С‰Р°РµС‚ РёРЅРґРµРєСЃ СЌР»РµРјРµРЅС‚Р° РІ СЃРїРёСЃРєРµ
+// =============================================================================
+function TFWZipWriter.InsertStream(const FileName: string; Index: Integer;
+  Value: TStream; AOwnerShip: TStreamOwnership): Integer;
+var
+  Item: TFWZipWriterItem;
+begin
+  Item := CreateItemFromStream(FileName, Value, AOwnerShip);
+  FItems.Insert(Index, Item);
+  Result := Index;
+end;
+
+//
+//  РџСЂРѕС†РµРґСѓСЂР° РїСЂРѕРІРѕРґРёС‚ СЃРѕС…СЂР°РЅРµРЅРёРµ СЃРµРєС†РёРё CentralDirectory
 // =============================================================================
 procedure TFWZipWriter.SaveCentralDirectory(Stream: TStream);
 var
@@ -1412,15 +1455,15 @@ begin
   for I := 0 to Count - 1 do
   begin
 
-    // пропускаем элементы при записи которых произошло исключение
+    // РїСЂРѕРїСѓСЃРєР°РµРј СЌР»РµРјРµРЅС‚С‹ РїСЂРё Р·Р°РїРёСЃРё РєРѕС‚РѕСЂС‹С… РїСЂРѕРёР·РѕС€Р»Рѕ РёСЃРєР»СЋС‡РµРЅРёРµ
     if FCD[I].ExceptOnWrite then Continue;
 
-    // перед записью каждого элемента CentralDirectory
-    // необходимо подготовить буфферы с расширенными данными
-    // и указать их расмер
+    // РїРµСЂРµРґ Р·Р°РїРёСЃСЊСЋ РєР°Р¶РґРѕРіРѕ СЌР»РµРјРµРЅС‚Р° CentralDirectory
+    // РЅРµРѕР±С…РѕРґРёРјРѕ РїРѕРґРіРѕС‚РѕРІРёС‚СЊ Р±СѓС„С„РµСЂС‹ СЃ СЂР°СЃС€РёСЂРµРЅРЅС‹РјРё РґР°РЅРЅС‹РјРё
+    // Рё СѓРєР°Р·Р°С‚СЊ РёС… СЂР°СЃРјРµСЂ
     ZIP64Data := TMemoryStream.Create;
     try
-      // подготавиваем буффер с ZIP64 данными
+      // РїРѕРґРіРѕС‚Р°РІРёРІР°РµРј Р±СѓС„С„РµСЂ СЃ ZIP64 РґР°РЅРЅС‹РјРё
 
       {
           The order of the fields in the ZIP64 extended
@@ -1441,7 +1484,7 @@ begin
       ZeroMemory(@ExDataNTFS, SizeOf(TExDataHeaderAndSize));
       if IsAttributesPresent(FCD[I].Attributes) then
       begin
-        // подготавливаем буффер с NTFS временем
+        // РїРѕРґРіРѕС‚Р°РІР»РёРІР°РµРј Р±СѓС„С„РµСЂ СЃ NTFS РІСЂРµРјРµРЅРµРј
         FCD[I].Header.ExtraFieldLength := SizeOf(TExDataNTFS);
 
         //   (NTFS)  0x000a        Short       Tag for this "extra" block type
@@ -1468,20 +1511,20 @@ begin
 
       TotalExDataStream := TMemoryStream.Create;
       try
-        // Запрашиваем блоки ExData от пользователя
+        // Р—Р°РїСЂР°С€РёРІР°РµРј Р±Р»РѕРєРё ExData РѕС‚ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ
         FillExData(TotalExDataStream, I);
 
-        // правим общий размер расширенных блоков
+        // РїСЂР°РІРёРј РѕР±С‰РёР№ СЂР°Р·РјРµСЂ СЂР°СЃС€РёСЂРµРЅРЅС‹С… Р±Р»РѕРєРѕРІ
         Inc(FCD[I].Header.ExtraFieldLength, TotalExDataStream.Size);
 
-        // Пишем структуру TCentralDirectoryFileHeader, описывающую элемент
+        // РџРёС€РµРј СЃС‚СЂСѓРєС‚СѓСЂСѓ TCentralDirectoryFileHeader, РѕРїРёСЃС‹РІР°СЋС‰СѓСЋ СЌР»РµРјРµРЅС‚
         Stream.WriteBuffer(FCD[I].Header, SizeOf(TCentralDirectoryFileHeader));
 
-        // Пишем наименование элемента
+        // РџРёС€РµРј РЅР°РёРјРµРЅРѕРІР°РЅРёРµ СЌР»РµРјРµРЅС‚Р°
         SaveString(Stream, FCD[I].FileName,
           FCD[I].Header.GeneralPurposeBitFlag and PBF_UTF8 = PBF_UTF8);
 
-        // если нужно -  доп информацию в формате ZIP64
+        // РµСЃР»Рё РЅСѓР¶РЅРѕ -  РґРѕРї РёРЅС„РѕСЂРјР°С†РёСЋ РІ С„РѕСЂРјР°С‚Рµ ZIP64
         if ZIP64Data.Size > 0 then
         begin
           ExDataHeader.Header := SUPPORTED_EXDATA_ZIP64;
@@ -1490,11 +1533,11 @@ begin
           Stream.CopyFrom(ZIP64Data, 0);
         end;
 
-        // потом информацию о NTFSTime
+        // РїРѕС‚РѕРј РёРЅС„РѕСЂРјР°С†РёСЋ Рѕ NTFSTime
         if ExDataNTFS.HS.Header = SUPPORTED_EXDATA_NTFSTIME then
           Stream.WriteBuffer(ExDataNTFS, SizeOf(TExDataNTFS));
 
-        // и расширенную информацию полученную от пользователя
+        // Рё СЂР°СЃС€РёСЂРµРЅРЅСѓСЋ РёРЅС„РѕСЂРјР°С†РёСЋ РїРѕР»СѓС‡РµРЅРЅСѓСЋ РѕС‚ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ
         if TotalExDataStream.Size > 0 then
           Stream.CopyFrom(TotalExDataStream, 0);
 
@@ -1502,7 +1545,7 @@ begin
          TotalExDataStream.Free;
       end;
 
-      // в завершение, пишем коментарий к элементу
+      // РІ Р·Р°РІРµСЂС€РµРЅРёРµ, РїРёС€РµРј РєРѕРјРµРЅС‚Р°СЂРёР№ Рє СЌР»РµРјРµРЅС‚Сѓ
       SaveString(Stream, FCD[I].FileComment,
         FCD[I].Header.GeneralPurposeBitFlag and PBF_UTF8 = PBF_UTF8);
 
@@ -1513,7 +1556,7 @@ begin
 end;
 
 //
-//  Процедура проводит сохранение секции EndOfCentralDirectory
+//  РџСЂРѕС†РµРґСѓСЂР° РїСЂРѕРІРѕРґРёС‚ СЃРѕС…СЂР°РЅРµРЅРёРµ СЃРµРєС†РёРё EndOfCentralDirectory
 // =============================================================================
 procedure TFWZipWriter.SaveEndOfCentralDirectory(Stream: TStream);
 var
@@ -1524,23 +1567,23 @@ var
 begin
   oe64cdOffset := Stream.Position;
   SizeOfCentralDir := oe64cdOffset - FcdfhOffset;
-  // Исключаем из общего количества элементов архива количество исключений
+  // РСЃРєР»СЋС‡Р°РµРј РёР· РѕР±С‰РµРіРѕ РєРѕР»РёС‡РµСЃС‚РІР° СЌР»РµРјРµРЅС‚РѕРІ Р°СЂС…РёРІР° РєРѕР»РёС‡РµСЃС‚РІРѕ РёСЃРєР»СЋС‡РµРЅРёР№
   oe64cd.TotalNumber1 := Count - FExceptionCount;
-  // формат ZIP64 используется в случае если количество элементов  
-  // архива превышает MAXWORD, или смещение на начало центральной директории
-  // превышает MAXDWORD или ее размер превышает MAXDWORD
+  // С„РѕСЂРјР°С‚ ZIP64 РёСЃРїРѕР»СЊР·СѓРµС‚СЃСЏ РІ СЃР»СѓС‡Р°Рµ РµСЃР»Рё РєРѕР»РёС‡РµСЃС‚РІРѕ СЌР»РµРјРµРЅС‚РѕРІ  
+  // Р°СЂС…РёРІР° РїСЂРµРІС‹С€Р°РµС‚ MAXWORD, РёР»Рё СЃРјРµС‰РµРЅРёРµ РЅР° РЅР°С‡Р°Р»Рѕ С†РµРЅС‚СЂР°Р»СЊРЅРѕР№ РґРёСЂРµРєС‚РѕСЂРёРё
+  // РїСЂРµРІС‹С€Р°РµС‚ MAXDWORD РёР»Рё РµРµ СЂР°Р·РјРµСЂ РїСЂРµРІС‹С€Р°РµС‚ MAXDWORD
   if (FcdfhOffset > MAXDWORD) or (SizeOfCentralDir > MAXDWORD) or
     (oe64cd.TotalNumber1 > MAXWORD) then
   begin
-    // В случае использования формата ZIP64
-    // необходимо записать дополнительные структуры
+    // Р’ СЃР»СѓС‡Р°Рµ РёСЃРїРѕР»СЊР·РѕРІР°РЅРёСЏ С„РѕСЂРјР°С‚Р° ZIP64
+    // РЅРµРѕР±С…РѕРґРёРјРѕ Р·Р°РїРёСЃР°С‚СЊ РґРѕРїРѕР»РЅРёС‚РµР»СЊРЅС‹Рµ СЃС‚СЂСѓРєС‚СѓСЂС‹
 
     // TZip64EOFCentralDirectoryRecord
     oe64cd.Zip64EndOfCentralDirSignature := ZIP64_END_OF_CENTRAL_DIR_SIGNATURE;
 
 
     // Rouse_ 20.07.2013
-    // в спецификации 6.3.0 от September 29, 2006 оговорено
+    // РІ СЃРїРµС†РёС„РёРєР°С†РёРё 6.3.0 РѕС‚ September 29, 2006 РѕРіРѕРІРѕСЂРµРЅРѕ
     {
         The value stored into the "size of zip64 end of central
         directory record" should be the size of the remaining
@@ -1548,13 +1591,13 @@ begin
 
         Size = SizeOfFixedFields + SizeOfVariableData - 12.
     }
-    // FWZip разрабатывался на основе более ранних спецификаций
-    // (изначально на 6.0 потом на 6.2) и не учитывал этот момент
+    // FWZip СЂР°Р·СЂР°Р±Р°С‚С‹РІР°Р»СЃСЏ РЅР° РѕСЃРЅРѕРІРµ Р±РѕР»РµРµ СЂР°РЅРЅРёС… СЃРїРµС†РёС„РёРєР°С†РёР№
+    // (РёР·РЅР°С‡Р°Р»СЊРЅРѕ РЅР° 6.0 РїРѕС‚РѕРј РЅР° 6.2) Рё РЅРµ СѓС‡РёС‚С‹РІР°Р» СЌС‚РѕС‚ РјРѕРјРµРЅС‚
 
-    // Поэтому вместо
+    // РџРѕСЌС‚РѕРјСѓ РІРјРµСЃС‚Рѕ
     // oe64cd.SizeOfZip64EOFCentralDirectoryRecord :=
     //   SizeOf(TZip64EOFCentralDirectoryRecord);
-    // пишем:
+    // РїРёС€РµРј:
 
     oe64cd.SizeOfZip64EOFCentralDirectoryRecord :=
       SizeOf(TZip64EOFCentralDirectoryRecord) - 12;
@@ -1600,7 +1643,7 @@ begin
 end;
 
 //
-//  Процедура проводит все процедуры подготовки, сжатия и сохранения указанного элемента архива
+//  РџСЂРѕС†РµРґСѓСЂР° РїСЂРѕРІРѕРґРёС‚ РІСЃРµ РїСЂРѕС†РµРґСѓСЂС‹ РїРѕРґРіРѕС‚РѕРІРєРё, СЃР¶Р°С‚РёСЏ Рё СЃРѕС…СЂР°РЅРµРЅРёСЏ СѓРєР°Р·Р°РЅРЅРѕРіРѕ СЌР»РµРјРµРЅС‚Р° Р°СЂС…РёРІР°
 // =============================================================================
 procedure TFWZipWriter.SaveItemToStream(Stream: TStream; Index: Integer);
 var
@@ -1609,54 +1652,54 @@ var
 begin
   CurrentItem := Item[Index];
 
-  // проверка на дуракоустойчивость
+  // РїСЂРѕРІРµСЂРєР° РЅР° РґСѓСЂР°РєРѕСѓСЃС‚РѕР№С‡РёРІРѕСЃС‚СЊ
   if not CurrentItem.UseExternalData then
     if (CurrentItem.FilePath = '') and (CurrentItem.Data = nil) then
-      raise EZipWriter.CreateFmt('Данные элемента №%d "%s" отсутствуют',
+      raise EZipWriter.CreateFmt('Р”Р°РЅРЅС‹Рµ СЌР»РµРјРµРЅС‚Р° в„–%d "%s" РѕС‚СЃСѓС‚СЃС‚РІСѓСЋС‚',
         [Index, CurrentItem.FileName]);
 
   FProcessedItemIndex := Index;
 
   // Rouse_ 25.10.2013
-  // Генерируем событие начала распаковки перед тем как результирующий файл будет залочен
+  // Р“РµРЅРµСЂРёСЂСѓРµРј СЃРѕР±С‹С‚РёРµ РЅР°С‡Р°Р»Р° СЂР°СЃРїР°РєРѕРІРєРё РїРµСЂРµРґ С‚РµРј РєР°Рє СЂРµР·СѓР»СЊС‚РёСЂСѓСЋС‰РёР№ С„Р°Р№Р» Р±СѓРґРµС‚ Р·Р°Р»РѕС‡РµРЅ
   DoProgress(psStart);
   try
 
-    // Заполняем информацию в CentralDirectory
+    // Р—Р°РїРѕР»РЅСЏРµРј РёРЅС„РѕСЂРјР°С†РёСЋ РІ CentralDirectory
     // ===========================================================================
     FillItemCDFHeader(CurrentItem, FCD[Index]);
     FCD[Index].RelativeOffsetOfLocalHeader := Stream.Position;
 
-    // Помещаем данные в результирующий файл
+    // РџРѕРјРµС‰Р°РµРј РґР°РЅРЅС‹Рµ РІ СЂРµР·СѓР»СЊС‚РёСЂСѓСЋС‰РёР№ С„Р°Р№Р»
     // ===========================================================================
 
-    // Запоминаем оффсет по которому необходимо будет писать имя файла
+    // Р—Р°РїРѕРјРёРЅР°РµРј РѕС„С„СЃРµС‚ РїРѕ РєРѕС‚РѕСЂРѕРјСѓ РЅРµРѕР±С…РѕРґРёРјРѕ Р±СѓРґРµС‚ РїРёСЃР°С‚СЊ РёРјСЏ С„Р°Р№Р»Р°
     FileNameOffset := Stream.Position + SizeOf(TLocalFileHeader);
 
-    // рассчитываем размер резервируемого места под
-    // LocalFileHeader и имя файла
+    // СЂР°СЃСЃС‡РёС‚С‹РІР°РµРј СЂР°Р·РјРµСЂ СЂРµР·РµСЂРІРёСЂСѓРµРјРѕРіРѕ РјРµСЃС‚Р° РїРѕРґ
+    // LocalFileHeader Рё РёРјСЏ С„Р°Р№Р»Р°
     StreamSizeBeforeCompress := FileNameOffset +
       FCD[Index].Header.FilenameLength;
 
-    // резервируем место под ZIP64
+    // СЂРµР·РµСЂРІРёСЂСѓРµРј РјРµСЃС‚Рѕ РїРѕРґ ZIP64
     if FCD[Index].UncompressedSize >= MAXDWORD then
       Inc(StreamSizeBeforeCompress, SizeOf(TExDataInfo64));
 
-    // выделяем блок данных под LocalFileHeader и имя файла
+    // РІС‹РґРµР»СЏРµРј Р±Р»РѕРє РґР°РЅРЅС‹С… РїРѕРґ LocalFileHeader Рё РёРјСЏ С„Р°Р№Р»Р°
     Stream.Size := StreamSizeBeforeCompress;
     Stream.Position := Stream.Size;
 
-    // сжимаем данные
+    // СЃР¶РёРјР°РµРј РґР°РЅРЅС‹Рµ
     if not CurrentItem.IsFolder then
       CompressItem(CurrentItem, Index, StreamSizeBeforeCompress, Stream);
 
     Inc(FTotalProcessedCount, CurrentItem.Size);
 
-    // пишем имя файла
+    // РїРёС€РµРј РёРјСЏ С„Р°Р№Р»Р°
     Stream.Position := FileNameOffset;
     SaveString(Stream, FCD[Index].Filename, CurrentItem.UseUTF8String);
 
-    // резервируем место под дескриптор
+    // СЂРµР·РµСЂРІРёСЂСѓРµРј РјРµСЃС‚Рѕ РїРѕРґ РґРµСЃРєСЂРёРїС‚РѕСЂ
     if CurrentItem.NeedDescriptor then
       Stream.Size := Stream.Size + SizeOf(TDataDescriptor);
 
@@ -1664,13 +1707,13 @@ begin
 
   finally
     // Rouse_ 25.10.2013
-    // Результирующий файл освобожден, генерируем событие
+    // Р РµР·СѓР»СЊС‚РёСЂСѓСЋС‰РёР№ С„Р°Р№Р» РѕСЃРІРѕР±РѕР¶РґРµРЅ, РіРµРЅРµСЂРёСЂСѓРµРј СЃРѕР±С‹С‚РёРµ
     DoProgress(psEnd);
   end;
 end;
 
 //
-//  Процедура проводит преобразование переданной строки в OEM и ее сохранение
+//  РџСЂРѕС†РµРґСѓСЂР° РїСЂРѕРІРѕРґРёС‚ РїСЂРµРѕР±СЂР°Р·РѕРІР°РЅРёРµ РїРµСЂРµРґР°РЅРЅРѕР№ СЃС‚СЂРѕРєРё РІ OEM Рё РµРµ СЃРѕС…СЂР°РЅРµРЅРёРµ
 // =============================================================================
 procedure TFWZipWriter.SaveString(Stream: TStream; const Value: string;
   UTF8String: Boolean);
@@ -1690,7 +1733,7 @@ begin
 end;
 
 //
-//  Процедура обновляет секции LocalFileHeader
+//  РџСЂРѕС†РµРґСѓСЂР° РѕР±РЅРѕРІР»СЏРµС‚ СЃРµРєС†РёРё LocalFileHeader
 // =============================================================================
 procedure TFWZipWriter.UpdateLocalHeaders(Stream: TStream);
 var
@@ -1704,14 +1747,14 @@ begin
   for I := 0 to Count - 1 do
   begin
 
-    // пропускаем элементы при записи которых произошло исключение
+    // РїСЂРѕРїСѓСЃРєР°РµРј СЌР»РµРјРµРЅС‚С‹ РїСЂРё Р·Р°РїРёСЃРё РєРѕС‚РѕСЂС‹С… РїСЂРѕРёР·РѕС€Р»Рѕ РёСЃРєР»СЋС‡РµРЅРёРµ
     if FCD[I].ExceptOnWrite then Continue;
 
-    // Имея на руках все данные перезаписываем все LocalFileHeader
-    // и DataDescriptor (если требуется)
+    // РРјРµСЏ РЅР° СЂСѓРєР°С… РІСЃРµ РґР°РЅРЅС‹Рµ РїРµСЂРµР·Р°РїРёСЃС‹РІР°РµРј РІСЃРµ LocalFileHeader
+    // Рё DataDescriptor (РµСЃР»Рё С‚СЂРµР±СѓРµС‚СЃСЏ)
     lfh.LocalFileHeaderSignature := LOCAL_FILE_HEADER_SIGNATURE;
 
-    // рассчитываем версию необходимую для распаковки элемента архива
+    // СЂР°СЃСЃС‡РёС‚С‹РІР°РµРј РІРµСЂСЃРёСЋ РЅРµРѕР±С…РѕРґРёРјСѓСЋ РґР»СЏ СЂР°СЃРїР°РєРѕРІРєРё СЌР»РµРјРµРЅС‚Р° Р°СЂС…РёРІР°
     lfh.VersionNeededToExtract := GetVersionToExtract(I);
     lfh.GeneralPurposeBitFlag := FCD[I].Header.GeneralPurposeBitFlag;
     UseDescriptor := lfh.GeneralPurposeBitFlag and PBF_DESCRIPTOR <> 0;
@@ -1721,10 +1764,10 @@ begin
     if UseDescriptor then
     begin
       dd.DescriptorSignature := DATA_DESCRIPTOR_SIGNATURE;
-      // хоть в стандарте сказано что при использовании дескрипторов 
-      // поля Crc32, CompressedSize и UncompressedSize должны быль установлены
-      // в ноль, но большинство архиваторов этого не делают,
-      // поэтому уподобимся им :)
+      // С…РѕС‚СЊ РІ СЃС‚Р°РЅРґР°СЂС‚Рµ СЃРєР°Р·Р°РЅРѕ С‡С‚Рѕ РїСЂРё РёСЃРїРѕР»СЊР·РѕРІР°РЅРёРё РґРµСЃРєСЂРёРїС‚РѕСЂРѕРІ 
+      // РїРѕР»СЏ Crc32, CompressedSize Рё UncompressedSize РґРѕР»Р¶РЅС‹ Р±С‹Р»СЊ СѓСЃС‚Р°РЅРѕРІР»РµРЅС‹
+      // РІ РЅРѕР»СЊ, РЅРѕ Р±РѕР»СЊС€РёРЅСЃС‚РІРѕ Р°СЂС…РёРІР°С‚РѕСЂРѕРІ СЌС‚РѕРіРѕ РЅРµ РґРµР»Р°СЋС‚,
+      // РїРѕСЌС‚РѕРјСѓ СѓРїРѕРґРѕР±РёРјСЃСЏ РёРј :)
       lfh.Crc32 := FCD[I].Header.Crc32;
       dd.Crc32 := lfh.Crc32;
       if FCD[I].CompressedSize > MAXDWORD then
@@ -1763,35 +1806,35 @@ begin
     Stream.WriteBuffer(lfh, SizeOf(TLocalFileHeader));
 
     // Rouse_ 20.03.2015
-    // Пишем данные для поддержки ZIP64
-    // а то WinRar, WinZip и 7Zip не будут распаковывать такой архив
-    // (не понятно правда, почему они не читают эту информацию из CentralDirectory)
+    // РџРёС€РµРј РґР°РЅРЅС‹Рµ РґР»СЏ РїРѕРґРґРµСЂР¶РєРё ZIP64
+    // Р° С‚Рѕ WinRar, WinZip Рё 7Zip РЅРµ Р±СѓРґСѓС‚ СЂР°СЃРїР°РєРѕРІС‹РІР°С‚СЊ С‚Р°РєРѕР№ Р°СЂС…РёРІ
+    // (РЅРµ РїРѕРЅСЏС‚РЅРѕ РїСЂР°РІРґР°, РїРѕС‡РµРјСѓ РѕРЅРё РЅРµ С‡РёС‚Р°СЋС‚ СЌС‚Сѓ РёРЅС„РѕСЂРјР°С†РёСЋ РёР· CentralDirectory)
     if lfh.ExtraFieldLength > 0 then
     begin
       Stream.Position := Stream.Position + lfh.FilenameLength;
       Info64.HS.Header := SUPPORTED_EXDATA_ZIP64;
       Info64.HS.Size := SizeOf(TExDataInfo64) - SizeOf(TExDataHeaderAndSize);
       Info64.UncompressedSize := FCD[I].UncompressedSize;
-      // если CompressedSize меньше MAXDWORD его писать не надо по стандарту,
-      // но место под него уже зарезервированно, поэтому придется писать его в любом случае
-      // как обойти это расхождение со стандартом хорошим способом - я пока не знаю
+      // РµСЃР»Рё CompressedSize РјРµРЅСЊС€Рµ MAXDWORD РµРіРѕ РїРёСЃР°С‚СЊ РЅРµ РЅР°РґРѕ РїРѕ СЃС‚Р°РЅРґР°СЂС‚Сѓ,
+      // РЅРѕ РјРµСЃС‚Рѕ РїРѕРґ РЅРµРіРѕ СѓР¶Рµ Р·Р°СЂРµР·РµСЂРІРёСЂРѕРІР°РЅРЅРѕ, РїРѕСЌС‚РѕРјСѓ РїСЂРёРґРµС‚СЃСЏ РїРёСЃР°С‚СЊ РµРіРѕ РІ Р»СЋР±РѕРј СЃР»СѓС‡Р°Рµ
+      // РєР°Рє РѕР±РѕР№С‚Рё СЌС‚Рѕ СЂР°СЃС…РѕР¶РґРµРЅРёРµ СЃРѕ СЃС‚Р°РЅРґР°СЂС‚РѕРј С…РѕСЂРѕС€РёРј СЃРїРѕСЃРѕР±РѕРј - СЏ РїРѕРєР° РЅРµ Р·РЅР°СЋ
       Info64.CompressedSize := FCD[I].CompressedSize;
       Stream.WriteBuffer(Info64, SizeOf(TExDataInfo64));
     end;
 
     if UseDescriptor then
     begin
-      // дескриптор пишется после сжатого блока данных
+      // РґРµСЃРєСЂРёРїС‚РѕСЂ РїРёС€РµС‚СЃСЏ РїРѕСЃР»Рµ СЃР¶Р°С‚РѕРіРѕ Р±Р»РѕРєР° РґР°РЅРЅС‹С…
       Stream.Position := FCD[I].RelativeOffsetOfLocalHeader +
         SizeOf(TLocalFileHeader) + lfh.FilenameLength +
         lfh.ExtraFieldLength + FCD[I].CompressedSize;
       Stream.WriteBuffer(dd, SizeOf(TDataDescriptor));
     end;
 
-    // обновляем информацию в массиве CentralDirectoryFileHeader
+    // РѕР±РЅРѕРІР»СЏРµРј РёРЅС„РѕСЂРјР°С†РёСЋ РІ РјР°СЃСЃРёРІРµ CentralDirectoryFileHeader
 
     // Rouse_ 14.02.2013
-    // Неверно выставлялась версия для распаковки в CentralDirectoryFileHeader
+    // РќРµРІРµСЂРЅРѕ РІС‹СЃС‚Р°РІР»СЏР»Р°СЃСЊ РІРµСЂСЃРёСЏ РґР»СЏ СЂР°СЃРїР°РєРѕРІРєРё РІ CentralDirectoryFileHeader
     //FCD[I].Header.VersionNeededToExtract := FVersionToExtract;
     FCD[I].Header.VersionNeededToExtract := lfh.VersionNeededToExtract;
 
@@ -1810,7 +1853,7 @@ begin
         FCD[I].RelativeOffsetOfLocalHeader;
 
     // Rouse_ 14.02.2013
-    // обновляем глобальную метку версии
+    // РѕР±РЅРѕРІР»СЏРµРј РіР»РѕР±Р°Р»СЊРЅСѓСЋ РјРµС‚РєСѓ РІРµСЂСЃРёРё
     if FVersionToExtract < lfh.VersionNeededToExtract then
       FVersionToExtract := lfh.VersionNeededToExtract;
   end;

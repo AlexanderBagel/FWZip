@@ -1,11 +1,11 @@
-////////////////////////////////////////////////////////////////////////////////
+п»ї////////////////////////////////////////////////////////////////////////////////
 //
 //  ****************************************************************************
 //  * Project   : FWZip
 //  * Unit Name : FWZipCrypt
-//  * Purpose   : Реализация криптографии по методу PKWARE
-//  * Author    : Александр (Rouse_) Багель
-//  * Copyright : © Fangorn Wizards Lab 1998 - 2015.
+//  * Purpose   : Р РµР°Р»РёР·Р°С†РёСЏ РєСЂРёРїС‚РѕРіСЂР°С„РёРё РїРѕ РјРµС‚РѕРґСѓ PKWARE
+//  * Author    : РђР»РµРєСЃР°РЅРґСЂ (Rouse_) Р‘Р°РіРµР»СЊ
+//  * Copyright : В© Fangorn Wizards Lab 1998 - 2015.
 //  * Version   : 1.0.11
 //  * Home Page : http://rouse.drkb.ru
 //  * Home Blog : http://alexander-bagel.blogspot.ru
@@ -14,7 +14,7 @@
 //  * Latest Source  : https://github.com/AlexanderBagel/FWZip
 //  ****************************************************************************
 //
-//  Используемые источники:
+//  РСЃРїРѕР»СЊР·СѓРµРјС‹Рµ РёСЃС‚РѕС‡РЅРёРєРё:
 //  ftp://ftp.info-zip.org/pub/infozip/doc/appnote-iz-latest.zip
 //  http://zlib.net/zlib-1.2.5.tar.gz
 //  http://www.base2ti.com/
@@ -24,8 +24,8 @@ unit FWZipCrypt;
 
 interface
 
-  // Переполнения и выход за диапазон неизбежны
-  // поэтому отключаем данные проверки
+  // РџРµСЂРµРїРѕР»РЅРµРЅРёСЏ Рё РІС‹С…РѕРґ Р·Р° РґРёР°РїР°Р·РѕРЅ РЅРµРёР·Р±РµР¶РЅС‹
+  // РїРѕСЌС‚РѕРјСѓ РѕС‚РєР»СЋС‡Р°РµРј РґР°РЅРЅС‹Рµ РїСЂРѕРІРµСЂРєРё
   {$OVERFLOWCHECKS OFF}
   {$RANGECHECKS OFF}
 
@@ -247,7 +247,7 @@ procedure TFWZipCryptor.EncryptBuffer(Buffer: PByte; Size: Int64);
 var
   temp: Byte;
 begin
-  // реверсированный вариант TFWZipDecryptor.DecryptBuffer
+  // СЂРµРІРµСЂСЃРёСЂРѕРІР°РЅРЅС‹Р№ РІР°СЂРёР°РЅС‚ TFWZipDecryptor.DecryptBuffer
   while Size > 0 do
   begin
     Dec(Size);
@@ -273,7 +273,7 @@ var
   Buffer: array [0..EncryptedHeaderSize - 1] of Byte;
   I: Integer;
 begin
-  // реверсированный вариант TFWZipDecryptor.LoadEncryptionHeader
+  // СЂРµРІРµСЂСЃРёСЂРѕРІР°РЅРЅС‹Р№ РІР°СЂРёР°РЅС‚ TFWZipDecryptor.LoadEncryptionHeader
   Randomize;
   for I := 0 to LastEncryptedHeaderByte - 2 do
     Buffer[I] := EncryptByte(Byte(Random(MAXBYTE)));
