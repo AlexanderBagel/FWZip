@@ -6,8 +6,8 @@
 //  * Purpose   : Демонстрация создания архива используя различные
 //  *           : варианты добавления данных
 //  * Author    : Александр (Rouse_) Багель
-//  * Copyright : © Fangorn Wizards Lab 1998 - 2019.
-//  * Version   : 1.0.12
+//  * Copyright : © Fangorn Wizards Lab 1998 - 2020.
+//  * Version   : 1.1.0
 //  * Home Page : http://rouse.drkb.ru
 //  * Home Blog : http://alexander-bagel.blogspot.ru
 //  ****************************************************************************
@@ -31,7 +31,7 @@ program CreateZIPDemo1;
 uses
   SysUtils,
   Classes,
-  TypInfo,  zlib,
+  TypInfo,
   FWZipWriter;
 
 procedure CheckResult(Value: Integer);
@@ -105,7 +105,7 @@ begin
       // при помощи вызова расширенной функции AddFolder,
       // в которой можем указать наименование папки внутри архива и указать
       // необходимость добавления подпапок (третий параметр)
-      if Zip.AddFolder('AddFolderDemo', '..\..\', '*.*', False) = 0 then
+      if Zip.AddFolder('AddFolderDemo', '..\..\', '*.pas', False) = 0 then
         raise Exception.Create('Ошибка добавления данных');
 
       // Вариант третий. Используем те-же файлы из корневой директории,
@@ -162,6 +162,9 @@ begin
         try
           repeat
             if (SR.Name = '.') or (SR.Name = '..') then Continue;
+            // пропускаем папку demos, т.к. там могут быть залоченные сейчас файлы
+            if AnsiLowerCase(SR.Name) = 'demos' then
+              Continue;
             PresentFiles.Add('AddFilesAndFolders\' + SR.Name + '=..\..\' + SR.Name);
           until FindNext(SR) <> 0;
         finally

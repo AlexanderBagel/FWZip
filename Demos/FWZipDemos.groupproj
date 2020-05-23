@@ -39,6 +39,18 @@
         <Projects Include="Modify ZIP\Replace data in ZIP\ReplaceZipItemData.dproj">
             <Dependencies/>
         </Projects>
+        <Projects Include="..\.UnitTest\FWZipUnitTest.dproj">
+            <Dependencies/>
+        </Projects>
+        <Projects Include="MultyPart ZIP\Create MultiPart ZIP\CreateMultiPartZip.dproj">
+            <Dependencies/>
+        </Projects>
+        <Projects Include="MultyPart ZIP\Modify MultiPart Zip\ModifyMultiPartZip.dproj">
+            <Dependencies/>
+        </Projects>
+        <Projects Include="MultyPart ZIP\Read MultiPart ZIP\ReadMultiPartZip.dproj">
+            <Dependencies/>
+        </Projects>
     </ItemGroup>
     <ProjectExtensions>
         <Borland.Personality>Default.Personality.12</Borland.Personality>
@@ -155,14 +167,50 @@
     <Target Name="ReplaceZipItemData:Make">
         <MSBuild Projects="Modify ZIP\Replace data in ZIP\ReplaceZipItemData.dproj" Targets="Make"/>
     </Target>
+    <Target Name="FWZipUnitTest">
+        <MSBuild Projects="..\.UnitTest\FWZipUnitTest.dproj"/>
+    </Target>
+    <Target Name="FWZipUnitTest:Clean">
+        <MSBuild Projects="..\.UnitTest\FWZipUnitTest.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="FWZipUnitTest:Make">
+        <MSBuild Projects="..\.UnitTest\FWZipUnitTest.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="CreateMultiPartZip">
+        <MSBuild Projects="MultyPart ZIP\Create MultiPart ZIP\CreateMultiPartZip.dproj"/>
+    </Target>
+    <Target Name="CreateMultiPartZip:Clean">
+        <MSBuild Projects="MultyPart ZIP\Create MultiPart ZIP\CreateMultiPartZip.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="CreateMultiPartZip:Make">
+        <MSBuild Projects="MultyPart ZIP\Create MultiPart ZIP\CreateMultiPartZip.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="ModifyMultiPartZip">
+        <MSBuild Projects="MultyPart ZIP\Modify MultiPart Zip\ModifyMultiPartZip.dproj"/>
+    </Target>
+    <Target Name="ModifyMultiPartZip:Clean">
+        <MSBuild Projects="MultyPart ZIP\Modify MultiPart Zip\ModifyMultiPartZip.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="ModifyMultiPartZip:Make">
+        <MSBuild Projects="MultyPart ZIP\Modify MultiPart Zip\ModifyMultiPartZip.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="ReadMultiPartZip">
+        <MSBuild Projects="MultyPart ZIP\Read MultiPart ZIP\ReadMultiPartZip.dproj"/>
+    </Target>
+    <Target Name="ReadMultiPartZip:Clean">
+        <MSBuild Projects="MultyPart ZIP\Read MultiPart ZIP\ReadMultiPartZip.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="ReadMultiPartZip:Make">
+        <MSBuild Projects="MultyPart ZIP\Read MultiPart ZIP\ReadMultiPartZip.dproj" Targets="Make"/>
+    </Target>
     <Target Name="Build">
-        <CallTarget Targets="CreateZIPDemo1;CreateZIPDemo2;ExctractZIPDemo1;ExctractZIPDemo2;FWZipPerfomance;BuildWithException;UseExDataBlob;ZipAnalizer;ZipAnalizer2;SplitZip;MergeZip;ReplaceZipItemData"/>
+        <CallTarget Targets="CreateZIPDemo1;CreateZIPDemo2;ExctractZIPDemo1;ExctractZIPDemo2;FWZipPerfomance;BuildWithException;UseExDataBlob;ZipAnalizer;ZipAnalizer2;SplitZip;MergeZip;ReplaceZipItemData;FWZipUnitTest;CreateMultiPartZip;ModifyMultiPartZip;ReadMultiPartZip"/>
     </Target>
     <Target Name="Clean">
-        <CallTarget Targets="CreateZIPDemo1:Clean;CreateZIPDemo2:Clean;ExctractZIPDemo1:Clean;ExctractZIPDemo2:Clean;FWZipPerfomance:Clean;BuildWithException:Clean;UseExDataBlob:Clean;ZipAnalizer:Clean;ZipAnalizer2:Clean;SplitZip:Clean;MergeZip:Clean;ReplaceZipItemData:Clean"/>
+        <CallTarget Targets="CreateZIPDemo1:Clean;CreateZIPDemo2:Clean;ExctractZIPDemo1:Clean;ExctractZIPDemo2:Clean;FWZipPerfomance:Clean;BuildWithException:Clean;UseExDataBlob:Clean;ZipAnalizer:Clean;ZipAnalizer2:Clean;SplitZip:Clean;MergeZip:Clean;ReplaceZipItemData:Clean;FWZipUnitTest:Clean;CreateMultiPartZip:Clean;ModifyMultiPartZip:Clean;ReadMultiPartZip:Clean"/>
     </Target>
     <Target Name="Make">
-        <CallTarget Targets="CreateZIPDemo1:Make;CreateZIPDemo2:Make;ExctractZIPDemo1:Make;ExctractZIPDemo2:Make;FWZipPerfomance:Make;BuildWithException:Make;UseExDataBlob:Make;ZipAnalizer:Make;ZipAnalizer2:Make;SplitZip:Make;MergeZip:Make;ReplaceZipItemData:Make"/>
+        <CallTarget Targets="CreateZIPDemo1:Make;CreateZIPDemo2:Make;ExctractZIPDemo1:Make;ExctractZIPDemo2:Make;FWZipPerfomance:Make;BuildWithException:Make;UseExDataBlob:Make;ZipAnalizer:Make;ZipAnalizer2:Make;SplitZip:Make;MergeZip:Make;ReplaceZipItemData:Make;FWZipUnitTest:Make;CreateMultiPartZip:Make;ModifyMultiPartZip:Make;ReadMultiPartZip:Make"/>
     </Target>
     <Import Project="$(BDS)\Bin\CodeGear.Group.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')"/>
 </Project>

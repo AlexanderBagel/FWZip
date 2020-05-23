@@ -11,6 +11,7 @@ BRCC = $(ROOT)\bin\brcc32.exe $**
 #------------------------------------------------------------------------------
 PROJECTS = CreateZIPDemo1.exe CreateZIPDemo2.exe ExctractZIPDemo1.exe \
   ExctractZIPDemo2.exe MergeZip.exe ReplaceZipItemData.exe SplitZip.exe \
+  CreateMultiPartZip.exe ModifyMultiPartZip.exe ReadMultiPartZip.exe \
   FWZipPerfomance.exe BuildWithException.exe UseExDataBlob.exe ZipAnalizer.exe \
   ZipAnalizer2.exe
 #------------------------------------------------------------------------------
@@ -36,6 +37,15 @@ ReplaceZipItemData.exe: Modify ZIP\Replace data in ZIP\ReplaceZipItemData.dpr
   $(DCC)
 
 SplitZip.exe: Modify ZIP\Split ZIP\SplitZip.dpr
+  $(DCC)
+
+CreateMultiPartZip.exe: MultyPart ZIP\Create MultiPart ZIP\CreateMultiPartZip.dpr
+  $(DCC)
+
+ModifyMultiPartZip.exe: MultyPart ZIP\Modify MultiPart Zip\ModifyMultiPartZip.dpr
+  $(DCC)
+
+ReadMultiPartZip.exe: MultyPart ZIP\Read MultiPart ZIP\ReadMultiPartZip.dpr
   $(DCC)
 
 FWZipPerfomance.exe: PerfomanceTest\FWZipPerfomance.dpr

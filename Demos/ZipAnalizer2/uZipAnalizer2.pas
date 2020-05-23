@@ -5,8 +5,8 @@
 //  * Unit Name : uZipAnalizer2
 //  * Purpose   : Вывод параметров архива при помощи поиска сигнатур
 //  * Author    : Александр (Rouse_) Багель
-//  * Copyright : © Fangorn Wizards Lab 1998 - 2013.
-//  * Version   : 1.0.10
+//  * Copyright : © Fangorn Wizards Lab 1998 - 2020.
+//  * Version   : 1.1.0
 //  * Home Page : http://rouse.drkb.ru
 //  * Home Blog : http://alexander-bagel.blogspot.ru
 //  ****************************************************************************
@@ -27,7 +27,7 @@ interface
 uses
   Windows, Messages, SysUtils, Classes, Controls, Forms,
   Dialogs, StdCtrls, ComCtrls, ExtCtrls, Menus,
-  FWZipConsts;
+  FWZipConsts, FWZipZLib;
 
 type
   TdlgZipAnalizer = class(TForm)
@@ -72,6 +72,28 @@ const
 
 {$R *.dfm}
 
+function CompressionMethodToStr(Value: Integer): string;
+begin
+  case Value of
+    Z_NO_COMPRESSION: Result := 'NO_COMPRESSION';
+    Z_DEFLATED: Result := 'DEFLATE';
+    1: Result := 'Shrunk';
+    2..5: Result := 'Reduced with compression factor ' + IntToStr(Value - 1);
+    6: Result := 'Imploding';
+    9: Result := 'DEFLATE64';
+    10: Result := 'PKWARE Imploding';
+    11, 13, 15..17: Result := 'Reserved by PKWARE';
+    12: Result := 'BZIP2';
+    14: Result := 'LZMA';
+    18: Result := 'IBM TERSE';
+    19: Result := 'IBM LZ77';
+    97: Result := 'WavPack';
+    98: Result := 'PPMd';
+  else
+    Result := 'unknown';
+  end;
+end;
+
 function GPBFToStr(Value: Word): string;
 
   procedure AddValue(const S: string);
@@ -85,19 +107,32 @@ function GPBFToStr(Value: Word): string;
 begin
   if Value = 0 then
   begin
-    Result := 'EMPTY';
+    Result := 'PBF_COMPRESS_NORMAL';
     Exit;
   end;
-  if PBF_CRYPTED and Value <> 0 then
+
+  if (Value and 7) in [PBF_COMPRESS_NORMAL, PBF_CRYPTED] then
+    AddValue('PBF_COMPRESS_NORMAL');
+
+  if PBF_COMPRESS_MAXIMUM and Value = PBF_COMPRESS_MAXIMUM then
+    AddValue('PBF_COMPRESS_MAXIMUM');
+
+  if PBF_COMPRESS_FAST and Value = PBF_COMPRESS_FAST then
+    AddValue('PBF_COMPRESS_FAST');
+
+  if PBF_COMPRESS_SUPERFAST and Value = PBF_COMPRESS_SUPERFAST then
+    AddValue('PBF_COMPRESS_SUPERFAST');
+
+  if PBF_CRYPTED and Value = PBF_CRYPTED then
     AddValue('PBF_CRYPTED');
 
-  if PBF_DESCRIPTOR and Value <> 0 then
+  if PBF_DESCRIPTOR and Value = PBF_DESCRIPTOR then
     AddValue('PBF_DESCRIPTOR');
 
-  if PBF_UTF8 and Value <> 0 then
+  if PBF_UTF8 and Value = PBF_UTF8 then
     AddValue('PBF_UTF8');
 
-  if PBF_STRONG_CRYPT and Value <> 0 then
+  if PBF_STRONG_CRYPT and Value = PBF_STRONG_CRYPT then
     AddValue('PBF_STRONG_CRYPT');
 end;
 
@@ -277,7 +312,7 @@ begin
     Log(Format('VersionNeededToExtract: %d', [VersionNeededToExtract]));
     Log(Format('GeneralPurposeBitFlag: %d (%s)', [GeneralPurposeBitFlag,
       GPBFToStr(GeneralPurposeBitFlag)]));
-    Log(Format('CompressionMethod: %d', [CompressionMethod]));
+    Log(Format('CompressionMethod: %d (%s)', [CompressionMethod, CompressionMethodToStr(CompressionMethod)]));
     Log(Format('LastModFileTimeTime: %d', [LastModFileTimeTime]));
     Log(Format('LastModFileTimeDate: %d', [LastModFileTimeDate]));
     Log(Format('Crc32: %d', [Crc32]));
@@ -308,9 +343,19 @@ end;
 procedure TdlgZipAnalizer.ShowDataDescryptor(Stream: TStream);
 var
   Data: TDataDescriptor;
+  StartPos: Int64;
 begin
-  Log('DATA_DESCRIPTOR_SIGNATURE found at offset: ' + IntToStr(Stream.Position));
+  StartPos := Stream.Position;
   Stream.ReadBuffer(Data, SizeOf(TDataDescriptor));
+  if Data.Crc32 = LOCAL_FILE_HEADER_SIGNATURE then
+  begin
+    Log('SPAN_DESCRIPTOR_SIGNATURE found at offset: ' + IntToStr(StartPos));
+    Log(Delim);
+    Stream.Position := StartPos + SizeOf(DWORD);
+    Exit;
+  end;
+
+  Log('DATA_DESCRIPTOR_SIGNATURE found at offset: ' + IntToStr(StartPos));
   with Data do
   begin
     if DescriptorSignature <> DATA_DESCRIPTOR_SIGNATURE then
@@ -334,11 +379,11 @@ begin
     if EndOfCentralDirSignature <> END_OF_CENTRAL_DIR_SIGNATURE then
       Log('INVALID SIGNATURE!!!!');
     Log(Format('NumberOfThisDisk: %d', [NumberOfThisDisk]));
-    Log(Format('NumberOfTheDiskWithTheStart: %d', [NumberOfTheDiskWithTheStart]));
+    Log(Format('DiskNumberStart: %d', [DiskNumberStart]));
     Log(Format('TotalNumberOfEntriesOnThisDisk: %d', [TotalNumberOfEntriesOnThisDisk]));
     Log(Format('TotalNumberOfEntries: %d', [TotalNumberOfEntries]));
     Log(Format('SizeOfTheCentralDirectory: %d', [SizeOfTheCentralDirectory]));
-    Log(Format('OffsetOfStartOfCentralDirectory: %d', [OffsetOfStartOfCentralDirectory]));
+    Log(Format('RelativeOffsetOfCentralDirectory: %d', [RelativeOffsetOfCentralDirectory]));
     Log(Format('ZipfileCommentLength: %d', [ZipfileCommentLength]));
     if ZipfileCommentLength > 0 then
     begin
@@ -367,7 +412,7 @@ var
       ('0', '1', '2', '3', '4', '5', '6', '7',
         '8', '9', 'A', 'B', 'C', 'D', 'E', 'F');
   var
-    I: integer;
+    I: Integer;
   begin
     SetLength(Result, Size shl 1);
     for I := 0 to Size - 1 do
@@ -381,6 +426,8 @@ var
 var
   ExDataStream: TMemoryStream;
   StartPos: Int64;
+  FileTime: TFileTime;
+  SystemTime: TSystemTime;
 begin
   if Size = 0 then Exit;
   StartPos := Stream.Position;
@@ -444,23 +491,47 @@ begin
             Continue;
           end;
           Dec(BuffCount, 4);
+          Dec(BlockSize, 4);
           if PWord(GetOffset(BuffCount))^ <> 1 then
           begin
             Dec(BuffCount, BlockSize);
             Continue;
           end;
           Dec(BuffCount, 2);
+          Dec(BlockSize, 2);
           if PWord(GetOffset(BuffCount))^ <> SizeOf(TNTFSFileTime) then
           begin
             Dec(BuffCount, BlockSize);
             Continue;
           end;
           Dec(BuffCount, 2);
+          Dec(BlockSize, 2);
 
           Log('SUPPORTED_EXDATA_NTFSTIME found at offset: ' +
             IntToStr(StartPos + Size - BuffCount - 12));
-          Log(Delim);
 
+          FileTime := PFileTime(GetOffset(BuffCount))^;
+          Dec(BuffCount, SizeOf(TFileTime));
+          Dec(BlockSize, SizeOf(TFileTime));
+          FileTimeToLocalFileTime(FileTime, FileTime);
+          FileTimeToSystemTime(FileTime, SystemTime);
+          Log(Format('Last Write Time: %s', [DateTimeToStr(SystemTimeToDateTime(SystemTime))]));
+
+          FileTime := PFileTime(GetOffset(BuffCount))^;
+          Dec(BuffCount, SizeOf(TFileTime));
+          Dec(BlockSize, SizeOf(TFileTime));
+          FileTimeToLocalFileTime(FileTime, FileTime);
+          FileTimeToSystemTime(FileTime, SystemTime);
+          Log(Format('Last Access Time: %s', [DateTimeToStr(SystemTimeToDateTime(SystemTime))]));
+
+          FileTime := PFileTime(GetOffset(BuffCount))^;
+          Dec(BuffCount, SizeOf(TFileTime));
+          Dec(BlockSize, SizeOf(TFileTime));
+          FileTimeToLocalFileTime(FileTime, FileTime);
+          FileTimeToSystemTime(FileTime, SystemTime);
+          Log(Format('Creation Time: %s', [DateTimeToStr(SystemTimeToDateTime(SystemTime))]));
+
+          Log(Delim);
        end;
       else
         Log(Format('UNKNOWN EXDATA TAG %d found at offset: %d',
@@ -496,7 +567,7 @@ begin
     Log(Format('VersionNeededToExtract: %d', [VersionNeededToExtract]));
     Log(Format('GeneralPurposeBitFlag: %d (%s)', [GeneralPurposeBitFlag,
       GPBFToStr(GeneralPurposeBitFlag)]));
-    Log(Format('CompressionMethod: %d', [CompressionMethod]));
+    Log(Format('CompressionMethod: %d (%s)', [CompressionMethod, CompressionMethodToStr(CompressionMethod)]));
     Log(Format('LastModFileTimeTime: %d', [LastModFileTimeTime]));
     Log(Format('LastModFileTimeDate: %d', [LastModFileTimeDate]));
     Log(Format('Crc32: %d', [Crc32]));
@@ -507,7 +578,6 @@ begin
     LoadStringValue(Stream, FileName, FilenameLength,
       GeneralPurposeBitFlag and PBF_UTF8 <> 0);
     Log('>>> FileName: ' + FileName);
-    //Stream.Position := Stream.Position + CompressedSize;
   end;
   Log(Delim);
 end;
@@ -525,12 +595,12 @@ begin
     Log(Format('SizeOfZip64EOFCentralDirectoryRecord: %d', [SizeOfZip64EOFCentralDirectoryRecord]));
     Log(Format('VersionMadeBy: %d', [VersionMadeBy]));
     Log(Format('VersionNeededToExtract: %d', [VersionNeededToExtract]));
-    Log(Format('number of this disk: %d', [Number1]));
-    Log(Format('number of the disk with the start of the central directory: %d', [Number2]));
-    Log(Format('total number of entries in the central directory on this disk: %d', [TotalNumber1]));
-    Log(Format('total number of entries in the central directory: %d', [TotalNumber2]));
-    Log(Format('size of the central directory: %d', [Size]));
-    Log(Format('offset of start of central directory with respect to the starting disk number: %d', [Offset]));
+    Log(Format('number of this disk: %d', [NumberOfThisDisk]));
+    Log(Format('number of the disk with the start of the central directory: %d', [DiskNumberStart]));
+    Log(Format('total number of entries in the central directory on this disk: %d', [TotalNumberOfEntriesOnThisDisk]));
+    Log(Format('total number of entries in the central directory: %d', [TotalNumberOfEntries]));
+    Log(Format('size of the central directory: %d', [SizeOfTheCentralDirectory]));
+    Log(Format('offset of start of central directory with respect to the starting disk number: %d', [RelativeOffsetOfCentralDirectory]));
   end;
   Log(Delim);
 end;
@@ -545,7 +615,7 @@ begin
   begin
     if Signature <> ZIP64_END_OF_CENTRAL_DIR_LOCATOR_SIGNATURE then
       Log('INVALID SIGNATURE!!!!');
-    Log(Format('NumberOfTheDisk: %d', [NumberOfTheDisk]));
+    Log(Format('NumberOfTheDisk: %d', [DiskNumberStart]));
     Log(Format('RelativeOffset: %d', [RelativeOffset]));
     Log(Format('TotalNumberOfDisks: %d', [TotalNumberOfDisks]));
   end;

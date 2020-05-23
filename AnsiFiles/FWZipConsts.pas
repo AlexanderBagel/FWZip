@@ -1,11 +1,11 @@
-п»ї////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 //
 //  ****************************************************************************
 //  * Project   : FWZip
 //  * Unit Name : FWZipConsts
-//  * Purpose   : РўРёРїС‹ Рё РєРѕРЅСЃС‚Р°РЅС‚С‹ РёСЃРїРѕР»СЊР·СѓРµРјС‹Рµ РґР»СЏ СЂР°Р±РѕС‚С‹ СЃ ZIP Р°СЂС…РёРІР°РјРё
-//  * Author    : РђР»РµРєСЃР°РЅРґСЂ (Rouse_) Р‘Р°РіРµР»СЊ
-//  * Copyright : В© Fangorn Wizards Lab 1998 - 2020.
+//  * Purpose   : Типы и константы используемые для работы с ZIP архивами
+//  * Author    : Александр (Rouse_) Багель
+//  * Copyright : © Fangorn Wizards Lab 1998 - 2020.
 //  * Version   : 1.1.0
 //  * Home Page : http://rouse.drkb.ru
 //  * Home Blog : http://alexander-bagel.blogspot.ru
@@ -14,7 +14,7 @@
 //  * Latest Source  : https://github.com/AlexanderBagel/FWZip
 //  ****************************************************************************
 //
-//  РСЃРїРѕР»СЊР·СѓРµРјС‹Рµ РёСЃС‚РѕС‡РЅРёРєРё:
+//  Используемые источники:
 //  ftp://ftp.info-zip.org/pub/infozip/doc/appnote-iz-latest.zip
 //  http://zlib.net/zlib-1.2.5.tar.gz
 //  http://www.base2ti.com/
@@ -212,8 +212,8 @@ const
   LOCAL_FILE_HEADER_SIGNATURE = $04034B50;
   DATA_DESCRIPTOR_SIGNATURE = $08074B50;
 
-  // РњР°СЂРєРµСЂ РґР»СЏ СЂР°Р·Р±РёС‚С‹С… РЅР° С‡Р°СЃС‚Рё Р°СЂС…РёРІРѕРІ
-  // СЃРј. zip_format.txt 8.5.4 - 8.5.5
+  // Маркер для разбитых на части архивов
+  // см. zip_format.txt 8.5.4 - 8.5.5
   SPAN_DESCRIPTOR_SIGNATURE = DATA_DESCRIPTOR_SIGNATURE;
   TEMPORARY_SPANING_DESCRIPTOR_SIGNATURE = $30304B50;
 
@@ -226,7 +226,7 @@ const
 
   ZIP_SLASH = '/';
 
-  // Р¤Р»Р°РіРё РґР»СЏ GeneralPurposeBitFlag
+  // Флаги для GeneralPurposeBitFlag
   PBF_CRYPTED = 1;
 
   // (For Methods 8 and 9 - Deflating)
@@ -240,7 +240,7 @@ const
 
   PBF_UTF8 = $800;
 
-  // РєРѕРЅСЃС‚Р°РЅС‚С‹ РїРѕРґРґРµСЂР¶РёРІР°РµРјС‹С… РїРѕР»РµР№ ExData
+  // константы поддерживаемых полей ExData
   SUPPORTED_EXDATA_ZIP64 = 1;
   SUPPORTED_EXDATA_NTFSTIME = 10;
 
@@ -248,12 +248,12 @@ const
 
 type
   TProgressState = (
-    psStart,            // РЅР°С‡Р°Р»Рѕ СЂР°СЃРїР°РєРѕРІРєРё СЌР»РµРјРµРЅС‚Р°, СЂРµР·СѓР»СЊС‚РёСЂСѓСЋС‰РёР№ С„Р°Р№Р» РµС‰Рµ РЅРµ СЃРѕР·РґР°РЅ
-    psInitialization,   // СЂРµР·СѓР»СЊС‚РёСЂСѓСЋС‰РёР№ С„Р°Р№Р» СЃРѕР·РґР°РЅ Рё Р·Р°Р»РѕС‡РµРЅ, РїСЂРѕРёР·РІРѕРґРёС‚СЃСЏ РїРѕРґРіРѕС‚РѕРІРєР° Рє СЂР°СЃРїР°РєРѕРІРєРµ
-    psInProgress,       // РёРґРµС‚ СЂР°СЃРїР°РєРѕРІРєР°
-    psFinalization,     // СЂР°СЃРїР°РєРѕРІРєР° Р·Р°РІРµСЂС€РµРЅР°, СЃРµР№С‡Р°СЃ Р±СѓРґСѓС‚ СЂР°Р·СЂСѓС€РµРЅС‹ РІСЃРµ СЃР»СѓР¶РµР±РЅС‹Рµ РѕР±СЉРµРєС‚С‹, СЂРµР·СѓР»СЊС‚РёСЂСѓСЋС‰РёР№ С„Р°Р№Р» РІСЃРµ РµС‰Рµ Р·Р°Р»РѕС‡РµРЅ
-    psEnd,              // РѕРїРµСЂР°С†РёСЏ СЂР°СЃРїР°РєРѕРІРєРё РїРѕР»РЅРѕСЃС‚СЊСЋ Р·Р°РІРµСЂС€РµРЅР°, СЂРµР·СѓР»СЊС‚РёСЂСѓСЋС‰РёР№ С„Р°Р№Р» РґРѕСЃС‚СѓРїРµРЅ РЅР° С‡С‚РµРЅРёРµ/Р·Р°РїРёСЃСЊ
-    psException         // РѕС€РёР±РєР°
+    psStart,            // начало распаковки элемента, результирующий файл еще не создан
+    psInitialization,   // результирующий файл создан и залочен, производится подготовка к распаковке
+    psInProgress,       // идет распаковка
+    psFinalization,     // распаковка завершена, сейчас будут разрушены все служебные объекты, результирующий файл все еще залочен
+    psEnd,              // операция распаковки полностью завершена, результирующий файл доступен на чтение/запись
+    psException         // ошибка
     );
 
   TZipProgressEvent = procedure(Sender: TObject; const FileName: string;
@@ -267,15 +267,15 @@ type
   TZipLoadExDataEvent = procedure(Sender: TObject; ItemIndex: Integer;
     Tag: Word; Data: TStream) of object;
 
-  // РўРёРїС‹ РїРѕРІРµРґРµРЅРёСЏ TFWZipWriter РїСЂРё РѕС€РёР±РєРµ РІ РїСЂРѕС†РµСЃСЃРµ СЃРѕР·РґР°РЅРёСЏ Р°СЂС…РёРІР°
+  // Типы поведения TFWZipWriter при ошибке в процессе создания архива
   TExceptionAction =
   (
-    eaRetry,                // РїРѕРІС‚РѕСЂРёС‚СЊ РїРѕРїС‹С‚РєСѓ
-    eaSkip,                 // РїСЂРѕРїСѓСЃС‚РёС‚СЊ С‚РµРєСѓС‰РёР№ СЌР»РµРјРµРЅС‚
-    eaAbort,                // РѕСЃС‚Р°РЅРѕРІРёС‚СЊ СЃРѕР·РґР°РЅРёРµ Р°СЂС…РёРІР°
-    eaUseNewFilePath,       // РёСЃРїРѕР»СЊР·РѕРІР°С‚СЊ РЅРѕРІС‹Р№ РїСѓС‚СЊ Рє С„Р°Р№Р»Сѓ (РїР°СЂ. NewFilePath)
-    eaUseNewFilePathAndDel, // С‚Рѕ-Р¶Рµ С‡С‚Рѕ Рё acUseNewFilePath, С‚РѕР»СЊРєРѕ С„Р°Р№Р» СѓРґР°Р»СЏРµС‚СЃСЏ РїРѕСЃР»Рµ РёСЃРїРѕР»СЊР·РѕРІР°РЅРёСЏ
-    eaUseNewFileData        // РёСЃРїРѕР»СЊР·РѕРІР°С‚СЊ СЃРѕРґРµСЂР¶РёРјРѕРµ С„Р°Р№Р»Р° РёР· СЃС‚СЂРёРјР° (РїР°СЂ. NewFileData)
+    eaRetry,                // повторить попытку
+    eaSkip,                 // пропустить текущий элемент
+    eaAbort,                // остановить создание архива
+    eaUseNewFilePath,       // использовать новый путь к файлу (пар. NewFilePath)
+    eaUseNewFilePathAndDel, // то-же что и acUseNewFilePath, только файл удаляется после использования
+    eaUseNewFileData        // использовать содержимое файла из стрима (пар. NewFileData)
   );
 
   TZipBuildExceptionEvent = procedure(Sender: TObject;
@@ -287,13 +287,13 @@ type
     E: Exception; const ItemIndex: Integer;
     var Handled: Boolean) of object;
 
-  // РўРёРїС‹ РїРѕРІРµРґРµРЅРёСЏ TFWZipReader РїСЂРё РєРѕРЅС„Р»РёРєС‚Рµ РёРјРµРЅ С„Р°Р№Р»РѕРІ
+  // Типы поведения TFWZipReader при конфликте имен файлов
   TDuplicateAction =
   (
-    daSkip,                // РїСЂРѕРїСѓСЃС‚РёС‚СЊ С„Р°Р№Р»
-    daOverwrite,           // РїРµСЂРµР·Р°РїРёСЃР°С‚СЊ
-    daUseNewFilePath,      // СЃРѕС…СЂР°РЅРёС‚СЊ СЃ РЅРѕРІС‹Рј РёРјРµРЅРµРј
-    daAbort                // РѕС‚РјРµРЅРёС‚СЊ СЂР°СЃРїР°РєРѕРІРєСѓ
+    daSkip,                // пропустить файл
+    daOverwrite,           // перезаписать
+    daUseNewFilePath,      // сохранить с новым именем
+    daAbort                // отменить распаковку
   );
 
   TZipDuplicateEvent = procedure(Sender: TObject;
@@ -446,30 +446,30 @@ function FileSizeToStr(Value: Int64): string;
 begin
   if Value < 1024 then
   begin
-    Result := Format('%d Р±Р°Р№С‚', [Value]);
+    Result := Format('%d байт', [Value]);
     Exit;
   end;
   Value := Value div 1024;
   if Value < 1024 then
   begin
-    Result := Format('%d РєРёР»РѕР±Р°Р№С‚', [Value]);
+    Result := Format('%d килобайт', [Value]);
     Exit;
   end;
   Value := Value div 1024;
   if Value < 1024 then
   begin
-    Result := Format('%d РјРµРіР°Р±Р°Р№С‚', [Value]);
+    Result := Format('%d мегабайт', [Value]);
     Exit;
   end;
   Value := Value div 1024;
   if Value < 1024 then
   begin
-    Result := Format('%d РіРёРіР°Р±Р°Р№С‚', [Value]);
+    Result := Format('%d гигабайт', [Value]);
     Exit;
   end;
-  // РЅСѓ Р° С‡РµРј Р±РѕРі РЅРµ С€СѓС‚РёС‚? :)
+  // ну а чем бог не шутит? :)
   Value := Value div 1024;
-  Result := Format('%d С‚РµСЂР°Р±Р°Р№С‚', [Value]);
+  Result := Format('%d терабайт', [Value]);
 end;
 
 end.

@@ -174,11 +174,11 @@ begin
   with Zip.EndOfCentralDir do
   begin
     Log(Format('NumberOfThisDisk: %d', [NumberOfThisDisk]));
-    Log(Format('NumberOfTheDiskWithTheStart: %d', [NumberOfTheDiskWithTheStart]));
+    Log(Format('NumberOfTheDiskWithTheStart: %d', [DiskNumberStart]));
     Log(Format('TotalNumberOfEntriesOnThisDisk: %d', [TotalNumberOfEntriesOnThisDisk]));
     Log(Format('TotalNumberOfEntries: %d', [TotalNumberOfEntries]));
     Log(Format('SizeOfTheCentralDirectory: %d', [SizeOfTheCentralDirectory]));
-    Log(Format('OffsetOfStartOfCentralDirectory: %d', [OffsetOfStartOfCentralDirectory]));
+    Log(Format('OffsetOfStartOfCentralDirectory: %d', [RelativeOffsetOfCentralDirectory]));
     Log(Format('ZipfileCommentLength: %d', [ZipfileCommentLength]));
     if ZipfileCommentLength > 0 then
       Log(Format('Comment: %s', [Zip.Comment]));
@@ -322,7 +322,7 @@ begin
   begin
     if Signature <> ZIP64_END_OF_CENTRAL_DIR_LOCATOR_SIGNATURE then Exit;
     Log('ZIP64_END_OF_CENTRAL_DIR_LOCATOR_SIGNATURE  found');
-    Log(Format('NumberOfTheDisk: %d', [NumberOfTheDisk]));
+    Log(Format('NumberOfTheDisk: %d', [DiskNumberStart]));
     Log(Format('RelativeOffset: %d', [RelativeOffset]));
     Log(Format('TotalNumberOfDisks: %d', [TotalNumberOfDisks]));
   end;
@@ -338,12 +338,12 @@ begin
     Log(Format('SizeOfZip64EOFCentralDirectoryRecord: %d', [SizeOfZip64EOFCentralDirectoryRecord]));
     Log(Format('VersionMadeBy: %d', [VersionMadeBy]));
     Log(Format('VersionNeededToExtract: %d', [VersionNeededToExtract]));
-    Log(Format('number of this disk: %d', [Number1]));
-    Log(Format('number of the disk with the start of the central directory: %d', [Number2]));
-    Log(Format('total number of entries in the central directory on this disk: %d', [TotalNumber1]));
-    Log(Format('total number of entries in the central directory: %d', [TotalNumber2]));
-    Log(Format('size of the central directory: %d', [Size]));
-    Log(Format('offset of start of central directory with respect to the starting disk number: %d', [Offset]));
+    Log(Format('number of this disk: %d', [NumberOfThisDisk]));
+    Log(Format('number of the disk with the start of the central directory: %d', [DiskNumberStart]));
+    Log(Format('total number of entries in the central directory on this disk: %d', [TotalNumberOfEntriesOnThisDisk]));
+    Log(Format('total number of entries in the central directory: %d', [TotalNumberOfEntries]));
+    Log(Format('size of the central directory: %d', [SizeOfTheCentralDirectory]));
+    Log(Format('offset of start of central directory with respect to the starting disk number: %d', [RelativeOffsetOfCentralDirectory]));
   end;
   Log(Delim);
 end;

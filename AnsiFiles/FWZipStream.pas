@@ -1,14 +1,14 @@
-п»ї////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 //
 //  ****************************************************************************
 //  * Project   : FWZip
 //  * Unit Name : FWZipStream
-//  * Purpose   : Р’СЃРїРѕРјРѕРіР°С‚РµР»СЊРЅС‹Рµ СЃС‚СЂРёРјС‹ РґР»СЏ РїРѕРґРґРµСЂР¶РєРё С€РёС„СЂРѕРІР°РЅРёСЏ РЅР° Р»РµС‚Сѓ,
-//  *           : Рё СѓСЃРµС‡РµРЅРЅРѕРіРѕ Р·Р°РіРѕР»РѕРІРєР° ZLib,
-//  *           : РґР»СЏ РїРѕРґРґРµСЂР¶РєРё СЂР°Р·Р±РёС‚С‹С… РЅР° С‚РѕРјР° Р°СЂС…РёРІРѕРІ Рё РїСЂРѕС‡РµРµ СѓС‚РёР»РёС‚Р°СЂРЅС‹Рµ
-//  *           : СЃС‚СЂРёРјС‹ РґР»СЏ РїСЂРѕРІРµСЂРєРё С†РµР»РѕСЃС‚РЅРѕСЃС‚Рё Р°СЂС…РёРІР°
-//  * Author    : РђР»РµРєСЃР°РЅРґСЂ (Rouse_) Р‘Р°РіРµР»СЊ
-//  * Copyright : В© Fangorn Wizards Lab 1998 - 2020.
+//  * Purpose   : Вспомогательные стримы для поддержки шифрования на лету,
+//  *           : и усеченного заголовка ZLib,
+//  *           : для поддержки разбитых на тома архивов и прочее утилитарные
+//  *           : стримы для проверки целостности архива
+//  * Author    : Александр (Rouse_) Багель
+//  * Copyright : © Fangorn Wizards Lab 1998 - 2020.
 //  * Version   : 1.1.0
 //  * Home Page : http://rouse.drkb.ru
 //  * Home Blog : http://alexander-bagel.blogspot.ru
@@ -17,27 +17,27 @@
 //  * Latest Source  : https://github.com/AlexanderBagel/FWZip
 //  ****************************************************************************
 //
-//  РСЃРїРѕР»СЊР·СѓРµРјС‹Рµ РёСЃС‚РѕС‡РЅРёРєРё:
+//  Используемые источники:
 //  ftp://ftp.info-zip.org/pub/infozip/doc/appnote-iz-latest.zip
 //  http://zlib.net/zlib-1.2.5.tar.gz
 //  http://www.base2ti.com/
 //
 //
-//  РћРїРёСЃР°РЅРёРµ РёРґРµРё TFWZipItemStream:
-//  РџСЂРё РїРѕРјРµС‰РµРЅРёРё РІ Р°СЂС…РёРІ СЃР¶Р°С‚РѕРіРѕ Р±Р»РѕРєР° РґР°РЅРЅС‹С… РјРµС‚РѕРґРѕРј Deflate Сѓ РЅРµРіРѕ
-//  РѕС‚СЂРµР·Р°РµС‚СЃСЏ РґРІСѓС…Р±Р°Р№С‚РЅС‹Р№ Р·Р°РіРѕР»РѕРІРѕРє РІ РєРѕС‚РѕСЂРѕРј СѓРєР°Р·Р°РЅС‹ РїР°СЂР°РјРµС‚СЂС‹ СЃР¶Р°С‚РёСЏ.
-//  Рў.Рµ. РІ Р°СЂС…РёРІ РїРѕРјРµС‰Р°СЋС‚СЃСЏ СЃР°РјРё РґР°РЅРЅС‹Рµ РІ С‡РёСЃС‚РѕРј РІРёРґРµ.
-//  Р”Р»СЏ СЂР°СЃРїР°РєРѕРІРєРё РЅРµРѕР±С…РѕРґРёРјРѕ РґР°РЅРЅС‹Р№ Р·Р°РіРѕР»РѕРІРѕРє РІРѕСЃСЃС‚Р°РЅРѕРІРёС‚СЊ.
-//  TFWZipItemStream РїРѕР·РІРѕР»СЏРµС‚ РґРѕР±Р°РІРёС‚СЊ РґР°РЅРЅС‹Р№ Р·Р°РіРѕР»РѕРІРѕРє "РЅР° Р»РµС‚Сѓ"
-//  Р°Р±СЃРѕР»СЋС‚РЅРѕ РїСЂРѕР·СЂР°С‡РЅРѕ РґР»СЏ РІРЅРµС€РЅРµРіРѕ РєРѕРґР°.
-//  РЎР°Рј Р·Р°РіРѕР»РѕРІРѕРє РіРµРЅРµСЂРёСЂСѓРµС‚СЃСЏ РІ РєРѕРЅСЃС‚СЂСѓРєС‚РѕСЂРµ Рё РїРѕРґСЃС‚Р°РІР»СЏРµС‚СЃСЏ РІ РјРµС‚РѕРґРµ Read.
-//  РўР°Рє-Р¶Рµ РєР»Р°СЃСЃ, РІС‹СЃС‚СѓРїР°СЏ РїРѕСЃСЂРµРґРЅРёРєРѕРј РјРµР¶РґСѓ РґРІСѓРјСЏ СЃС‚СЂРёРјР°РјРё,
-//  РїРѕР·РІРѕР»СЏРµС‚ РїСЂРѕРёР·РІРѕРґРёС‚СЊ С€РёС„СЂРѕРІР°РЅРёРµ Рё РґРµС€РёС„СЂРѕРІРєСѓ РїРµСЂРµРґР°РІР°РµРјС‹С… РґР°РЅРЅС‹С….
-//  РЁРёС„СЂРѕРІР°РЅРёРµ РїСЂРѕРёР·РІРѕРґРёС‚СЃСЏ РІ РјРµС‚РѕРґРµ Write, РІ СЌС‚РѕС‚ РјРѕРјРµРЅС‚ РєР»Р°СЃСЃ СЏРІР»СЏРµС‚СЃСЏ
-//  РїРѕСЃСЂРµРґРЅРёРєРѕРј РјРµР¶РґСѓ TCompressionStream Рё СЂРµР·СѓР»СЊС‚РёСЂСѓСЋС‰РёРј СЃС‚СЂРёРјРѕРј.
-//  Р”РµС€РёС„СЂРѕРІР°РЅРёРµ РѕСЃСѓС‰РµСЃС‚РІР»СЏРµС‚СЃСЏ РІ РјРµС‚РѕРґРµ Read, РІ СЌС‚РѕС‚ РјРѕРјРµРЅС‚ РєР»Р°СЃСЃ СЏРІР»СЏРµС‚СЃСЏ
-//  РїРѕСЃСЂРµРґРЅРёРєРѕРј РјРµР¶РґСѓ СЃС‚СЂРёРјРѕРј СЃРѕ СЃР¶Р°С‚С‹РјРё Рё
-//  РїРѕС€РёС„СЂРѕРІР°РЅРЅС‹РјРё РґР°РЅРЅС‹РјРё Рё TDecompressionStream.
+//  Описание идеи TFWZipItemStream:
+//  При помещении в архив сжатого блока данных методом Deflate у него
+//  отрезается двухбайтный заголовок в котором указаны параметры сжатия.
+//  Т.е. в архив помещаются сами данные в чистом виде.
+//  Для распаковки необходимо данный заголовок восстановить.
+//  TFWZipItemStream позволяет добавить данный заголовок "на лету"
+//  абсолютно прозрачно для внешнего кода.
+//  Сам заголовок генерируется в конструкторе и подставляется в методе Read.
+//  Так-же класс, выступая посредником между двумя стримами,
+//  позволяет производить шифрование и дешифровку передаваемых данных.
+//  Шифрование производится в методе Write, в этот момент класс является
+//  посредником между TCompressionStream и результирующим стримом.
+//  Дешифрование осуществляется в методе Read, в этот момент класс является
+//  посредником между стримом со сжатыми и
+//  пошифрованными данными и TDecompressionStream.
 //
 
 unit FWZipStream;
@@ -58,6 +58,7 @@ uses
 
 const
   NO_STREAM = -1;
+  MinPartSize = {$IFDEF UNIT_TEST}100{$ELSE}$10000{$ENDIF};
 
 type
   TFWZipItemStream = class(TStream)
@@ -82,9 +83,9 @@ type
 
   EFWZipItemItemUnpackedStreamException = class(Exception);
 
-  // Р’РёСЂС‚СѓР°Р»СЊРЅС‹Р№ СЃС‚СЂРёРј РґР°РЅРЅС‹С….
-  // РСЃРїРѕР»СЊР·СѓРµС‚СЃСЏ РґР»СЏ Р±РѕР»РµРµ РїСЂРёРІС‹С‡РЅРѕР№ СЂР°Р±РѕС‚С‹ СЃ РЅРµР·Р°РїР°РєРѕРІР°РЅРЅС‹Рј Р±Р»РѕРєРѕРј РґР°РЅРЅС‹С…,
-  // СЂР°СЃРїРѕР»РѕР¶РµРЅРЅРѕРіРѕ РІ Р°СЂС…РёРІРµ
+  // Виртуальный стрим данных.
+  // Используется для более привычной работы с незапакованным блоком данных,
+  // расположенного в архиве
   TFWZipItemItemUnpackedStream = class(TStream)
   private
     FOwnerStream: TStream;
@@ -101,7 +102,7 @@ type
     function Seek(Offset: Longint; Origin: Word): Longint; override;
   end;
 
-  //  TFakeStream РїСЂРµРґРЅР°Р·РЅР°С‡РµРЅ РґР»СЏ РїСЂРѕРІРµСЂРєРё Р°СЂС…РёРІР° РЅР° С†РµР»РѕСЃС‚РЅРѕСЃС‚СЊ
+  //  TFakeStream предназначен для проверки архива на целостность
   TFakeStream = class(TStream)
   private
     FSize: Int64;
@@ -126,7 +127,7 @@ type
 
   TFWLastVolumesType = (lvtLastPart, lvtCentralDirectory);
 
-  // Р”Р°РЅРЅС‹Р№ СЃС‚СЂРёРј РёСЃРїРѕР»СЊР·СѓРµС‚СЃСЏ РїСЂРё СЂР°Р±РѕС‚Рµ СЃ Р°СЂС…РёРІРѕРј СЂР°Р·Р±РёС‚С‹Рј РЅР° С‚РѕРјР°
+  // Данный стрим используется при работе с архивом разбитым на тома
   TFWAbstractMultiStream = class(TStream)
   private
     FMode: TFWMultiStreamMode;
@@ -145,8 +146,8 @@ type
     property VolumeSize[Index: Integer]: Int64 read GetVolumeSizeByIndex;
     procedure UpdateVolumeSize; virtual; abstract;
     /// <summary>
-    ///  РњРµС‚РѕРґ РґРѕР»Р¶РµРЅ РІС‹Р·С‹РІР°С‚СЊСЃСЏ С‚РѕР»СЊРєРѕ РґР»СЏ СЂРµР¶РёРјР° msmWrite РїРѕСЃР»Рµ РѕРєРѕРЅС‡Р°РЅРёСЏ
-    ///  Р·Р°РїРёСЃРё Р°СЂС…РёРІР°. РџСЂРёРјРµРЅСЏРµС‚СЃСЏ РґР»СЏ Р·Р°РєСЂС‹С‚РёСЏ РїРѕСЃР»РµРґРЅРµРіРѕ РґРѕРјР° Рё РµРіРѕ РїРµСЂРµРёРјРµРЅРѕРІР°РЅРёСЏ.
+    ///  Метод должен вызываться только для режима msmWrite после окончания
+    ///  записи архива. Применяется для закрытия последнего дома и его переименования.
     /// </summary>
     procedure FinallyWrite; virtual;
   protected
@@ -161,8 +162,8 @@ type
     function Seek(const Offset: Int64; Origin: TSeekOrigin): Int64; overload; override;
     function Seek(DiskNumber: Integer; Offset: Int64): Int64; overload;
     /// <summary>
-    ///  РќР°С‡РёРЅР°РµС‚ РЅРѕРІС‹Р№ С‚РѕРј Р°СЂС…РёРІР° РґР°Р¶Рµ РµСЃР»Рё РїСЂРµРґС‹РґСѓС‰РёР№ Р±С‹Р» Р·Р°РїРѕР»РЅРµРЅ РЅРµ РґРѕ РєРѕРЅС†Р°
-    ///  Р Р°Р±РѕС‚Р°РµС‚ С‚РѕР»СЊРєРѕ РІ СЂРµР¶РёРјРµ msmWrite
+    ///  Начинает новый том архива даже если предыдущий был заполнен не до конца
+    ///  Работает только в режиме msmWrite
     /// </summary>
     procedure StartNewVolume;
     property Mode: TFWMultiStreamMode read FMode;
@@ -172,10 +173,8 @@ type
 
   TReadSizeMode = (rsmQuick, rsmFull);
 
-  // РСЃРїРѕР»СЊР·СѓРµС‚СЃСЏ РґР»СЏ СЂР°Р±РѕС‚С‹ СЃ С‚РѕРјР°РјРё Р°СЂС…РёРІР° РґРѕСЃС‚СѓРїРЅС‹Рј РёР· С„Р°Р№Р»РѕРІРѕР№ СЃРёСЃС‚РµРјС‹
+  // Используется для работы с томами архива доступным из файловой системы
   TFWFileMultiStream = class(TFWAbstractMultiStream)
-  private const
-    MinPartSize = {$IFDEF UNIT_TEST}100{$ELSE}$10000{$ENDIF};
   private
     FCurrentStreamNumber: Integer;
     FCurrentStream: TFileStream;
@@ -199,7 +198,7 @@ type
     procedure UpdateVolumeSize; override;
     procedure FinallyWrite; override;
   protected
-    function GetVolumeExt(Index: Integer): string; virtual; // РµСЃР»Рё РёРјРµРЅР° С„Р°Р№Р»РѕРІ РЅРµ .zРҐРҐ С‚Рѕ РїРµСЂРµРєСЂС‹РІР°РµРј СЌС‚Сѓ РїСЂРѕС†РµРґСѓСЂСѓ РІ РЅР°СЃР»РµРґРЅРёРєРµ
+    function GetVolumeExt(Index: Integer): string; virtual; // если имена файлов не .zХХ то перекрываем эту процедуру в наследнике
   public
     constructor CreateRead(const FilePath: string; ReadSizeMode: TReadSizeMode = rsmFull);
     constructor CreateWrite(const FilePath: string; PartSize: Int64 = MinPartSize);
@@ -211,7 +210,7 @@ type
 implementation
 
 const
-  E_READONLY = 'TFWZipItemItemUnpackedStream СЂР°Р±РѕС‚Р°РµС‚ С‚РѕР»СЊРєРѕ РІ СЂРµР¶РёРјРµ ReadOnly';
+  E_READONLY = 'TFWZipItemItemUnpackedStream работает только в режиме ReadOnly';
 
 { TFWZipItemStream }
 
@@ -228,14 +227,14 @@ begin
   FPosition := 0;
 
   // Rouse_ 30.10.2013
-  // РЈСЃС‚Р°СЂРµРІС€РёР№ РєРѕРґ
+  // Устаревший код
   {$IFDEF USE_AUTOGENERATED_ZLIB_HEADER}
 
   // Rouse_ 17.03.2011
-  // Р Р°Р·РјРµСЂС‡РёРє РІСЃРµ-Р¶Рµ РЅСѓР¶РЅРѕ РїСЂР°РІРёС‚СЊ СѓРІРµР»РёС‡РёРєР°СЏ РЅР° СЂР°Р·РјРµСЂ Р·Р°РіРѕР»РѕРІРєР°
+  // Размерчик все-же нужно править увеличикая на размер заголовка
   Inc(FSize, 2);
-  // Р’РѕСЃСЃС‚Р°РЅР°РІР»РёРІР°РµРј РїСЂРѕРїСѓС‰РµРЅРЅС‹Р№ Р·Р°РіРѕР»РѕРІРѕРє ZLib СЃС‚СЂРёРјР°
-  // СЃРј. deflate.c - int ZEXPORT deflate (strm, flush)
+  // Восстанавливаем пропущенный заголовок ZLib стрима
+  // см. deflate.c - int ZEXPORT deflate (strm, flush)
 
   // uInt header = (Z_DEFLATED + ((s->w_bits-8)<<4)) << 8;
   FHeader := (Z_DEFLATED + (7 {32k Window size} shl 4)) shl 8;
@@ -249,9 +248,9 @@ begin
   // else
   //     level_flags = 3;
   //
-  // СЃР°Рј CompressLevel (level_flags)
-  // Р±РµСЂРµС‚СЃСЏ РёР· СѓР¶Рµ Р·Р°РїРѕР»РЅРµРЅРЅРѕРіРѕ GeneralPurposeBitFlag
-  // Р·РґРµСЃСЊ РјС‹ РёР· Р±РёС‚РѕРІРѕР№ РјР°СЃРєРё РІРѕСЃСЃС‚Р°РЅР°РІР»РёРІР°РµРј РѕСЂРёРіРёРЅР°Р»СЊРЅС‹Рµ Р·РЅР°С‡РµРЅРёСЏ
+  // сам CompressLevel (level_flags)
+  // берется из уже заполненного GeneralPurposeBitFlag
+  // здесь мы из битовой маски восстанавливаем оригинальные значения
 
   case CompressLevel of
     PBF_COMPRESS_SUPERFAST:
@@ -268,7 +267,7 @@ begin
   FHeader := FHeader or (CompressLevel shl 6);
 
   // if (s->strstart != 0) header |= PRESET_DICT;
-  // СЃР»РѕРІР°СЂСЊ РЅРµ РёСЃРїРѕР»СЊР·СѓРµС‚СЃСЏ - РѕСЃС‚Р°РІР»СЏРµРј Р±РµР· РёР·РјРµРЅРµРЅРёР№
+  // словарь не используется - оставляем без изменений
 
   // header += 31 - (header % 31);
   Inc(FHeader, 31 - (FHeader mod 31));
@@ -289,12 +288,12 @@ var
   DecryptBuff: Pointer;
 begin
   // Rouse_ 30.10.2013
-  // РЈСЃС‚Р°СЂРµРІС€РёР№ РєРѕРґ
+  // Устаревший код
   {$IFDEF USE_AUTOGENERATED_ZLIB_HEADER}
   if FPosition = 0 then
   begin
-    // РµСЃР»Рё Р·Р°С‡РёС‚С‹РІР°СЋС‚СЃСЏ РґР°РЅРЅС‹Рµ СЃ СЃР°РјРѕРіРѕ РЅР°С‡Р°Р»Р°
-    // РЅРµРѕР±С…РѕРґРёРјРѕ РїРµСЂРµРґ РЅРёРјРё СЂР°Р·РјРµСЃС‚РёС‚СЊ Р·Р°РіРѕР»РѕРІРѕРє ZLib
+    // если зачитываются данные с самого начала
+    // необходимо перед ними разместить заголовок ZLib
     P := @FHeader;
     Move(P^, Buffer, 2);
     FOwner.Position := FStart;
@@ -305,7 +304,7 @@ begin
     FOwner.Position := FStart;
     if FDecryptor <> nil then
     begin
-      // РІ СЃР»СѓС‡Р°Рµ РµСЃР»Рё С„Р°Р№Р» Р·Р°С€РёС„СЂРѕРІР°РЅ, РїСЂРѕРёР·РІРѕРґРёРј СЂР°СЃС€РёС„СЂРѕРІРєСѓ Р±Р»РѕРєР°
+      // в случае если файл зашифрован, производим расшифровку блока
       GetMem(DecryptBuff, Count - 2);
       try
         Result := FOwner.Read(DecryptBuff^, Count - 2);
@@ -331,7 +330,7 @@ begin
       Count := Size - Position;
     if FDecryptor <> nil then
     begin
-      // РІ СЃР»СѓС‡Р°Рµ РµСЃР»Рё С„Р°Р№Р» Р·Р°С€РёС„СЂРѕРІР°РЅ, РїСЂРѕРёР·РІРѕРґРёРј СЂР°СЃС€РёС„СЂРѕРІРєСѓ Р±Р»РѕРєР°
+      // в случае если файл зашифрован, производим расшифровку блока
       GetMem(DecryptBuff, Count);
       try
         Result := FOwner.Read(DecryptBuff^, Count);
@@ -371,15 +370,15 @@ begin
     Result := FOwner.Write(Buffer, Count)
   else
   begin
-    // РєСЂРёРїС‚СѓРµРј Р±СѓС„РµСЂ
+    // криптуем буфер
     GetMem(EncryptBuffer, Count);
     try
       Move(Buffer, EncryptBuffer^, Count);
 
       // Rouse_ 31.10.2013
-      // РЈСЃС‚Р°СЂРµРІС€РёР№ РєРѕРґ
+      // Устаревший код
       {$IFDEF USE_AUTOGENERATED_ZLIB_HEADER}
-      // РЁРёС„СЂРѕРІР°С‚СЊ Р±Р»РѕРє РЅСѓР¶РЅРѕ РїСЂРѕРїСѓСЃС‚РёРІ РґРІСѓР±Р°Р№С‚РЅС‹Р№ Р·Р°РіРѕР»РѕРІРѕРє ZLib
+      // Шифровать блок нужно пропустив двубайтный заголовок ZLib
       if FPosition = 0 then
       begin
         Inc(EncryptBuffer, 2);
@@ -402,7 +401,7 @@ end;
 constructor TFWZipItemItemUnpackedStream.Create;
 begin
   raise EFWZipItemItemUnpackedStreamException.Create(
-    'РќРµРІРµСЂРЅС‹Р№ РІС‹Р·РѕРІ РєРѕРЅСЃС‚СЂСѓРєС‚РѕСЂР°');
+    'Неверный вызов конструктора');
 end;
 
 constructor TFWZipItemItemUnpackedStream.Create(Owner: TStream; Offset: Int64;
@@ -485,7 +484,7 @@ end;
 
 constructor EFWMultiStreamException.Create(ADiskNumber: Integer);
 begin
-  inherited CreateFmt('Can not find disk image в„–%d', [ADiskNumber]);
+  inherited CreateFmt('Can not find disk image №%d', [ADiskNumber]);
 end;
 
 constructor EFWMultiStreamException.Create(const AMessage: string);
@@ -555,7 +554,7 @@ begin
     PartialRead := FCurrentDiskData.Read(P^, Count - Result);
 
     if PartialRead = 0 then
-      raise EFWMultiStreamException.Create('РћС€РёР±РєР° С‡С‚РµРЅРёСЏ РґР°РЅРЅС‹С….');
+      raise EFWMultiStreamException.Create('Ошибка чтения данных.');
 
     Inc(Result, PartialRead);
     Inc(FPosition, PartialRead);
@@ -603,10 +602,10 @@ begin
   CheckMode(msmWrite);
   TotalSize := GetTotalSize;
 
-  // Р•СЃР»Рё РёР·РјРµРЅРµРЅРёСЏ СЂР°Р·РјРµСЂР° РЅРµС‚, С‚Рѕ Рё РЅРµС‡РµРіРѕ РґРµР»Р°С‚СЊ
+  // Если изменения размера нет, то и нечего делать
   if TotalSize = NewSize then Exit;
 
-  // Р Р°Р·РјРµСЂ СЃС‚СЂРёРјР° СѓРјРµРЅСЊС€Р°РµС‚СЃСЏ
+  // Размер стрима уменьшается
   if TotalSize > NewSize then
   begin
     Position := NewSize;
@@ -615,10 +614,10 @@ begin
     Exit;
   end;
 
-  // Р’ РїСЂРѕС‚РёРІРЅРѕРј СЃР»СѓС‡Р°Рµ СѓРІРµР»РёС‡РёРІР°С‚СЊ Р±СѓРґРµРј СЃ СЃР°РјРѕРіРѕ РїРѕСЃР»РµРґРЅРµРіРѕ С‚РѕРјР°
+  // В противном случае увеличивать будем с самого последнего тома
   GetStream(GetDiskCount - 1, FCurrentDiskData);
 
-  // РљРѕС‚РѕСЂРѕРіРѕ РјРѕР¶РµС‚ Рё РЅРµ Р±С‹С‚СЊ
+  // Которого может и не быть
   if FCurrentDiskData = nil then
     FCurrentDiskData := GetNextWriteVolume;
 
@@ -644,7 +643,7 @@ procedure TFWAbstractMultiStream.StartNewVolume;
 begin
   CheckMode(msmWrite);
   if Position <> Size then
-    raise EFWMultiStreamException.Create('РќРµР»СЊР·СЏ Р·Р°РІРµСЂС€Р°С‚СЊ С‚РµРєСѓС‰РёР№ С‚РѕРј РЅР°С…РѕРґСЏСЃСЊ РІ СЃРµСЂРµРґРёРЅРµ Р°СЂС…РёРІР°.');
+    raise EFWMultiStreamException.Create('Нельзя завершать текущий том находясь в середине архива.');
   if FCurrentDiskData <> nil then
     if FCurrentDiskData.Size > 0 then
       GetNextWriteVolume;
@@ -677,7 +676,7 @@ begin
     P := PByte(@Buffer);
     Inc(P, Result);
     if FCurrentDiskData.Write(P^, PartialWrite) <> PartialWrite then
-      raise EFWMultiStreamException.Create('РћС€РёР±РєР° Р·Р°РїРёСЃРё РґР°РЅРЅС‹С….');
+      raise EFWMultiStreamException.Create('Ошибка записи данных.');
     Inc(Result, PartialWrite);
     Inc(FPosition, PartialWrite);
     UpdateVolumeSize;
@@ -717,7 +716,7 @@ begin
   begin
     if PartSize < MinPartSize then
       raise EFWFileMultiStreamException.CreateFmt(
-        'РЈРєР°Р·Р°РЅ СЃР»РёС€РєРѕРј РјР°Р»РµРЅСЊРєРёР№ СЂР°Р·РјРµСЂ С‚РѕРјР° (%d), РјРёРЅРёРјР°Р»СЊРЅС‹Р№ СЂР°Р·РјРµСЂ = %d', [PartSize, MinPartSize]);
+        'Указан слишком маленький размер тома (%d), минимальный размер = %d', [PartSize, MinPartSize]);
     FVolumeSize := PartSize;
   end;
   inherited Create(AMode);
@@ -781,7 +780,7 @@ begin
     begin
       F := TFileStream.Create(FVolumesPath[I], fmShareDenyWrite);
       try
-        // РљР°Р¶РґР°СЏ Р·Р°РїРёСЃСЊ СЃРѕРґРµСЂР¶РёС‚ СЂР°Р·РјРµСЂ СЃ РєРѕС‚РѕСЂРѕРіРѕ РѕРЅР° РЅР°С‡РёРЅР°РµС‚СЃСЏ РІ РїР»РѕСЃРєРѕРј РјР°СЃСЃРёРІРµ
+        // Каждая запись содержит размер с которого она начинается в плоском массиве
         FReadVolumesSize[I] := FTotalSize;
         Inc(FTotalSize, F.Size);
       finally
