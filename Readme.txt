@@ -1,4 +1,4 @@
-﻿FWZip версия 1.1.0 от ?? мая 2020 года.
+﻿FWZip версия 1.1.0 от 23 мая 2020 года.
 Автор: Александр (Rouse_) Багель
 Авторский сайт: http://rouse.drkb.ru
 Авторский блог: http://alexander-bagel.blogspot.ru/
@@ -190,7 +190,7 @@ mailto: rouse79@yandex.ru
     - Добавлен метод TFWZipReaderItem.CreateDecompressionStream для работы с блоком данных извне
     - Добавлена поддержка длинных путей и имен файлов
 	
-  1.1.0 (от ?? мая 2020 года)
+  1.1.0 (от 23 мая 2020 года)
   
     ВАЖНО!!!
     Произошли изменения в наименованиях некоторых ранее не используемых полей структур TEndOfCentralDir, TZip64EOFCentralDirectoryLocator и TZip64EOFCentralDirectoryRecord.
