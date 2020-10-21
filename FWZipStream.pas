@@ -9,7 +9,7 @@
 //  *           : стримы для проверки целостности архива
 //  * Author    : Александр (Rouse_) Багель
 //  * Copyright : © Fangorn Wizards Lab 1998 - 2020.
-//  * Version   : 1.1.0
+//  * Version   : 1.1.1
 //  * Home Page : http://rouse.drkb.ru
 //  * Home Blog : http://alexander-bagel.blogspot.ru
 //  ****************************************************************************
@@ -839,7 +839,14 @@ begin
       Break;
   end;
   if LastDiskIndex >= 0 then
+  begin
+    // Rouse_ 21.10.2020
+    // Если файл с именем архива уже существует, то RenameFile не сможет
+    // переименовать последний том архива.
+    // Спасибо Владиславу Нечепоренко за найденую ошибку.
+    DeleteFile(FFilePath);
     RenameFile(FVolumesPath[LastDiskIndex], FFilePath);
+  end;
   SetLength(FReadVolumesSize, 0);
   SetLength(FWriteVolumesSize, 0);
   FVolumesPath.Clear;
