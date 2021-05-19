@@ -59,7 +59,9 @@ type
     procedure TestDeleteFromZip;
     procedure TestSplitZip;
     procedure TestBuildWithException;
+    {$IFNDEF WINE}
     procedure TestExtractOverride;
+    {$ENDIF}
     procedure TestExData;
     // тесты стрима для мультипарт архива
     procedure TestMultiStream1;
@@ -84,8 +86,11 @@ type
     procedure TestMultyPartDeleteFromZip;
     procedure TestMultyPartSplitZip;
     procedure TestMultyPartBuildWithException;
+    {$IFNDEF WINE}
     procedure TestMultyPartExtractOverride;
+    {$ENDIF}
     procedure TestMultyPartExData;
+    procedure TestMultyPartBuildSingleZip;
     // Тяжелые тесты для обычного архива
     procedure TestZip64_BigFiles;
     procedure TestZip64_BigFilesCount;
@@ -1071,6 +1076,7 @@ begin
   DeleteFolder(DstFolder);
 end;
 
+{$IFNDEF WINE}
 procedure TFWZipUnitTest.TestExtractOverride;
 var
   Count: TDataCount;
@@ -1112,6 +1118,7 @@ begin
   DeleteFolder(SrcFolder);
   DeleteFolder(DstFolder);
 end;
+{$ENDIF}
 
 procedure TFWZipUnitTest.TestMerge2Zip;
 var
@@ -1620,6 +1627,37 @@ begin
     raise EFWZipUnitTestException.Create('Прочитаны неверные данные');
 
   Clear;
+  DeleteFolder(DstFolder);
+end;
+
+procedure TFWZipUnitTest.TestMultyPartBuildSingleZip;
+var
+  SrcFolder, DstFolder: string;
+  M: TFWFileMultiStream;
+begin
+  // проверка, если размер тома указан больше чем финальный размер архива
+  // должен создасться обычный немноготомный архив
+
+  Clear;
+  SrcFolder := GetTestFolderPath(215, True, True);
+  DstFolder := GetTestFolderPath(215, False, True);
+  CreateTestDataInSrcFolder(SrcFolder);
+  M := TFWFileMultiStream.CreateWrite(DstFolder + ZipName, 1024 * 1024 * 8);
+  try
+    Writer.AddFolder('', SrcFolder, '');
+    Writer.BuildZip(M);
+  finally
+    M.Free;
+  end;
+
+  if FileExists(DstFolder + ChangeFileExt(ZipName, '.z01')) then
+    raise EFWZipUnitTestException.Create('Создан многотомный архив!!!');
+
+  Reader.LoadFromFile(DstFolder + ZipName);
+  Reader.Check;
+
+  Clear;
+  DeleteFolder(SrcFolder);
   DeleteFolder(DstFolder);
 end;
 
@@ -2241,7 +2279,7 @@ var
   M: TFWFileMultiStream;
 begin
   Clear;
-  SrcFolder := GetTestFolderPath(12, True, True);
+  SrcFolder := GetTestFolderPath(212, True, True);
   Count := CreateTestDataInSrcFolder(SrcFolder);
   Writer.AddFolder('', SrcFolder, '*.*', True);
 
@@ -2256,7 +2294,7 @@ begin
     M.Free;
   end;
 
-  DstFolder := GetTestFolderPath(12, False, True);
+  DstFolder := GetTestFolderPath(212, False, True);
 
   Method.Code := @OnLoadExData;
   Method.Data := Reader;
@@ -2284,6 +2322,7 @@ begin
   DeleteFolder(DstFolder);
 end;
 
+{$IFNDEF WINE}
 procedure TFWZipUnitTest.TestMultyPartExtractOverride;
 var
   Count: TDataCount;
@@ -2338,6 +2377,7 @@ begin
   DeleteFolder(SrcFolder);
   DeleteFolder(DstFolder);
 end;
+{$ENDIF}
 
 procedure TFWZipUnitTest.TestMultyPartMerge2Zip;
 var

@@ -6,7 +6,7 @@
 //  * Purpose   : Набор классов для распаковки ZIP архива
 //  * Author    : Александр (Rouse_) Багель
 //  * Copyright : © Fangorn Wizards Lab 1998 - 2020.
-//  * Version   : 1.1.0
+//  * Version   : 1.1.1
 //  * Home Page : http://rouse.drkb.ru
 //  * Home Blog : http://alexander-bagel.blogspot.ru
 //  ****************************************************************************
@@ -274,6 +274,7 @@ var
   hFile: THandle;
   FileDate: Integer;
   DuplicateAction: TDuplicateAction;
+  ResultFileName: string;
 begin
   Result := erDone;
 
@@ -282,14 +283,23 @@ begin
   if Path = '' then
     FullPath := GetCurrentDir;
 
+  // Rouse_ 19.05.2021
+  // Даем возможность поменять имя распаковываемого файла на лету
+  // Отдельное спасибо Артуру Алееву за обнаружение неверной работы с параметром
+  if NewFileName = '' then
+    ResultFileName := FFileHeader.FileName
+  else
+    ResultFileName := NewFileName;
+
   FullPath := StringReplace(
-    IncludeTrailingPathDelimiter(FullPath) + FFileHeader.FileName,
+    IncludeTrailingPathDelimiter(FullPath) + ResultFileName,
     ZIP_SLASH, '\', [rfReplaceAll]);
 
-  // Rouse_ 23.03.2015
-  // Даем возможность поменять имя распаковываемого файла на лету
-  if NewFileName <> '' then
-    FullPath := ExtractFilePath(FullPath) + NewFileName;
+// BAD CODE
+//  // Rouse_ 23.03.2015
+//  // Даем возможность поменять имя распаковываемого файла на лету
+//  if NewFileName <> '' then
+//    FullPath := ExtractFilePath(FullPath) + NewFileName;
 
   // Rouse_ 20.12.2019
   // Даем возможность работы с длинными путями
