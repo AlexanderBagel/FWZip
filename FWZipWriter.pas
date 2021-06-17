@@ -6,7 +6,7 @@
 //  * Purpose   : Класс для создания ZIP архива
 //  * Author    : Александр (Rouse_) Багель
 //  * Copyright : © Fangorn Wizards Lab 1998 - 2020.
-//  * Version   : 1.1.0
+//  * Version   : 1.1.1
 //  * Home Page : http://rouse.drkb.ru
 //  * Home Blog : http://alexander-bagel.blogspot.ru
 //  ****************************************************************************
@@ -1272,7 +1272,10 @@ var
 begin
   DateTimeToSystemTime(Now, SystemTime);
   SystemTimeToFileTime(SystemTime, Result);
-  FileTimeToLocalFileTime(Result, Result);
+  // Rouse_ 17.06.2021
+  // Случайно заметил что не верно приводилось время
+//  FileTimeToLocalFileTime(Result, Result);
+  LocalFileTimeToFileTime(Result, Result);
 end;
 
 //
