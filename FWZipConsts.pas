@@ -6,7 +6,7 @@
 //  * Purpose   : Типы и константы используемые для работы с ZIP архивами
 //  * Author    : Александр (Rouse_) Багель
 //  * Copyright : © Fangorn Wizards Lab 1998 - 2020.
-//  * Version   : 1.1.0
+//  * Version   : 1.1.1
 //  * Home Page : http://rouse.drkb.ru
 //  * Home Blog : http://alexander-bagel.blogspot.ru
 //  ****************************************************************************
@@ -357,6 +357,12 @@ const
   function MakeUniqueName(const Value: string): string;
   function FileSizeToStr(Value: Int64): string;
 
+var
+  /// <summary>
+  ///  Глобальная переменная управляющая включением/отключением поддержки длинных путей
+  /// </summary>
+  UseLongNamePrefix: Boolean = True;
+
 implementation
 
   function PathCanonicalizeA(lpszDes, lpszSrc: PAnsiChar): BOOL; stdcall; external 'shlwapi.dll';
@@ -388,7 +394,7 @@ begin
       (Value[2] = LongNamePrefix[2]) and
       (Value[3] = LongNamePrefix[3]) and
       (Value[4] = LongNamePrefix[4]));
-  if NeedAdd then
+  if NeedAdd and UseLongNamePrefix then
     Result := LongNamePrefix + Value
   else
     Result := Value;
