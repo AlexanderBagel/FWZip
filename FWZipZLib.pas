@@ -7,8 +7,8 @@
 //  *           : Вынесено из ZLibEx в отдельный модуль
 //  *           : для совместимости со старыми версиями Delphi
 //  * Author    : Александр (Rouse_) Багель
-//  * Copyright : © Fangorn Wizards Lab 1998 - 2017.
-//  * Version   : 1.0.12
+//  * Copyright : © Fangorn Wizards Lab 1998 - 2021.
+//  * Version   : 1.1.1
 //  * Home Page : http://rouse.drkb.ru
 //  * Home Blog : http://alexander-bagel.blogspot.ru
 //  ****************************************************************************
@@ -200,6 +200,8 @@ type
     procedure SetStreamPosition(value: TStreamPos);
   protected
     constructor Create(stream: TStream);
+
+    function GetSize: Int64; override;
 
     function  StreamRead(var buffer; count: Longint): Longint;
     function  StreamWrite(const buffer; count: Longint): Longint;
@@ -441,6 +443,13 @@ end;
 procedure TCustomZStream.DoProgress;
 begin
   if Assigned(FOnProgress) then FOnProgress(Self);
+end;
+
+function TCustomZStream.GetSize: Int64;
+begin
+  // Rouse_ 12.11.2021
+  // Фиксим правки в методе TStream.CopyFrom в Delphi 11 (Alexandria)
+  Result := -1;
 end;
 
 function TCustomZStream.GetStreamPosition: TStreamPos;

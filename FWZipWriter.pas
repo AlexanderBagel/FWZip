@@ -5,7 +5,7 @@
 //  * Unit Name : FWZipWriter
 //  * Purpose   : Класс для создания ZIP архива
 //  * Author    : Александр (Rouse_) Багель
-//  * Copyright : © Fangorn Wizards Lab 1998 - 2020.
+//  * Copyright : © Fangorn Wizards Lab 1998 - 2021.
 //  * Version   : 1.1.1
 //  * Home Page : http://rouse.drkb.ru
 //  * Home Blog : http://alexander-bagel.blogspot.ru
@@ -1774,7 +1774,10 @@ begin
     eocd.RelativeOffsetOfCentralDirectory := FcdfhOffset;
   Stream.WriteBuffer(eocd, SizeOf(TEndOfCentralDir));
   if eocd.ZipfileCommentLength > 0 then
-    SaveString(Stream, FComment, False);
+    // Rouse_ 12.11.2021
+    // Не учитывался флаг при добавлении коментария
+    // SaveString(Stream, FComment, False);
+    SaveString(Stream, FComment, UseUTF8String);
 end;
 
 //
