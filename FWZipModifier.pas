@@ -5,8 +5,8 @@
 //  * Unit Name : FWZipModifier
 //  * Purpose   : Класс для модификации созданного ранее ZIP архива
 //  * Author    : Александр (Rouse_) Багель
-//  * Copyright : © Fangorn Wizards Lab 1998 - 2020.
-//  * Version   : 1.1.0
+//  * Copyright : © Fangorn Wizards Lab 1998 - 2021.
+//  * Version   : 1.1.2
 //  * Home Page : http://rouse.drkb.ru
 //  * Home Blog : http://alexander-bagel.blogspot.ru
 //  ****************************************************************************
@@ -62,9 +62,11 @@ type
   TExDataRecords = array of TExDataRecord;
 
   // структура для хранения подключенного архива и его блоков ExData
+  TReaderOwnership = (roReference, roOwned);
   TReaderData = record
     Reader: TFWZipReader;
     ExDataRecords: TExDataRecords;
+    Ownership: TReaderOwnership;
   end;
 
   TReaderList = array of TReaderData;
@@ -75,6 +77,7 @@ type
     function CheckZipFileIndex(Value: TReaderIndex): TReaderIndex;
     function AddItemFromZip(AReader: TFWZipReader;
       ReaderIndex: TReaderIndex; ItemIndex: Integer): Integer;
+    function GetReader(Index: Integer): TFWZipReader;
   protected
     function GetItemClass: TFWZipWriterItemClass; override;
     procedure FillItemCDFHeader(CurrentItem: TFWZipWriterItem;
@@ -86,6 +89,8 @@ type
       Tag: Word; Data: TStream);
   public
     destructor Destroy; override;
+    function AddZipFile(const AReader: TFWZipReader;
+      AOwnership: TReaderOwnership = roReference): TReaderIndex; overload;
     function AddZipFile(const FilePath: string; SFXOffset: Integer = -1;
       ZipEndOffset: Integer = -1): TReaderIndex; overload;
     function AddZipFile(FileStream: TStream; SFXOffset: Integer = -1;
@@ -93,6 +98,8 @@ type
     function AddFromZip(ReaderIndex: TReaderIndex): Integer; overload;
     function AddFromZip(ReaderIndex: TReaderIndex; const ItemPath: string): Integer; overload;
     function AddFromZip(ReaderIndex: TReaderIndex; ItemsList: TStringList): Integer; overload;
+    function ReadersCount: Integer;
+    property Reader[Index: Integer]: TFWZipReader read GetReader;
   end;
 
 implementation
@@ -223,12 +230,24 @@ function TFWZipModifier.AddZipFile(FileStream: TStream; SFXOffset,
 var
   AReader: TFWZipReader;
 begin
-  Result := Length(FReaderList);
-  SetLength(FReaderList, Result + 1);
   AReader := TFWZipReader.Create;
   AReader.OnLoadExData := OnLoadExData;
   AReader.LoadFromStream(FileStream, SFXOffset, ZipEndOffset);
+  Result := AddZipFile(AReader, roOwned);
+end;
+
+//
+//  Функция добавляет новный ридер в список доступных
+//  Загрузка данных не производится, поэтому данный вариант добавления
+//  ридера не позволит работать с блоком ExData если таковой присутствует.
+// =============================================================================
+function TFWZipModifier.AddZipFile(const AReader: TFWZipReader;
+  AOwnership: TReaderOwnership): TReaderIndex;
+begin
+  Result := Length(FReaderList);
+  SetLength(FReaderList, Result + 1);
   FReaderList[Result].Reader := AReader;
+  FReaderList[Result].Ownership := AOwnership;
 end;
 
 //
@@ -243,12 +262,10 @@ function TFWZipModifier.AddZipFile(const FilePath: string;
 var
   AReader: TFWZipReader;
 begin
-  Result := Length(FReaderList);
-  SetLength(FReaderList, Result + 1);
   AReader := TFWZipReader.Create;
   AReader.OnLoadExData := OnLoadExData;
   AReader.LoadFromFile(FilePath, SFXOffset, ZipEndOffset);
-  FReaderList[Result].Reader := AReader;
+  Result := AddZipFile(AReader, roOwned);
 end;
 
 //
@@ -312,7 +329,8 @@ var
 begin
   for I := 0 to Length(FReaderList) - 1 do
   begin
-    FReaderList[I].Reader.Free;
+    if FReaderList[I].Ownership = roOwned then
+      FReaderList[I].Reader.Free;
     for A := 0 to Length(FReaderList[I].ExDataRecords) - 1 do
       FReaderList[I].ExDataRecords[A].Stream.Free;
   end;
@@ -387,6 +405,16 @@ begin
 end;
 
 //
+//  Возвращаем сылку на внутренний ридер
+// =============================================================================
+function TFWZipModifier.GetReader(Index: Integer): TFWZipReader;
+begin
+  if (Index < 0) or (Index >= ReadersCount) then
+    raise EFWZipModifier.CreateFmt('Invalid reader index value (%d).', [Index]);
+  Result := FReaderList[Index].Reader;
+end;
+
+//
 //  Задача процедуры собрать все ExData в локальное хранилище,
 //  чтобы их можно было присоединить к структуре архива на этапе ребилда
 // =============================================================================
@@ -404,6 +432,14 @@ begin
   ExDataCount := Length(FReaderList[ReaderCount - 1].ExDataRecords);
   SetLength(FReaderList[ReaderCount - 1].ExDataRecords, ExDataCount + 1);
   FReaderList[ReaderCount - 1].ExDataRecords[ExDataCount] := ExData;
+end;
+
+//
+//  Возвращаем количество доступных ридеров
+// =============================================================================
+function TFWZipModifier.ReadersCount: Integer;
+begin
+  Result := Length(FReaderList);
 end;
 
 end.
