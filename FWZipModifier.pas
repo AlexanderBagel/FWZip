@@ -231,9 +231,9 @@ var
   AReader: TFWZipReader;
 begin
   AReader := TFWZipReader.Create;
+  Result := AddZipFile(AReader, roOwned);
   AReader.OnLoadExData := OnLoadExData;
   AReader.LoadFromStream(FileStream, SFXOffset, ZipEndOffset);
-  Result := AddZipFile(AReader, roOwned);
 end;
 
 //
@@ -263,9 +263,9 @@ var
   AReader: TFWZipReader;
 begin
   AReader := TFWZipReader.Create;
+  Result := AddZipFile(AReader, roOwned);
   AReader.OnLoadExData := OnLoadExData;
   AReader.LoadFromFile(FilePath, SFXOffset, ZipEndOffset);
-  Result := AddZipFile(AReader, roOwned);
 end;
 
 //
@@ -421,17 +421,20 @@ end;
 procedure TFWZipModifier.OnLoadExData(Sender: TObject; ItemIndex: Integer;
   Tag: Word; Data: TStream);
 var
-  ReaderCount, ExDataCount: Integer;
+  Index, ExDataCount: Integer;
   ExData: TExDataRecord;
 begin
-  ExData.Index := ItemIndex;
-  ExData.Tag := Tag;
-  ExData.Stream := TMemoryStream.Create;
-  ExData.Stream.CopyFrom(Data, 0);
-  ReaderCount := Length(FReaderList);
-  ExDataCount := Length(FReaderList[ReaderCount - 1].ExDataRecords);
-  SetLength(FReaderList[ReaderCount - 1].ExDataRecords, ExDataCount + 1);
-  FReaderList[ReaderCount - 1].ExDataRecords[ExDataCount] := ExData;
+  Index := ReadersCount - 1;
+  if Index >= 0 then
+  begin
+    ExData.Index := ItemIndex;
+    ExData.Tag := Tag;
+    ExData.Stream := TMemoryStream.Create;
+    ExData.Stream.CopyFrom(Data, 0);
+    ExDataCount := Length(FReaderList[Index].ExDataRecords);
+    SetLength(FReaderList[Index].ExDataRecords, ExDataCount + 1);
+    FReaderList[Index].ExDataRecords[ExDataCount] := ExData;
+  end;
 end;
 
 //
