@@ -5,8 +5,8 @@
 //  * Unit Name : FWZipReader
 //  * Purpose   : Набор классов для распаковки ZIP архива
 //  * Author    : Александр (Rouse_) Багель
-//  * Copyright : © Fangorn Wizards Lab 1998 - 2020.
-//  * Version   : 1.1.1
+//  * Copyright : © Fangorn Wizards Lab 1998 - 2022.
+//  * Version   : 1.1.2
 //  * Home Page : http://rouse.drkb.ru
 //  * Home Blog : http://alexander-bagel.blogspot.ru
 //  ****************************************************************************
@@ -559,7 +559,10 @@ begin
             CRC32Stream := TFWZipCRC32Stream.Create(Value);
             try
               try
-                CRC32Stream.CopyFrom(Decompressor, UncompressedSize);
+                // Rouse_ 16.06.2022
+                // Фикс ошибки с падением внутри VCL по размеру "минус 1"
+                if UncompressedSize > 0 then
+                  CRC32Stream.CopyFrom(Decompressor, UncompressedSize);
               except
                 // EOutOfMemory наверх как есть
                 on E: EOutOfMemory do
