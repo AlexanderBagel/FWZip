@@ -5,8 +5,8 @@
 //  * Unit Name : FWZipTests
 //  * Purpose   : Набор классов для юниттестирования FWZip
 //  * Author    : Александр (Rouse_) Багель
-//  * Copyright : © Fangorn Wizards Lab 1998 - 2020.
-//  * Version   : 1.1.0
+//  * Copyright : © Fangorn Wizards Lab 1998 - 2022.
+//  * Version   : 1.1.2
 //  * Home Page : http://rouse.drkb.ru
 //  * Home Blog : http://alexander-bagel.blogspot.ru
 //  ****************************************************************************
@@ -59,6 +59,7 @@ type
     procedure TestDeleteFromZip;
     procedure TestSplitZip;
     procedure TestBuildWithException;
+    procedure TestExtractZeroSizeItem;
     {$IFNDEF WINE}
     procedure TestExtractOverride;
     {$ENDIF}
@@ -557,7 +558,6 @@ begin
     hOFStruct, OF_WRITE);
   try
     CheckBuildResult(Writer.BuildZip(DstFile), brFailed);
-
     // теперь добавляем еще один не залоченый
     DeleteFile(DstFile);
     Writer.AddFile(SrcFolder + TestFolderData[1]);
@@ -579,10 +579,8 @@ begin
   hFile := OpenFile(PAnsiChar(AnsiString(SrcFolder + TestFolderData[0])),
     hOFStruct, OF_WRITE);
   try
-
     // Назначаем обработчик через который мы будем обрабатывать ошибку
     // В обработчике OnException1 будет создаваться копия файла
-
     Method.Code := @OnException1;
     Method.Data := Writer;
     Writer.OnException := TZipBuildExceptionEvent(Method);
@@ -596,10 +594,8 @@ begin
   hFile := OpenFile(PAnsiChar(AnsiString(SrcFolder + TestFolderData[0])),
     hOFStruct, OF_WRITE);
   try
-
     // снимаем исскуственную блокировку файла и выставляем
     // свойство Action в eaRetry
-
     Method.Code := @OnException2;
     Method.Data := Writer;
     Writer.OnException := TZipBuildExceptionEvent(Method);
@@ -613,9 +609,7 @@ begin
   hFile := OpenFile(PAnsiChar(AnsiString(SrcFolder + TestFolderData[0])),
     hOFStruct, OF_WRITE);
   try
-
     // загружаем данные через стрим
-
     Method.Code := @OnException3;
     Method.Data := Writer;
     Writer.OnException := TZipBuildExceptionEvent(Method);
@@ -869,7 +863,6 @@ begin
   ItemIndex := AddItem(Writer, 'test.txt', TestStringBlock[0]);
   CheckResult(ItemIndex);
   Writer.Item[ItemIndex].Comment := TestStringBlock[2];
-
   S := TStringStream.Create(TestStringBlock[1]);
   S.Position := 0;
   ItemIndex := Writer.AddStream('test2.txt', S, soOwned);
@@ -1019,7 +1012,6 @@ begin
     end;
   end;
 end;
-
 procedure OnLoadExData(Self, Sender: TObject; ItemIndex: Integer;
   Tag: Word; Data: TStream);
 var
@@ -1119,6 +1111,30 @@ begin
   DeleteFolder(DstFolder);
 end;
 {$ENDIF}
+
+procedure TFWZipUnitTest.TestExtractZeroSizeItem;
+var
+  M: TMemoryStream;
+  ItemIndex: Integer;
+  SrcFolder: string;
+begin
+  Clear;
+  SrcFolder := GetTestFolderPath(10, True, True) + 'test.txt';
+  M := TMemoryStream.Create;
+  try
+    M.SaveToFile(SrcFolder);
+    ItemIndex := Writer.AddFile(SrcFolder);
+    CheckResult(ItemIndex);
+    CheckBuildResult(Writer.BuildZip(M));
+    M.Position := 0;
+    Reader.LoadFromStream(M);
+    Reader.Check;
+  finally
+    M.Free;
+  end;
+  Clear;
+  DeleteFolder(SrcFolder);
+end;
 
 procedure TFWZipUnitTest.TestMerge2Zip;
 var
@@ -1685,11 +1701,9 @@ begin
     finally
       M.Free;
     end;
-
     // теперь добавляем еще один не залоченый
     ClearFolder(DstFolder);
     Writer.AddFile(SrcFolder + TestFolderData[1]);
-
     M := TFWFileMultiStream.CreateWrite(DstFile);
     try
       CheckBuildResult(Writer.BuildZip(M), brPartialBuild);
@@ -1726,10 +1740,8 @@ begin
   hFile := OpenFile(PAnsiChar(AnsiString(SrcFolder + TestFolderData[0])),
     hOFStruct, OF_WRITE);
   try
-
     // Назначаем обработчик через который мы будем обрабатывать ошибку
     // В обработчике OnException1 будет создаваться копия файла
-
     Method.Code := @OnException1;
     Method.Data := Writer;
     Writer.OnException := TZipBuildExceptionEvent(Method);
@@ -1749,10 +1761,8 @@ begin
   hFile := OpenFile(PAnsiChar(AnsiString(SrcFolder + TestFolderData[0])),
     hOFStruct, OF_WRITE);
   try
-
     // снимаем исскуственную блокировку файла и выставляем
     // свойство Action в eaRetry
-
     Method.Code := @OnException2;
     Method.Data := Writer;
     Writer.OnException := TZipBuildExceptionEvent(Method);
@@ -1772,7 +1782,6 @@ begin
   hFile := OpenFile(PAnsiChar(AnsiString(SrcFolder + TestFolderData[0])),
     hOFStruct, OF_WRITE);
   try
-
     // загружаем данные через стрим
     Method.Code := @OnException3;
     Method.Data := Writer;
@@ -2100,7 +2109,6 @@ begin
   ItemIndex := AddItem(Writer, 'test.txt', TestStringBlock[0]);
   CheckResult(ItemIndex);
   Writer.Item[ItemIndex].Comment := TestStringBlock[2];
-
   S := TStringStream.Create(TestStringBlock[1]);
   S.Position := 0;
   ItemIndex := Writer.AddStream('test2.txt', S, soOwned);
@@ -2240,7 +2248,6 @@ begin
       Modifier.AddFromZip(Index);
       Modifier.DeleteItem(0);
       CheckCount(Modifier.Count, 2);
-
       M := TFWFileMultiStream.CreateWrite(DstFolder + ZipName);
       try
         CheckBuildResult(Modifier.BuildZip(M));
@@ -2491,21 +2498,18 @@ begin
       // данные возьмутся как есть в виде массива байт прямо в сжатом виде
       // из оригинального архива
       CheckCount(Modifier.Count, 2);
-
       M := TFWFileMultiStream.CreateWrite(DstFolder + ZipName1);
       try
         CheckBuildResult(Modifier.BuildZip(M));
       finally
         M.Free;
       end;
-
       // теперь удаляем добавленные элементы и добавляем вторые два
       Modifier.Clear;
       Modifier.AddFromZip(Index, 'test3.txt');
       Modifier.AddFromZip(Index, 'test4.txt');
       // сохраняем во торой архив
       CheckCount(Modifier.Count, 2);
-
       M := TFWFileMultiStream.CreateWrite(DstFolder + ZipName2);
       try
         CheckBuildResult(Modifier.BuildZip(M));
@@ -2645,7 +2649,6 @@ begin
       // из оригинального архива
       CheckCount(Modifier.Count, 2);
       CheckBuildResult(Modifier.BuildZip(DstFolder + ZipName1));
-
       // теперь удаляем добавленные элементы и добавляем вторые два
       Modifier.Clear;
       Modifier.AddFromZip(Index, 'test3.txt');
