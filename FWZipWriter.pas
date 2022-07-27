@@ -174,6 +174,13 @@ type
     function Count: Integer;
     procedure Clear;
     procedure DeleteItem(Index: Integer);
+
+    /// <summary>
+    ///  Функция ищет запись об элементе по имени
+    /// </summary>
+    function Find(const Value: string; out AItem: TFWZipWriterItem;
+      IgnoreCase: Boolean = True): Boolean; overload;
+
     function InsertStream(const FileName: string; Index: Integer;
       Value: TStream; AOwnerShip: TStreamOwnership = soReference): Integer;
 
@@ -1424,6 +1431,29 @@ begin
   if CurrentItem.UseUTF8String then
     Value.Header.GeneralPurposeBitFlag :=
       Value.Header.GeneralPurposeBitFlag or PBF_UTF8;
+end;
+
+function TFWZipWriter.Find(const Value: string; out AItem: TFWZipWriterItem;
+  IgnoreCase: Boolean): Boolean;
+var
+  I: Integer;
+  AItemText: string;
+begin
+  Result := False;
+  AItem := nil;
+  for I := 0 to Count - 1 do
+  begin
+    AItemText := Item[I].FileName;
+    if IgnoreCase then
+      Result := AnsiSameText(Value, AItemText)
+    else
+      Result := AnsiSameStr(Value, AItemText);
+    if Result then
+    begin
+      AItem := Item[I];
+      Break;
+    end;
+  end;
 end;
 
 //

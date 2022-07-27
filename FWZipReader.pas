@@ -154,6 +154,13 @@ type
     constructor Create;
     destructor Destroy; override;
     procedure Clear;
+
+    /// <summary>
+    ///  Функция ищет запись об элементе по имени
+    /// </summary>
+    function Find(const Value: string; out AItem: TFWZipReaderItem;
+      IgnoreCase: Boolean = True): Boolean; overload;
+
     function GetElementIndex(const FileName: string): Integer;
     procedure LoadFromFile(const Value: string; SFXOffset: Integer = -1;
       ZipEndOffset: Integer = -1);
@@ -1089,6 +1096,29 @@ end;
 procedure TFWZipReader.ExtractAll(const ExtractMask: string; Path: string);
 begin
   ProcessExtractOrCheckAllData(ExtractMask, Path, False);
+end;
+
+function TFWZipReader.Find(const Value: string; out AItem: TFWZipReaderItem;
+  IgnoreCase: Boolean): Boolean;
+var
+  I: Integer;
+  AItemText: string;
+begin
+  Result := False;
+  AItem := nil;
+  for I := 0 to Count - 1 do
+  begin
+    AItemText := Item[I].FileName;
+    if IgnoreCase then
+      Result := AnsiSameText(Value, AItemText)
+    else
+      Result := AnsiSameStr(Value, AItemText);
+    if Result then
+    begin
+      AItem := Item[I];
+      Break;
+    end;
+  end;;
 end;
 
 //

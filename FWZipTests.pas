@@ -60,6 +60,7 @@ type
     procedure TestSplitZip;
     procedure TestBuildWithException;
     procedure TestExtractZeroSizeItem;
+    procedure TestFind;
     {$IFNDEF WINE}
     procedure TestExtractOverride;
     {$ENDIF}
@@ -1125,6 +1126,9 @@ begin
     M.SaveToFile(SrcFolder);
     ItemIndex := Writer.AddFile(SrcFolder);
     CheckResult(ItemIndex);
+    ItemIndex := Writer.AddFile(SrcFolder);
+    CheckResult(ItemIndex);
+    Writer.Item[ItemIndex].CompressionLevel := clNone;
     CheckBuildResult(Writer.BuildZip(M));
     M.Position := 0;
     Reader.LoadFromStream(M);
@@ -1134,6 +1138,73 @@ begin
   end;
   Clear;
   DeleteFolder(SrcFolder);
+end;
+
+procedure TFWZipUnitTest.TestFind;
+const
+  FileName = 'test.txt';
+  FileName2 = 'test2.txt';
+
+  procedure Check(Value: Boolean; const Caption: string);
+  begin
+    if not Value then
+      raise Exception.Create('Ошибка при поиске: ' + Caption);
+  end;
+
+var
+  wi: TFWZipWriterItem;
+  ri: TFWZipReaderItem;
+  Modifier: TFWZipModifier;
+  M: TMemoryStream;
+  ReaderIndex: Integer;
+begin
+  Clear;
+  AddItem(Writer, FileName, TestStringBlock[0]);
+  Check(Writer.Find(FileName, wi), 'Writer.Find ignore case');
+  Check(Assigned(wi), 'Writer.Find ignore case, item is nil');
+  Check(Writer.Find(FileName, wi, False), 'Writer.Find NO ignore case');
+  Check(Assigned(wi), 'Writer.Find NO ignore case, item is nil');
+  Check(Writer.Find(UpperCase(FileName), wi), 'Writer.Find UP CASE ignore case');
+  Check(Assigned(wi), 'Writer.Find UP CASE ignore case, item is nil');
+  Check(not Writer.Find(UpperCase(FileName), wi, False), 'Writer.Find UP CASE NO ignore case');
+  Check(wi = nil, 'Writer.Find UP CASE NO ignore case, item is nil');
+  M := TMemoryStream.Create;
+  try
+    Writer.BuildZip(M);
+    M.Position := 0;
+    Reader.LoadFromStream(M);
+    Check(Reader.Find(FileName, ri), 'Reader.Find ignore case');
+    Check(Assigned(ri), 'Reader.Find ignore case, item is nil');
+    Check(Reader.Find(FileName, ri, False), 'Reader.Find NO ignore case');
+    Check(Assigned(ri), 'Reader.Find NO ignore case, item is nil');
+    Check(Reader.Find(UpperCase(FileName), ri), 'Reader.Find UP CASE ignore case');
+    Check(Assigned(ri), 'Reader.Find UP CASE ignore case, item is nil');
+    Check(not Reader.Find(UpperCase(FileName), ri, False), 'Reader.Find UP CASE NO ignore case');
+    Check(not Assigned(ri), 'Reader.Find UP CASE NO ignore case, item is nil');
+
+    Modifier := TFWZipModifier.Create;
+    try
+      M.Position := 0;
+      ReaderIndex := Modifier.AddZipFile(M);
+      Modifier.AddFromZip(ReaderIndex);
+
+      Check(Modifier.Find(FileName, wi), 'Modifier.Find ignore case');
+      Check(Assigned(wi), 'Modifier.Find ignore case, item is nil');
+      Check(Modifier.Find(FileName, wi, False), 'Modifier.Find NO ignore case');
+      Check(Assigned(wi), 'Modifier.Find NO ignore case, item is nil');
+      Check(Modifier.Find(UpperCase(FileName), wi), 'Modifier.Find UP CASE ignore case');
+      Check(Assigned(wi), 'Modifier.Find UP CASE ignore case, item is nil');
+      Check(not Modifier.Find(UpperCase(FileName), wi, False), 'Modifier.Find UP CASE NO ignore case');
+      Check(wi = nil, 'Modifier.Find UP CASE NO ignore case, item is nil');
+
+    finally
+      Modifier.Free;
+    end;
+  finally
+    M.Free;
+  end;
+
+  Clear;
 end;
 
 procedure TFWZipUnitTest.TestMerge2Zip;
