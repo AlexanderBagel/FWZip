@@ -5,8 +5,8 @@
 //  * Unit Name : FWZipWriter
 //  * Purpose   : Класс для создания ZIP архива
 //  * Author    : Александр (Rouse_) Багель
-//  * Copyright : © Fangorn Wizards Lab 1998 - 2021.
-//  * Version   : 1.1.1
+//  * Copyright : © Fangorn Wizards Lab 1998 - 2023.
+//  * Version   : 2.0.0
 //  * Home Page : http://rouse.drkb.ru
 //  * Home Blog : http://alexander-bagel.blogspot.ru
 //  ****************************************************************************
@@ -16,18 +16,22 @@
 //
 //  Используемые источники:
 //  ftp://ftp.info-zip.org/pub/infozip/doc/appnote-iz-latest.zip
-//  http://zlib.net/zlib-1.2.5.tar.gz
+//  https://zlib.net/zlib-1.2.13.tar.gz
 //  http://www.base2ti.com/
 //
 
 unit FWZipWriter;
+
+{$IFDEF FPC}
+  {$MODE Delphi}
+  {$H+}
+{$ENDIF}
 
 interface
 
 {$I fwzip.inc}
 
 uses
-  Windows,
   SysUtils,
   Classes,
   Contnrs,
@@ -36,7 +40,8 @@ uses
   FWZipCrc32,
   FWZipCrypt,
   FWZipStream,
-  FWZipZLib;
+  FWZipZLib,
+  FWZipUtils;
 
 type
   TFWZipWriter = class;
@@ -54,8 +59,8 @@ type
     FSize: Int64;
     FData: TStream;                  // Данные элемента в случае если файл
                                      // отсутствует на диске
-    FAttributes:                     // Внешние аттрибуты файла
-      TWin32FileAttributeData;
+    FAttributes: TFileAttributeData; // Внешние аттрибуты файла
+
     FTag: Integer;
     FUseUTF8String: Boolean;
     FUseExternalData: Boolean;       // Флаг указывающий на то что данные будут передаваться снаружи
@@ -68,12 +73,12 @@ type
   public
     constructor Create(Owner: TFWZipWriter;
       const InitFilePath: string;
-      InitAttributes: TWin32FileAttributeData;
+      InitAttributes: TFileAttributeData;
       const InitFileName: string = ''); virtual;
     destructor Destroy; override;
     procedure ChangeDataStream(Value: TStream;
       AOwnerShip: TStreamOwnership = soReference);
-    procedure ChangeAttributes(Value: TWin32FileAttributeData);
+    procedure ChangeAttributes(Value: TFileAttributeData);
     function IsFolder: Boolean;
     property Comment: string index 0 read FComment write SetString;
     property FilePath: string index 1 read FFilePath write SetString;
@@ -82,7 +87,7 @@ type
     property CompressionLevel: TCompressionLevel read FCmpLevel write SetCmpLevel;
     property NeedDescriptor: Boolean read FNeedDescriptor write SetBool;
     property Size: Int64 read FSize;
-    property Attributes: TWin32FileAttributeData read FAttributes;
+    property Attributes: TFileAttributeData read FAttributes;
     property Tag: Integer read FTag write FTag;
     property UseUTF8String: Boolean read FUseUTF8String write FUseUTF8String;
   end;
@@ -97,6 +102,8 @@ type
     brAborted,      // создание архива отменено пользователем
     brPartialBuild  // некоторые элементы пропущены из-за возникших ошибок
   );
+
+  { TFWZipWriter }
 
   TFWZipWriter = class
   private
@@ -142,10 +149,10 @@ type
     procedure SaveCentralDirectory(Stream: TStream);
     procedure SaveEndOfCentralDirectory(Stream: TStream);
     procedure SaveString(Stream: TStream; const Value: string;
-      UTF8String: Boolean);
+      AUseUTF8String: Boolean);
     procedure UpdateLocalHeaders(Stream: TStream);
     property BuildState: Boolean read FBuildState;
-    function StringLength(const Value: string; UTF8String: Boolean): Integer;
+    function StringLength(const Value: string; AUseUTF8String: Boolean): Integer;
   public
     constructor Create; overload;
     constructor Create(CompressionLevel: TCompressionLevel); overload;
@@ -155,11 +162,11 @@ type
     destructor Destroy; override;
     function AddEmptyFolder(const FolderRelativeName: string): Integer; overload;
     function AddEmptyFolder(const FolderRelativeName: string;
-      Attributes: TWin32FileAttributeData): Integer; overload;
+      Attributes: TFileAttributeData): Integer; overload;
     function AddFile(const FilePath: string;
       const FileName: string = ''): Integer; overload;
     function AddFile(const FilePath: string;
-      Attributes: TWin32FileAttributeData;
+      Attributes: TFileAttributeData;
       const FileName: string = ''): Integer; overload;
     function AddStream(const FileName: string; Value: TStream;
       AOwnerShip: TStreamOwnership = soReference): Integer;
@@ -169,7 +176,7 @@ type
       SubFolders: Boolean = True): Integer; overload;
     function AddFolder(const RelativePath, Path, Mask: string;
       SubFolders: Boolean = True): Integer; overload;
-    function BuildZip(const ZipFilePath: string): TBuildZipResult; overload;
+    function BuildZip(ZipFilePath: string): TBuildZipResult; overload;
     function BuildZip(Stream: TStream): TBuildZipResult; overload;
     function Count: Integer;
     procedure Clear;
@@ -200,6 +207,8 @@ type
     property OnException: TZipBuildExceptionEvent read FBuidException write FBuidException;
     property OnProgress: TZipProgressEvent read FOnProgress write FOnProgress;
     property OnSaveExData: TZipSaveExDataEvent read FSaveExData write FSaveExData;
+    // Свойство для автоматического выставления кодировки у добавляемых элементов
+    // Не влияет на кодировку коментария к архиву (он всегда Ansi)
     property UseUTF8String: Boolean read FUseUTF8String write FUseUTF8String;
   end;
 
@@ -214,7 +223,7 @@ implementation
 //
 //  Процедура изменяет аттрибуты элемента архива
 // =============================================================================
-procedure TFWZipWriterItem.ChangeAttributes(Value: TWin32FileAttributeData);
+procedure TFWZipWriterItem.ChangeAttributes(Value: TFileAttributeData);
 begin
   if not FOwner.BuildState then
     FAttributes := Value;
@@ -248,7 +257,7 @@ end;
 // =============================================================================
 constructor TFWZipWriterItem.Create(Owner: TFWZipWriter;
   const InitFilePath: string;
-  InitAttributes: TWin32FileAttributeData; const InitFileName: string);
+  InitAttributes: TFileAttributeData; const InitFileName: string);
 begin
   inherited Create;
   FData := nil;
@@ -306,7 +315,7 @@ end;
 procedure TFWZipWriterItem.SetString(const Index: Integer;
   const Value: string);
 var
-  Attributes: TWin32FileAttributeData;
+  Attributes: TFileAttributeData;
 begin
   if not FOwner.BuildState then
     case Index of
@@ -317,8 +326,7 @@ begin
         begin
           // Изменяем только в том случае если объект доступен
           // и мы смогли снять его аттрибуты
-          if GetFileAttributesEx(PChar(Value),
-            GetFileExInfoStandard, @Attributes) then
+          if GetFileAttributes(Value, Attributes) then
           begin
             FAttributes := Attributes;
             FSize :=
@@ -349,18 +357,17 @@ end;
 //  FileName - наименование файла в архиве
 //    (включая относительный путь от корня архива)
 // =============================================================================
-function TFWZipWriter.AddFile(const FilePath,
-  FileName: string): Integer;
+function TFWZipWriter.AddFile(const FilePath: string; const FileName: string
+  ): Integer;
 var
-  Attributes: TWin32FileAttributeData;
+  Attributes: TFileAttributeData;
   FullFilePath: string;
 begin
   Result := -1;
   FullFilePath := PathCanonicalize(FilePath);
   // Добавляем только в том случае если объект доступен
   // и мы смогли снять его аттрибуты
-  if GetFileAttributesEx(PChar(FullFilePath),
-    GetFileExInfoStandard, @Attributes) then
+  if GetFileAttributes(FullFilePath, Attributes) then
     Result := AddFile(FullFilePath, Attributes, FileName);
 end;
 
@@ -373,9 +380,9 @@ end;
 // =============================================================================
 function TFWZipWriter.AddEmptyFolder(const FolderRelativeName: string): Integer;
 var
-  Attributes: TWin32FileAttributeData;
+  Attributes: TFileAttributeData;
 begin
-  ZeroMemory(@Attributes, SizeOf(TWin32FileAttributeData));
+  ZeroMemory(@Attributes, SizeOf(TFileAttributeData));
   Attributes.dwFileAttributes := faDirectory;
   Result := AddEmptyFolder(FolderRelativeName, Attributes);
 end;
@@ -389,7 +396,7 @@ end;
 //  Attributes - аттрибуты папки
 // =============================================================================
 function TFWZipWriter.AddEmptyFolder(const FolderRelativeName: string;
-  Attributes: TWin32FileAttributeData): Integer;
+  Attributes: TFileAttributeData): Integer;
 var
   FolderPath: string;
   Item: TFWZipWriterItem;
@@ -413,7 +420,7 @@ end;
 //    (включая относительный путь от корня архива)
 // =============================================================================
 function TFWZipWriter.AddFile(const FilePath: string;
-  Attributes: TWin32FileAttributeData; const FileName: string): Integer;
+  Attributes: TFileAttributeData; const FileName: string): Integer;
 var
   Item: TFWZipWriterItem;
   InitFileName, FullFilePath: string;
@@ -480,7 +487,7 @@ begin
   Result := 0;
   for I := 0 to Value.Count - 1 do
   begin
-    Path := Value.ValueFromIndex[I];
+    Path := PathCanonicalize(Value.ValueFromIndex[I]);
     if DirectoryExists(Path) then
       Inc(Result, AddFolder(Value.Names[I], Path, '', SubFolders))
     else
@@ -516,11 +523,11 @@ end;
 function TFWZipWriter.AddFolder(const RelativePath, Path, Mask: string;
   SubFolders: Boolean): Integer;
 const
-  AllDataMask = '*.*';
+  AllDataMask = '*';
 var
   SR: TSearchRec;
   TrailingPath, TrailingRelativePath, ResultMask: string;
-  Attributes: TWin32FileAttributeData;
+  Attributes: TFileAttributeData;
   Masks: TStringList;
   I: Integer;
   Matched: Boolean;
@@ -553,6 +560,11 @@ begin
     try
       repeat
 
+        if SR.Name = '..' then Continue;
+
+        {$IFDEF LINUX}
+        GetFileAttributes(TrailingPath + SR.Name, Attributes);
+        {$ELSE}
         {$WARN SYMBOL_PLATFORM OFF}
         Attributes.dwFileAttributes := SR.FindData.dwFileAttributes;
         Attributes.ftCreationTime := SR.FindData.ftCreationTime;
@@ -561,6 +573,7 @@ begin
         Attributes.nFileSizeHigh := SR.FindData.nFileSizeHigh;
         Attributes.nFileSizeLow := SR.FindData.nFileSizeLow;
         {$WARN SYMBOL_PLATFORM ON}
+        {$ENDIF}
 
         if SR.Name = '.' then
         begin
@@ -570,8 +583,6 @@ begin
             AddEmptyFolder(TrailingRelativePath, Attributes);
           Continue;
         end;
-
-        if SR.Name = '..' then Continue;
 
         if SR.Attr and faDirectory <> 0 then
         begin
@@ -700,7 +711,7 @@ begin
           begin
             DeletePackedFile := False;
             NewFilePath := Item[I - 1].FilePath;
-            SetFileAttributes(PChar(NewFilePath), FILE_ATTRIBUTE_NORMAL);
+            SetNormalFileAttributes(NewFilePath);
             DeleteFile(NewFilePath);
           end;
 
@@ -843,16 +854,18 @@ end;
 //
 //  Процедура формирует архив и сохраняет его в указанный файл.
 // =============================================================================
-function TFWZipWriter.BuildZip(const ZipFilePath: string): TBuildZipResult;
+function TFWZipWriter.BuildZip(ZipFilePath: string): TBuildZipResult;
 var
   ZIP: TFileStream;
 begin
   Result := brFailed;
   if Count = 0 then Exit;
+  ZipFilePath := PathCanonicalize(ZipFilePath);
+  ForceDirectories(ExtractFilePath(ZipFilePath));
   ZIP := TFileStream.Create(ZipFilepath, fmCreate);
   try
     Result := BuildZip(ZIP);
-    FlushFileBuffers(ZIP.Handle);
+    FinallyFileBuffers(ZIP.Handle);
   finally
     ZIP.Free;
   end;
@@ -980,9 +993,9 @@ begin
               end;
             except
               on E: Exception do
-                raise EZipWriterWrite.CreateFmt(
+                raise EZipWriterWrite.CreateFmt(string(
                   'Ошибка доступа к данным элемента №%d "%s".' +
-                  sLineBreak + E.ClassName + ': ' + E.Message,
+                  sLineBreak) + ExceptionMessage(E),
                   [Index, CurrentItem.FileName]);
             end;
           end;
@@ -1076,9 +1089,9 @@ begin
                   end;
                 except
                   on E: Exception do
-                    raise EZipWriterWrite.CreateFmt(
+                    raise EZipWriterWrite.CreateFmt(string(
                       'Ошибка доступа к данным элемента №%d "%s".' +
-                      sLineBreak + E.ClassName + ': ' + E.Message,
+                      sLineBreak) + ExceptionMessage(E),
                       [Index, CurrentItem.FileName]);
                 end;
               finally
@@ -1182,13 +1195,13 @@ function TFWZipWriter.CreateItemFromStream(const FileName: string;
 var
   Size: Int64;
   InitFileName: string;
-  Attributes: TWin32FileAttributeData;
+  Attributes: TFileAttributeData;
 begin
   // проверка на дубли
   InitFileName := CheckFileNameSlashes(FileName);
 
   Size := Value.Size;
-  ZeroMemory(@Attributes, SizeOf(TWin32FileAttributeData));
+  ZeroMemory(@Attributes, SizeOf(TFileAttributeData));
   Attributes.ftCreationTime := GetCurrentFileTime;
   Attributes.ftLastAccessTime := Attributes.ftCreationTime;
   Attributes.ftLastWriteTime := Attributes.ftCreationTime;
@@ -1262,27 +1275,20 @@ end;
 //
 //  Рассчитываем длину строки с учетом UTF8
 // =============================================================================
-function TFWZipWriter.StringLength(const Value: string; UTF8String: Boolean): Integer;
+function TFWZipWriter.StringLength(const Value: string; AUseUTF8String: Boolean): Integer;
 begin
-  if UTF8String then
+  if AUseUTF8String then
     Result := Length(UTF8Encode(Value))
   else
-    Result := Length(Value);
+    Result := Length(ConvertToOemString(AnsiString(Value)));
 end;
 
 //
 //  Функция возвращает текущее время в формате TFileTime
 // =============================================================================
 function TFWZipWriter.GetCurrentFileTime: TFileTime;
-var
-  SystemTime: TSystemTime;
 begin
-  DateTimeToSystemTime(Now, SystemTime);
-  SystemTimeToFileTime(SystemTime, Result);
-  // Rouse_ 17.06.2021
-  // Случайно заметил что не верно приводилось время
-//  FileTimeToLocalFileTime(Result, Result);
-  LocalFileTimeToFileTime(Result, Result);
+  Result := DateTimeToFileTime(Now);
 end;
 
 //
@@ -1350,8 +1356,6 @@ end;
 procedure TFWZipWriter.FillItemCDFHeader(CurrentItem: TFWZipWriterItem;
   var Value: TCentralDirectoryFileHeaderEx);
 var
-  SystemTime: TSystemTime;
-  LastWriteTime: TFileTime;
   FileDate: Cardinal;
   Buff: array of Byte;
 begin
@@ -1397,7 +1401,7 @@ begin
         else
         begin
           CurrentItem.Data.Position := 0;
-          SetLength(Buff, CurrentItem.Data.Size);
+          SetLength(Buff{%H-}, CurrentItem.Data.Size);
           CurrentItem.Data.Read(Buff[0], CurrentItem.Data.Size);
           Value.Header.Crc32 :=
             CRC32Calc(@Buff[0], CurrentItem.Data.Size);
@@ -1405,12 +1409,7 @@ begin
       end;
   Value.UncompressedSize := CurrentItem.Size;
 
-  // Rouse_ 25.10.2013
-  // Правка небольшой ошибки замеченой Владиславом Нечепоренко
-  //FileTimeToSystemTime(CurrentItem.Attributes.ftLastWriteTime, SystemTyme);
-  FileTimeToLocalFileTime(CurrentItem.Attributes.ftLastWriteTime, LastWriteTime);
-  FileTimeToSystemTime(LastWriteTime, SystemTime);
-  FileDate := DateTimeToFileDate(SystemTimeToDateTime(SystemTime));
+  FileDate := FileTimeToLocalFileDate(CurrentItem.Attributes.ftLastWriteTime);
 
   Value.Header.LastModFileTimeTime := FileDate and $FFFF;
   Value.Header.LastModFileTimeDate := FileDate shr 16;
@@ -1557,7 +1556,6 @@ begin
   else
     FcdfhDiskNumber := 0;
 
-  ZeroMemory(@ExDataNTFS, SizeOf(TExDataNTFS));
   for I := 0 to Count - 1 do
   begin
 
@@ -1587,7 +1585,7 @@ begin
       if FCD[I].DiskNumberStart >= MAXWORD then
         ZIP64Data.WriteBuffer(FCD[I].DiskNumberStart, 4);
 
-      ZeroMemory(@ExDataNTFS, SizeOf(TExDataHeaderAndSize));
+      ZeroMemory(@ExDataNTFS, SizeOf(TExDataNTFS));
       if IsAttributesPresent(FCD[I].Attributes) then
       begin
         // подготавливаем буффер с NTFS временем
@@ -1724,7 +1722,7 @@ begin
   // количество записей в конкретном томе
   eo64cd.TotalNumberOfEntriesOnThisDisk := FcdfhRecordOnDisk;
   // Исключаем из общего количества элементов архива количество исключений
-  eo64cd.TotalNumberOfEntries := Count - FExceptionCount;
+  eo64cd.TotalNumberOfEntries {%H-}:= Count - FExceptionCount;
 
   // формат ZIP64 используется в случае если количество элементов
   // архива превышает MAXWORD, или смещение на начало центральной директории
@@ -1804,10 +1802,11 @@ begin
     eocd.RelativeOffsetOfCentralDirectory := FcdfhOffset;
   Stream.WriteBuffer(eocd, SizeOf(TEndOfCentralDir));
   if eocd.ZipfileCommentLength > 0 then
-    // Rouse_ 12.11.2021
-    // Не учитывался флаг при добавлении коментария
-    // SaveString(Stream, FComment, False);
-    SaveString(Stream, FComment, UseUTF8String);
+    // Rouse_ 26.06.2023
+    // В спецификации вообще ничего не сказано про формат коментария
+    // и нет поля где хранился бы флаг кодировки общего коментария к архиву
+  	// поэтому коментарий должен сохраняться ТОЛЬКО как Ansi строка
+    SaveString(Stream, FComment, False);
 end;
 
 //
@@ -1896,18 +1895,18 @@ end;
 //  Процедура проводит преобразование переданной строки в OEM и ее сохранение
 // =============================================================================
 procedure TFWZipWriter.SaveString(Stream: TStream; const Value: string;
-  UTF8String: Boolean);
+  AUseUTF8String: Boolean);
 var
   OemString: AnsiString;
 begin
   if Value <> '' then
   begin
-    OemString := AnsiString(Value);
-    UniqueString(OemString);
-    if UTF8String then
+    if AUseUTF8String then
       OemString := UTF8Encode(Value)
     else
-      AnsiToOem(PAnsiChar(OemString), PAnsiChar(OemString));
+      OemString := ConvertToOemString(AnsiString(Value));
+    // длина строки после конвертации будет правильной, т.е. для
+    // 'Мой тестовый комментарий' у UTF8 будет равна 46 и 24 в противном случае
     Stream.WriteBuffer(OemString[1], Length(OemString));
   end;
 end;
@@ -2014,7 +2013,7 @@ begin
         TFWAbstractMultiStream(Stream).Seek(
           FCD[I].DiskNumberStart, FCD[I].RelativeOffsetOfLocalHeader);
         Stream.Seek(SizeOf(TLocalFileHeader) + lfh.FilenameLength +
-          lfh.ExtraFieldLength + FCD[I].CompressedSize, soCurrent);
+          lfh.ExtraFieldLength {%H-}+ FCD[I].CompressedSize, soCurrent);
       end
       else
         Stream.Position := FCD[I].RelativeOffsetOfLocalHeader +

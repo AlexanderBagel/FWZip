@@ -5,8 +5,8 @@
 //  * Unit Name : FWZipConsts
 //  * Purpose   : Типы и константы используемые для работы с ZIP архивами
 //  * Author    : Александр (Rouse_) Багель
-//  * Copyright : © Fangorn Wizards Lab 1998 - 2020.
-//  * Version   : 1.1.1
+//  * Copyright : © Fangorn Wizards Lab 1998 - 2023.
+//  * Version   : 2.0.0
 //  * Home Page : http://rouse.drkb.ru
 //  * Home Blog : http://alexander-bagel.blogspot.ru
 //  ****************************************************************************
@@ -16,20 +16,52 @@
 //
 //  Используемые источники:
 //  ftp://ftp.info-zip.org/pub/infozip/doc/appnote-iz-latest.zip
-//  http://zlib.net/zlib-1.2.5.tar.gz
+//  https://zlib.net/zlib-1.2.13.tar.gz
 //  http://www.base2ti.com/
 //
 
 unit FWZipConsts;
 
+{$IFDEF FPC}
+  {$MODE Delphi}
+  {$H+}
+{$ENDIF}
+
 interface
 
 uses
+  {$IFDEF MSWINDOWS}
   Windows,
+  {$ELSE}
+  Types,
+  {$ENDIF}
   SysUtils,
   Classes;
 
+const
+  MAXBYTE = 255;
+  MAXWORD = 65535;
+  MAXDWORD = DWORD(-1);
+  MAX_PATH = 260;
+
 type
+  DWORD = Cardinal;
+  LOBYTE = Byte;
+  LOWORD = Word;
+
+  // зависит от платформы, под Windows будет праться из Windows.pas
+  // под остальными из Types.pas
+	TFileTime = FILETIME;
+  PFileTime = ^TFileTime;
+
+  TFileAttributeData = record
+    dwFileAttributes: DWORD;
+    ftCreationTime: TFileTime;
+    ftLastAccessTime: TFileTime;
+    ftLastWriteTime: TFileTime;
+    nFileSizeHigh: DWORD;
+    nFileSizeLow: DWORD;
+  end;
 
 {
   IV. General Format of a .ZIP file
@@ -141,7 +173,7 @@ type
     DiskNumberStart: Integer;
     FileName,
     FileComment: string;
-    Attributes: TWin32FileAttributeData;
+    Attributes: TFileAttributeData;
     ExceptOnWrite: Boolean;
   end;
 
@@ -351,12 +383,6 @@ const
 
   LongNamePrefix = '\\?\';
 
-  function IsAttributesPresent(Value: TWin32FileAttributeData): Boolean;
-  function FileSizeToInt64(FileSizeLo, FileSizeHi: DWORD): Int64;
-  function PathCanonicalize(Value: string): string;
-  function MakeUniqueName(const Value: string): string;
-  function FileSizeToStr(Value: Int64): string;
-
 var
   /// <summary>
   ///  Глобальная переменная управляющая включением/отключением поддержки длинных путей
@@ -364,118 +390,5 @@ var
   UseLongNamePrefix: Boolean = True;
 
 implementation
-
-  function PathCanonicalizeA(lpszDes, lpszSrc: PAnsiChar): BOOL; stdcall; external 'shlwapi.dll';
-  function PathCanonicalizeW(lpszDes, lpszSrc: PWideChar): BOOL; stdcall; external 'shlwapi.dll';
-  function PathMakeUniqueName(pszUniqueName: PWideChar; cchMax: UINT;
-    pszTemplate, pszLongPlate, pszDir: PWideChar): BOOL; stdcall; external 'shell32.dll';
-
-function IsAttributesPresent(Value: TWin32FileAttributeData): Boolean;
-begin
-  Result := (Value.ftCreationTime.dwLowDateTime <> 0) and
-    (Value.ftCreationTime.dwHighDateTime <> 0);
-end;
-
-function FileSizeToInt64(FileSizeLo, FileSizeHi: DWORD): Int64;
-begin
-  Result := FileSizeHi;
-  Result := Result shl 32;
-  Inc(Result, FileSizeLo);
-end;
-
-function IncludeLongNamePrefix(const Value: string): string;
-var
-  NeedAdd: Boolean;
-begin
-  NeedAdd := True;
-  if Length(Value) >= 4 then
-    NeedAdd := not(
-      (Value[1] = LongNamePrefix[1]) and
-      (Value[2] = LongNamePrefix[2]) and
-      (Value[3] = LongNamePrefix[3]) and
-      (Value[4] = LongNamePrefix[4]));
-  if NeedAdd and UseLongNamePrefix then
-    Result := LongNamePrefix + Value
-  else
-    Result := Value;
-end;
-
-function PathCanonicalize(Value: string): string;
-begin
-  if Value = '' then
-  begin
-    Result := '';
-    Exit;
-  end;
-  if Value[1] = '.' then
-    Value := IncludeTrailingPathDelimiter(GetCurrentDir) + Value;
-  SetLength(Result, MAX_PATH);
-  if
-  {$IFDEF UNICODE}
-  PathCanonicalizeW(PWideChar(Result), PWideChar(Value))
-  {$ELSE}
-  PathCanonicalizeA(PAnsiChar(Result), PAnsiChar(Value))
-  {$ENDIF} then
-    Result := PChar(Result)
-  else
-    Result := Value;
-  Result := IncludeLongNamePrefix(Result);
-end;
-
-function MakeUniqueName(const Value: string): string;
-{$IFDEF UNICODE}
-var
-  FilePath, FileName: string;
-begin
-  Result := Value;
-  FilePath := ExtractFilePath(Value);
-  FileName := ExtractFileName(Value);
-  SetLength(Result, MAX_PATH);
-  if PathMakeUniqueName(PWideChar(Result), MAX_PATH,
-    nil, PWideChar(FileName), PWideChar(FilePath)) then
-    Result := PWideChar(Result);
-{$ELSE}
-var
-  UnicodeResult, FilePath, FileName: WideString;
-begin
-  Result := Value;
-  FilePath := WideString(ExtractFilePath(Value));
-  FileName := WideString(ExtractFileName(Value));
-  SetLength(UnicodeResult, MAX_PATH);
-  if PathMakeUniqueName(PWideChar(UnicodeResult), MAX_PATH,
-    nil, PWideChar(FileName), PWideChar(FilePath)) then
-    Result := AnsiString(PWideChar(UnicodeResult));
-{$ENDIF}
-end;
-
-function FileSizeToStr(Value: Int64): string;
-begin
-  if Value < 1024 then
-  begin
-    Result := Format('%d байт', [Value]);
-    Exit;
-  end;
-  Value := Value div 1024;
-  if Value < 1024 then
-  begin
-    Result := Format('%d килобайт', [Value]);
-    Exit;
-  end;
-  Value := Value div 1024;
-  if Value < 1024 then
-  begin
-    Result := Format('%d мегабайт', [Value]);
-    Exit;
-  end;
-  Value := Value div 1024;
-  if Value < 1024 then
-  begin
-    Result := Format('%d гигабайт', [Value]);
-    Exit;
-  end;
-  // ну а чем бог не шутит? :)
-  Value := Value div 1024;
-  Result := Format('%d терабайт', [Value]);
-end;
 
 end.

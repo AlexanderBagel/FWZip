@@ -5,8 +5,8 @@
 //  * Unit Name : ReplaceZipItemData
 //  * Purpose   : Демонстрация изменения данных в уже созданном архиве
 //  * Author    : Александр (Rouse_) Багель
-//  * Copyright : © Fangorn Wizards Lab 1998 - 2021.
-//  * Version   : 1.1.2
+//  * Copyright : © Fangorn Wizards Lab 1998 - 2023.
+//  * Version   : 2.0.0
 //  * Home Page : http://rouse.drkb.ru
 //  * Home Blog : http://alexander-bagel.blogspot.ru
 //  ****************************************************************************
@@ -16,8 +16,9 @@
 //
 //  Используемые источники:
 //  ftp://ftp.info-zip.org/pub/infozip/doc/appnote-iz-latest.zip
-//  http://zlib.net/zlib-1.2.5.tar.gz
+//  https://zlib.net/zlib-1.2.13.tar.gz
 //  http://www.base2ti.com/
+// http://www.base2ti.com/
 //
 
 // Данный пример показывает как можно изменить данные в уже созданном архиве
@@ -25,9 +26,12 @@
 
 program ReplaceZipItemData;
 
-{$APPTYPE CONSOLE}
-
-{$R *.res}
+{$IFDEF FPC}
+  {$MODE Delphi}
+  {$H+}
+{$ELSE}
+  {$APPTYPE CONSOLE}
+{$ENDIF}
 
 uses
   SysUtils,

@@ -1,13 +1,13 @@
-////////////////////////////////////////////////////////////////////////////////
+п»ї////////////////////////////////////////////////////////////////////////////////
 //
 //  ****************************************************************************
 //  * Project   : FWZip
 //  * Unit Name : ExctractZIPDemo1
-//  * Purpose   : Демонстрация распаковки архива.
-//  *           : Используется архив созданный демоприложением CreateZIPDemo1
-//  * Author    : Александр (Rouse_) Багель
-//  * Copyright : © Fangorn Wizards Lab 1998 - 2013.
-//  * Version   : 1.0.10
+//  * Purpose   : Р”РµРјРѕРЅСЃС‚СЂР°С†РёСЏ СЂР°СЃРїР°РєРѕРІРєРё Р°СЂС…РёРІР°.
+//  *           : РСЃРїРѕР»СЊР·СѓРµС‚СЃСЏ Р°СЂС…РёРІ СЃРѕР·РґР°РЅРЅС‹Р№ РґРµРјРѕРїСЂРёР»РѕР¶РµРЅРёРµРј CreateZIPDemo1
+//  * Author    : РђР»РµРєСЃР°РЅРґСЂ (Rouse_) Р‘Р°РіРµР»СЊ
+//  * Copyright : В© Fangorn Wizards Lab 1998 - 2023.
+//  * Version   : 2.0.0
 //  * Home Page : http://rouse.drkb.ru
 //  * Home Blog : http://alexander-bagel.blogspot.ru
 //  ****************************************************************************
@@ -15,20 +15,24 @@
 //  * Latest Source  : https://github.com/AlexanderBagel/FWZip
 //  ****************************************************************************
 //
-//  Используемые источники:
+//  РСЃРїРѕР»СЊР·СѓРµРјС‹Рµ РёСЃС‚РѕС‡РЅРёРєРё:
 //  ftp://ftp.info-zip.org/pub/infozip/doc/appnote-iz-latest.zip
-//  http://zlib.net/zlib-1.2.5.tar.gz
+//  https://zlib.net/zlib-1.2.13.tar.gz
 //  http://www.base2ti.com/
 //
 
-// Данный пример показывает два варианта извлечения информации из архива.
+// Р”Р°РЅРЅС‹Р№ РїСЂРёРјРµСЂ РїРѕРєР°Р·С‹РІР°РµС‚ РґРІР° РІР°СЂРёР°РЅС‚Р° РёР·РІР»РµС‡РµРЅРёСЏ РёРЅС„РѕСЂРјР°С†РёРё РёР· Р°СЂС…РёРІР°.
 
 program ExctractZIPDemo1;
 
-{$APPTYPE CONSOLE}
+{$IFDEF FPC}
+  {$MODE Delphi}
+  {$H+}
+{$ELSE}
+  {$APPTYPE CONSOLE}
+{$ENDIF}
 
 uses
-  Windows,
   Classes,
   SysUtils,
   TypInfo,
@@ -42,53 +46,54 @@ end;
 var
   Zip: TFWZipReader;
   Index: Integer;
-  S: TStringStream;
-  OemString: AnsiString;
+  M: TStringStream;
 begin
   SetCurrentDir(ExtractFilePath(ParamStr(0)));
   try
     Zip := TFWZipReader.Create;
     try
-      // Открываем ранее созданный архив
+      // РћС‚РєСЂС‹РІР°РµРј СЂР°РЅРµРµ СЃРѕР·РґР°РЅРЅС‹Р№ Р°СЂС…РёРІ
       Zip.LoadFromFile('..\DemoResults\CreateZIPDemo1.zip');
 
-      // Первый вариант распаковки - ручной доступ к каждому элементу архива
+      // РџРµСЂРІС‹Р№ РІР°СЂРёР°РЅС‚ СЂР°СЃРїР°РєРѕРІРєРё - СЂСѓС‡РЅРѕР№ РґРѕСЃС‚СѓРї Рє РєР°Р¶РґРѕРјСѓ СЌР»РµРјРµРЅС‚Сѓ Р°СЂС…РёРІР°
 
-      // В примере CreateZIPDemo1 мы создали в корне архива файл Test.txt
-      // Нам необходимо получить индекс этого элемента в архиве
+      // Р’ РїСЂРёРјРµСЂРµ CreateZIPDemo1 РјС‹ СЃРѕР·РґР°Р»Рё РІ РєРѕСЂРЅРµ Р°СЂС…РёРІР° С„Р°Р№Р» Test.txt
+      // РќР°Рј РЅРµРѕР±С…РѕРґРёРјРѕ РїРѕР»СѓС‡РёС‚СЊ РёРЅРґРµРєСЃ СЌС‚РѕРіРѕ СЌР»РµРјРµРЅС‚Р° РІ Р°СЂС…РёРІРµ
       Index := Zip.GetElementIndex('test.txt');
       if Index >= 0 then
       begin
-        // Распаковать можно в память:
-        S := TStringStream.Create('');
+        // Р Р°СЃРїР°РєРѕРІР°С‚СЊ РјРѕР¶РЅРѕ РІ РїР°РјСЏС‚СЊ:
+        M := TStringStream.Create('');
         try
-          Zip[Index].ExtractToStream(S, '');
-          // Файл извлечен, выведем его содержимое в окно консоли
+          Zip[Index].ExtractToStream(M, '');
+          // Р¤Р°Р№Р» РёР·РІР»РµС‡РµРЅ, РІС‹РІРµРґРµРј РµРіРѕ СЃРѕРґРµСЂР¶РёРјРѕРµ РІ РѕРєРЅРѕ РєРѕРЅСЃРѕР»Рё
           {$IFDEF UNICODE}
-          Writeln(OemString);
+          Writeln(M.DataString);
           {$ELSE}
-          OemString := AnsiString(S.DataString);
-          AnsiToOem(PAnsiChar(OemString), PAnsiChar(OemString));
-          Writeln(OemString);
+            {$IFDEF FPC}
+            Writeln(M.DataString);
+            {$ELSE}
+            Writeln(ConvertToOemString(AnsiString(M.DataString)));
+            {$ENDIF}
           {$ENDIF}
         finally
-          S.Free;
+          M.Free;
         end;
 
-        // Распаковать так-же можно на диск:
+        // Р Р°СЃРїР°РєРѕРІР°С‚СЊ С‚Р°Рє-Р¶Рµ РјРѕР¶РЅРѕ РЅР° РґРёСЃРє:
         Write('Extract "', Zip[Index].FileName, '": ');
         Writeln(ExtractResultStr(
           Zip[Index].Extract('..\DemoResults\CreateZIPDemo1\ManualExtract\', '')));
       end;
 
-      // Таким-же образом можно получить содержимое остальных файлов
+      // РўР°РєРёРј-Р¶Рµ РѕР±СЂР°Р·РѕРј РјРѕР¶РЅРѕ РїРѕР»СѓС‡РёС‚СЊ СЃРѕРґРµСЂР¶РёРјРѕРµ РѕСЃС‚Р°Р»СЊРЅС‹С… С„Р°Р№Р»РѕРІ
 
-      // Второй вариант распаковки - автоматической распаковка архива
-      // в указанную папку на диске
+      // Р’С‚РѕСЂРѕР№ РІР°СЂРёР°РЅС‚ СЂР°СЃРїР°РєРѕРІРєРё - Р°РІС‚РѕРјР°С‚РёС‡РµСЃРєРѕР№ СЂР°СЃРїР°РєРѕРІРєР° Р°СЂС…РёРІР°
+      // РІ СѓРєР°Р·Р°РЅРЅСѓСЋ РїР°РїРєСѓ РЅР° РґРёСЃРєРµ
       Zip.ExtractAll('..\DemoResults\CreateZIPDemo1\');
 
-      // Третий вариант распаковки - автоматическая распаковка по маске
-      // (данный код распакует все файлы находящиеся в папке AddFolderDemo архива)
+      // РўСЂРµС‚РёР№ РІР°СЂРёР°РЅС‚ СЂР°СЃРїР°РєРѕРІРєРё - Р°РІС‚РѕРјР°С‚РёС‡РµСЃРєР°СЏ СЂР°СЃРїР°РєРѕРІРєР° РїРѕ РјР°СЃРєРµ
+      // (РґР°РЅРЅС‹Р№ РєРѕРґ СЂР°СЃРїР°РєСѓРµС‚ РІСЃРµ С„Р°Р№Р»С‹ РЅР°С…РѕРґСЏС‰РёРµСЃСЏ РІ РїР°РїРєРµ AddFolderDemo Р°СЂС…РёРІР°)
       Zip.ExtractAll('AddFolderDemo*', '..\DemoResults\CreateZIPDemo1\ExtractMasked\');
     finally
       Zip.Free;

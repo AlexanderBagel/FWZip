@@ -1,12 +1,12 @@
-////////////////////////////////////////////////////////////////////////////////
+п»ї////////////////////////////////////////////////////////////////////////////////
 //
 //  ****************************************************************************
 //  * Project   : FWZip - ZipAnalizer
 //  * Unit Name : uZipAnalizer
-//  * Purpose   : Вывод параметров архива используя возможности FWZipReader
-//  * Author    : Александр (Rouse_) Багель
-//  * Copyright : © Fangorn Wizards Lab 1998 - 2013.
-//  * Version   : 1.0.10
+//  * Purpose   : Р’С‹РІРѕРґ РїР°СЂР°РјРµС‚СЂРѕРІ Р°СЂС…РёРІР° РёСЃРїРѕР»СЊР·СѓСЏ РІРѕР·РјРѕР¶РЅРѕСЃС‚Рё FWZipReader
+//  * Author    : РђР»РµРєСЃР°РЅРґСЂ (Rouse_) Р‘Р°РіРµР»СЊ
+//  * Copyright : В© Fangorn Wizards Lab 1998 - 2023.
+//  * Version   : 2.0.0
 //  * Home Page : http://rouse.drkb.ru
 //  * Home Blog : http://alexander-bagel.blogspot.ru
 //  ****************************************************************************
@@ -14,20 +14,32 @@
 //  * Latest Source  : https://github.com/AlexanderBagel/FWZip
 //  ****************************************************************************
 //
-//  Используемые источники:
+//  РСЃРїРѕР»СЊР·СѓРµРјС‹Рµ РёСЃС‚РѕС‡РЅРёРєРё:
 //  ftp://ftp.info-zip.org/pub/infozip/doc/appnote-iz-latest.zip
-//  http://zlib.net/zlib-1.2.5.tar.gz
+//  https://zlib.net/zlib-1.2.13.tar.gz
 //  http://www.base2ti.com/
 //
 
 unit uZipAnalizer;
 
+{$IFDEF FPC}
+  {$MODE Delphi}
+{$ENDIF}
+
 interface
 
 uses
-  Windows, Messages, SysUtils, Classes, Controls, Forms,
+{$IFnDEF FPC}
+  Windows,
+{$ELSE}
+  LCLIntf, LCLType,
+{$ENDIF}
+  SysUtils, Classes, Controls, Forms,
   Dialogs, StdCtrls, ComCtrls, ExtCtrls, Menus,
-  FWZipReader, FWZipConsts;
+
+  FWZipReader,
+  FWZipConsts,
+  FWZipUtils;
 
 type
   TFWZipReaderFriendly = class(TFWZipReader);
@@ -44,7 +56,7 @@ type
     btnBrowse: TButton;
     btnAnalize: TButton;
     GroupBox: TGroupBox;
-    edReport: TRichEdit;
+    edReport: TMemo;
     OpenDialog: TOpenDialog;
     PopupMenu: TPopupMenu;
     mnuSave: TMenuItem;
@@ -78,7 +90,11 @@ implementation
 const
   Delim = '===================================================================';
 
-{$R *.dfm}
+{$IFnDEF FPC}
+  {$R *.dfm}
+{$ELSE}
+  {$R *.lfm}
+{$ENDIF}
 
 procedure TdlgZipAnalizer.btnAnalizeClick(Sender: TObject);
 var
@@ -105,6 +121,9 @@ end;
 
 procedure TdlgZipAnalizer.btnBrowseClick(Sender: TObject);
 begin
+  UseLongNamePrefix := False;
+  OpenDialog.InitialDir :=
+    PathCanonicalize(ExtractFilePath(ParamStr(0)) + '..\DemoResults');
   if OpenDialog.Execute then
   begin
     edPath.Text := OpenDialog.FileName;
@@ -130,7 +149,6 @@ procedure TdlgZipAnalizer.FormCreate(Sender: TObject);
 begin
   Zip := TFWZipReaderFriendly.Create;
   Zip.OnLoadExData := OnLoadExData;
-  edReport.PlainText := True;
 end;
 
 procedure TdlgZipAnalizer.FormDestroy(Sender: TObject);
@@ -196,6 +214,9 @@ procedure TdlgZipAnalizer.ShowItemData(Index: Integer);
   var
     I: integer;
   begin
+    {$IFDEF FPC}
+    Result := '';
+    {$ENDIF}
     SetLength(Result, Size shl 1);
     for I := 0 to Size - 1 do
     begin

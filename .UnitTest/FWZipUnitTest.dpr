@@ -1,26 +1,46 @@
-﻿program FWZipUnitTest;
-{
+program FWZipUnitTest;
 
-  Delphi DUnit Test Project
-  -------------------------
-  This project contains the DUnit test framework and the GUI/Console test runners.
-  Add "CONSOLE_TESTRUNNER" to the conditional defines entry in the project options
-  to use the console test runner.  Otherwise the GUI test runner will be used by
-  default.
-
-}
-
-{$IFDEF CONSOLE_TESTRUNNER}
-{$APPTYPE CONSOLE}
+{$IFDEF FPC}
+  {$MODE Delphi}
+{$ELSE}
+  {$IFDEF CONSOLE_TESTRUNNER}
+    {$APPTYPE CONSOLE}
+  {$ENDIF}
 {$ENDIF}
 
 uses
+  {$IFDEF FPC}
+    {$IFDEF CONSOLE_TESTRUNNER}
+    consoletestrunner,
+    {$ELSE}
+    Interfaces, Forms, GuiTestRunner,
+    {$ENDIF}
+  {$ELSE}
   DUnitTestRunner,
+  {$ENDIF}
   FWZipTests in '..\FWZipTests.pas';
 
-{$R *.RES}
+{$R *.res}
 
+{$IFDEF FPC}
+  {$IFDEF CONSOLE_TESTRUNNER}
+  var Application: TTestRunner;
+  {$ENDIF}
+{$ENDIF}
 begin
+  {$IFDEF FPC}
+    {$IFDEF CONSOLE_TESTRUNNER}
+    Application := TTestRunner.Create(nil);
+    Application.Initialize;
+    Application.Run;
+    Application.Free;
+    {$ELSE}
+    Application.Initialize;
+    Application.CreateForm(TGuiTestRunner, TestRunner);
+    Application.Run;
+    {$ENDIF}
+  {$ELSE}
   DUnitTestRunner.RunRegisteredTests;
+  {$ENDIF}
 end.
 

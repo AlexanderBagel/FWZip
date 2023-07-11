@@ -1,0 +1,101 @@
+object dlgZipAnalizer: TdlgZipAnalizer
+  Left = 301
+  Height = 300
+  Top = 184
+  Width = 685
+  Caption = 'Вывод параметров ZIP архива'
+  ClientHeight = 300
+  ClientWidth = 685
+  Color = clBtnFace
+  DesignTimePPI = 144
+  Font.Color = clWindowText
+  Font.Height = -11
+  Font.Name = 'Tahoma'
+  Position = poScreenCenter
+  LCLVersion = '2.2.6.0'
+  object edPath: TLabeledEdit
+    Left = 8
+    Height = 21
+    Top = 24
+    Width = 550
+    Anchors = [akTop, akLeft, akRight]
+    EditLabel.Height = 13
+    EditLabel.Width = 550
+    EditLabel.Caption = 'Укажите путь к архиву:'
+    EditLabel.ParentColor = False
+    TabOrder = 0
+    Text = 'E:\2\tst.zip'
+    OnChange = edPathChange
+  end
+  object btnBrowse: TButton
+    Left = 560
+    Height = 25
+    Top = 22
+    Width = 25
+    Anchors = [akTop, akRight]
+    Caption = '...'
+    OnClick = btnBrowseClick
+    TabOrder = 1
+  end
+  object btnAnalize: TButton
+    Left = 591
+    Height = 25
+    Top = 22
+    Width = 75
+    Anchors = [akTop, akRight]
+    Caption = 'Старт'
+    Enabled = False
+    OnClick = btnAnalizeClick
+    TabOrder = 2
+  end
+  object GroupBox: TGroupBox
+    Left = 8
+    Height = 233
+    Top = 56
+    Width = 669
+    Anchors = [akTop, akLeft, akRight, akBottom]
+    Caption = 'Параметры архива:'
+    ClientHeight = 215
+    ClientWidth = 665
+    TabOrder = 3
+    object edReport: TMemo
+      Left = 0
+      Height = 215
+      Top = 0
+      Width = 665
+      Align = alClient
+      Font.CharSet = RUSSIAN_CHARSET
+      Font.Color = clWindowText
+      Font.Height = -11
+      Font.Name = 'Tahoma'
+      ParentFont = False
+      PopupMenu = PopupMenu
+      ReadOnly = True
+      ScrollBars = ssBoth
+      TabOrder = 0
+    end
+  end
+  object OpenDialog: TOpenDialog
+    DefaultExt = '.zip'
+    Filter = 'ZIP архивы (*.zip)|*.zip|Все файлы (*.*)|*.*'
+    Options = [ofHideReadOnly, ofFileMustExist, ofEnableSizing]
+    Left = 48
+    Top = 88
+  end
+  object PopupMenu: TPopupMenu
+    OnPopup = PopupMenuPopup
+    Left = 120
+    Top = 88
+    object mnuSave: TMenuItem
+      Caption = 'Сохранить...'
+      ShortCut = 16467
+      OnClick = mnuSaveClick
+    end
+  end
+  object SaveDialog: TSaveDialog
+    DefaultExt = '.txt'
+    Filter = 'Текстовые файлы (*.txt)|*.txt|Все файлы (*.*)|*.*'
+    Left = 208
+    Top = 88
+  end
+end

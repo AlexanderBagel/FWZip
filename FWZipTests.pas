@@ -5,8 +5,8 @@
 //  * Unit Name : FWZipTests
 //  * Purpose   : Набор классов для юниттестирования FWZip
 //  * Author    : Александр (Rouse_) Багель
-//  * Copyright : © Fangorn Wizards Lab 1998 - 2022.
-//  * Version   : 1.1.2
+//  * Copyright : © Fangorn Wizards Lab 1998 - 2023.
+//  * Version   : 2.0.0
 //  * Home Page : http://rouse.drkb.ru
 //  * Home Blog : http://alexander-bagel.blogspot.ru
 //  ****************************************************************************
@@ -16,21 +16,41 @@
 //
 //  Используемые источники:
 //  ftp://ftp.info-zip.org/pub/infozip/doc/appnote-iz-latest.zip
-//  http://zlib.net/zlib-1.2.5.tar.gz
+//  https://zlib.net/zlib-1.2.13.tar.gz
 //  http://www.base2ti.com/
 //
 
 unit FWZipTests;
 
+{$IFDEF FPC}
+  {$MODE Delphi}
+  {$H+}
+{$ENDIF}
+
 interface
 
 uses
-  TestFramework, Windows, Masks, FWZipStream, Classes, Contnrs, SysUtils,
-  FWZipWriter, FWZipConsts, FWZipCrc32, FWZipCrypt, FWZipZLib, FWZipReader,
-  FWZipModifier;
+{$IFDEF FPC}
+  LCLIntf, LCLType, fpcunit, testregistry, FileUtil, DateUtils,
+{$ELSE}
+  TestFramework, Windows,
+{$ENDIF}
+  Classes, SysUtils,
+
+  FWZipStream,
+  FWZipWriter,
+  FWZipConsts,
+  FWZipCrc32,
+  FWZipZLib,
+  FWZipReader,
+  FWZipModifier,
+  FWZipUtils;
 
 type
   EFWZipUnitTestException = class(Exception);
+
+  { TFWZipUnitTest }
+
   TFWZipUnitTest = class(TTestCase)
   strict private
     FZipWriter: TFWZipWriter;
@@ -48,6 +68,8 @@ type
   protected
     procedure TearDown; override;
   published
+    // Тесты преобразования времени
+    procedure TestDateTimeConvertion;
     // Легкие тесты обычного архива
     procedure TestBuildWithStream;
     procedure TestBuildWithExistingFile;
@@ -122,15 +144,30 @@ const
     'Тестовый текстовый файл №3'
   );
 
-  TestComment = 'Мой тестовый комментарий';
+  ReadLock = fmOpenRead or fmShareDenyNone;
+  {$IFDEF LINUX}
+  WriteLock = fmOpenWrite or fmShareExclusive;
+  {$ELSE}
+  WriteLock = fmOpenWrite or fmShareDenyNone;
+  {$ENDIF}
 
 var
   RootFolder: string
   {$IFDEF CUSTOM_TEMP_FOLDER_PATH}
-   = 'E:\FWZip_UnitTest\'
+    {$IFDEF LINUX}
+    //= '~/Documents/ZIP/Demos/DemoResults/'
+    = '/mnt/'
+    {$ELSE}
+     = 'W:\FWZip_UnitTest\'
+    {$ENDIF}
   {$ENDIF};
   _SorceFolder, _DestinationFolder: string;
   TestFolderData: TStringList;
+
+function _L(const Value: string): string; inline;
+begin
+  Result := StringReplace(Value, '\', PathDelim, [rfReplaceAll]);
+end;
 
 function SourceFolder: string;
 begin
@@ -145,34 +182,42 @@ end;
 procedure InitFolders;
 begin
   {$IFNDEF CUSTOM_TEMP_FOLDER_PATH}
+  {$IFDEF FPC}
+  RootFolder := GetTempDir;
+  {$ELSE}
   SetLength(RootFolder, MAX_PATH);
   if GetTempPath(MAX_PATH, @RootFolder[1]) = 0 then Exit;
+  {$ENDIF}
   RootFolder := IncludeTrailingPathDelimiter(PChar(RootFolder));
   {$ENDIF}
-  ForceDirectories(RootFolder);
-  _SorceFolder := RootFolder + 'fwziptest\src\';
+  _SorceFolder := PathCanonicalize(RootFolder + _L('fwziptest\src\'));
   ForceDirectories(_SorceFolder);
-  _DestinationFolder := RootFolder + 'fwziptest\dst\';
+  _DestinationFolder := PathCanonicalize(RootFolder + _L('fwziptest\dst\'));
   ForceDirectories(_DestinationFolder);
 
   TestFolderData := TStringList.Create;
   TestFolderData.Add('1.txt');
   TestFolderData.Add('2.txt');
   TestFolderData.Add('3.txt');
-  TestFolderData.Add('1\1.txt');
-  TestFolderData.Add('1\2.no_txt');
-  TestFolderData.Add('1\3.txt');
-  TestFolderData.Add('2\1.txt');
-  TestFolderData.Add('2\2.txt');
-  TestFolderData.Add('2\3.txt');
-  TestFolderData.Add('3\');
-  TestFolderData.Add('4\5\2.txt');
-  TestFolderData.Add('4\5\3.txt');
-  TestFolderData.Add('7\8\9\10\1.bin');
-  TestFolderData.Add('7\8\9\10\2.bin');
+  TestFolderData.Add(_L('1\1.txt'));
+  TestFolderData.Add(_L('1\2.no_txt'));
+  TestFolderData.Add(_L('1\3.txt'));
+  TestFolderData.Add(_L('2\1.txt'));
+  TestFolderData.Add(_L('2\2.txt'));
+  TestFolderData.Add(_L('2\3.txt'));
+  TestFolderData.Add(_L('3\'));
+  TestFolderData.Add(_L('4\5\2.txt'));
+  TestFolderData.Add(_L('4\5\3.txt'));
+  TestFolderData.Add(_L('7\8\9\10\1.bin'));
+  TestFolderData.Add(_L('7\8\9\10\2.bin'));
 end;
 
 procedure DeleteFolder(const Path: string);
+{$IFDEF FPC}
+begin
+  DeleteDirectory(Path, False);
+end;
+{$ELSE}
 var
   SR: TSearchRec;
 begin
@@ -194,6 +239,7 @@ begin
   end;
   RemoveDirectory(PChar(Path));
 end;
+{$ENDIF}
 
 procedure CreateFile(const Path: string);
 var
@@ -280,7 +326,7 @@ begin
     Result := SourceFolder
   else
     Result := DestinationFolder;
-  Result := Result + 'test_' + IntToStr(TestIndex) + '\';
+  Result := IncludeTrailingPathDelimiter(Result + 'test_' + IntToStr(TestIndex));
   if Clear then
     ClearFolder(Result)
   else
@@ -295,7 +341,7 @@ var
   MaxSize: Int64;
 begin
   L := MAXWORD;
-  SetLength(Buff, $FFFF);
+  SetLength(Buff{%H-}, $FFFF);
   for I := 0 to L - 1 do
     Buff[I] := Byte(I);
 
@@ -380,14 +426,14 @@ begin
   if Expected <> brDone then
   begin
     if Value <> Expected then
-      raise EFWZipUnitTestException.Create('Ошибка создания архива. Ожидалось ' +
+      raise EFWZipUnitTestException.Create(string('Ошибка создания архива. Ожидалось ') +
       GetEnumName(TypeInfo(TBuildZipResult), Integer(Expected)) +
-      ', но вернулся результат ' +
+      string(', но вернулся результат ') +
       GetEnumName(TypeInfo(TBuildZipResult), Integer(Value)));
   end
   else
     if Value <> Expected then
-      raise EFWZipUnitTestException.Create('Ошибка создания архива. Result = ' +
+      raise EFWZipUnitTestException.Create(string('Ошибка создания архива. Result = ') +
       GetEnumName(TypeInfo(TBuildZipResult), Integer(Value)));
 end;
 
@@ -466,8 +512,13 @@ end;
 
 var
   Method: TMethod;
-  hOFStruct: TOFStruct;
-  hFile: THandle;
+  hLockedFile: THandle;
+
+procedure DropLock;
+begin
+  FileClose(hLockedFile);
+  hLockedFile := INVALID_HANDLE_VALUE;
+end;
 
 procedure OnException1(Self, Sender: TObject; E: Exception;
   const ItemIndex: Integer; var Action: TExceptionAction;
@@ -476,13 +527,15 @@ var
   CurrentFilePath: string;
   Src: THandleStream;
   Dst: TFileStream;
-  hOFStruct: TOFStruct;
   hFile: THandle;
 begin
+  {$IFDEF LINUX}
+  // с блокировкой под юниксом проблемы, поэтому пусть будет так
+  DropLock;
+  {$ENDIF}
   CurrentFilePath := string(TFWZipWriter(Sender)[ItemIndex].FilePath);
   NewFilePath := ChangeFileExt(CurrentFilePath, '.tmp');
-  hFile := OpenFile(PAnsiChar(AnsiString(CurrentFilePath)),
-    hOFStruct, OF_READ);
+  hFile := FileOpen(CurrentFilePath, ReadLock);
   try
     Src := THandleStream.Create(hFile);
     try
@@ -496,7 +549,7 @@ begin
       Src.Free;
     end;
   finally
-    CloseHandle(hFile);
+    FileClose(hFile);
   end;
   Action := eaUseNewFilePathAndDel;
 end;
@@ -505,8 +558,7 @@ procedure OnException2(Self, Sender: TObject; E: Exception;
   const ItemIndex: Integer; var Action: TExceptionAction;
   var NewFilePath: string; NewFileData: TMemoryStream);
 begin
-  CloseHandle(hFile);
-  hFile := INVALID_HANDLE_VALUE;
+  DropLock;
   Action := eaRetry;
 end;
 
@@ -515,12 +567,13 @@ procedure OnException3(Self, Sender: TObject; E: Exception;
   var NewFilePath: string; NewFileData: TMemoryStream);
 var
   Src: THandleStream;
-  hOFStruct: TOFStruct;
   hFile: THandle;
 begin
-  hFile := OpenFile(
-    PAnsiChar(AnsiString(TFWZipWriter(Sender)[ItemIndex].FilePath)),
-    hOFStruct, OF_READ);
+  {$IFDEF LINUX}
+  // с блокировкой под юниксом проблемы, поэтому пусть будет так
+  DropLock;
+  {$ENDIF}
+  hFile := FileOpen(TFWZipWriter(Sender)[ItemIndex].FilePath, ReadLock);
   try
     Src := THandleStream.Create(hFile);
     try
@@ -529,7 +582,7 @@ begin
       Src.Free;
     end;
   finally
-    CloseHandle(hFile);
+    FileClose(hFile);
   end;
   Action := eaUseNewFileData;
 end;
@@ -541,22 +594,38 @@ begin
   FreeAndNil(FZipReader);
 end;
 
+procedure TFWZipUnitTest.TestDateTimeConvertion;
+var
+  ConstDateTime, CheckDateTimeValue: TDateTime;
+  F: TFileTime;
+  FileDate: Cardinal;
+begin
+  PUInt64(@ConstDateTime)^ := 4675509705865876384; // '11.02.2005 10:40:12'
+
+  F := DateTimeToFileTime(ConstDateTime);
+  CheckEquals(F.dwLowDateTime, 3318603264, 'DateTimeToFileTime failed');
+  CheckEquals(F.dwHighDateTime, 29691891, 'DateTimeToFileTime failed');
+
+  CheckDateTimeValue := FileTimeToLocalDateTime(F);
+  CheckEquals(PUInt64(@ConstDateTime)^, PUInt64(@CheckDateTimeValue)^, 'FileTimeToLocalDateTime failed');
+
+  FileDate := FileTimeToLocalFileDate(F);
+  CheckEquals(FileDate, 843797766, 'FileTimeToLocalFileDate failed');
+end;
+
 procedure TFWZipUnitTest.TestBuildWithException;
 var
-  Count: TDataCount;
   SrcFolder, DstFolder, DstFile: string;
 begin
   Clear;
   SrcFolder := GetTestFolderPath(9, True, True);
   DstFolder := GetTestFolderPath(9, False, True);
   DstFile := DstFolder + ZipName;
-  Count := CreateTestDataInSrcFolder(SrcFolder);
+  CreateTestDataInSrcFolder(SrcFolder);
 
   // лочим один из файлов для демонстрации
   Writer.AddFile(SrcFolder + TestFolderData[0]);
-  ZeroMemory(@hOFStruct, SizeOf(TOFStruct));
-  hFile := OpenFile(PAnsiChar(AnsiString(SrcFolder + TestFolderData[0])),
-    hOFStruct, OF_WRITE);
+  hLockedFile := FileOpen(SrcFolder + TestFolderData[0], WriteLock);
   try
     CheckBuildResult(Writer.BuildZip(DstFile), brFailed);
     // теперь добавляем еще один не залоченый
@@ -564,7 +633,7 @@ begin
     Writer.AddFile(SrcFolder + TestFolderData[1]);
     CheckBuildResult(Writer.BuildZip(DstFile), brPartialBuild);
   finally
-    CloseHandle(hFile);
+    FileClose(hLockedFile);
   end;
 
   // а теперь должно быть нормально
@@ -577,8 +646,7 @@ begin
 
   Clear;
   Writer.AddFile(SrcFolder + TestFolderData[0]);
-  hFile := OpenFile(PAnsiChar(AnsiString(SrcFolder + TestFolderData[0])),
-    hOFStruct, OF_WRITE);
+  hLockedFile := FileOpen(SrcFolder + TestFolderData[0], WriteLock);
   try
     // Назначаем обработчик через который мы будем обрабатывать ошибку
     // В обработчике OnException1 будет создаваться копия файла
@@ -587,13 +655,12 @@ begin
     Writer.OnException := TZipBuildExceptionEvent(Method);
     CheckBuildResult(Writer.BuildZip(DstFile));
   finally
-    CloseHandle(hFile);
+    FileClose(hLockedFile);
   end;
 
   Clear;
   Writer.AddFile(SrcFolder + TestFolderData[0]);
-  hFile := OpenFile(PAnsiChar(AnsiString(SrcFolder + TestFolderData[0])),
-    hOFStruct, OF_WRITE);
+  hLockedFile := FileOpen(SrcFolder + TestFolderData[0], WriteLock);
   try
     // снимаем исскуственную блокировку файла и выставляем
     // свойство Action в eaRetry
@@ -602,13 +669,12 @@ begin
     Writer.OnException := TZipBuildExceptionEvent(Method);
     CheckBuildResult(Writer.BuildZip(DstFile));
   finally
-    CloseHandle(hFile);
+    FileClose(hLockedFile);
   end;
 
   Clear;
   Writer.AddFile(SrcFolder + TestFolderData[0]);
-  hFile := OpenFile(PAnsiChar(AnsiString(SrcFolder + TestFolderData[0])),
-    hOFStruct, OF_WRITE);
+  hLockedFile := FileOpen(SrcFolder + TestFolderData[0], WriteLock);
   try
     // загружаем данные через стрим
     Method.Code := @OnException3;
@@ -616,7 +682,7 @@ begin
     Writer.OnException := TZipBuildExceptionEvent(Method);
     CheckBuildResult(Writer.BuildZip(DstFile));
   finally
-    CloseHandle(hFile);
+    FileClose(hLockedFile);
   end;
 
   Clear;
@@ -644,8 +710,8 @@ begin
   Reader.ExtractAll(DstFolder);
   for I := 0 to TestFolderData.Count - 1 do
   begin
-    SrcFile := SrcFolder + TestFolderData[I];
-    DstFile := DstFolder + 'test_2\' + TestFolderData[I];
+    SrcFile := _L(SrcFolder + TestFolderData[I]);
+    DstFile := _L(DstFolder + 'test_2\' + TestFolderData[I]);
     if DirectoryExists(SrcFile) then Continue;
     CheckFiles(SrcFile, DstFile);
   end;
@@ -657,14 +723,13 @@ end;
 
 procedure TFWZipUnitTest.TestBuildWithExistingFile2;
 var
-  Count: TDataCount;
   SrcFolder, DstFolder: string;
   SrcFile, DstFile, Ext: string;
   I: Integer;
 begin
   Clear;
   SrcFolder := GetTestFolderPath(3, True, True);
-  Count := CreateTestDataInSrcFolder(SrcFolder);
+  CreateTestDataInSrcFolder(SrcFolder);
   if Writer.AddFolder('AddFolderDemo', SrcFolder, '*.bin;*.no_txt', True) <> 3 then
     raise EFWZipUnitTestException.Create('Ошибка инициализации архива. Неверное количество добавленных файлов');
   CheckBuildResult(Writer.BuildZip(SrcFolder + ZipName));
@@ -676,8 +741,8 @@ begin
   Reader.ExtractAll(DstFolder);
   for I := 0 to TestFolderData.Count - 1 do
   begin
-    SrcFile := SrcFolder + TestFolderData[I];
-    DstFile := DstFolder + 'AddFolderDemo\' + TestFolderData[I];
+    SrcFile := _L(SrcFolder + TestFolderData[I]);
+    DstFile := _L(DstFolder + 'AddFolderDemo\' + TestFolderData[I]);
     Ext := ExtractFileExt(DstFile);
     if (Ext <> '.no_txt') and ((Ext <> '.bin')) then Continue;
     CheckFiles(SrcFile, DstFile);
@@ -713,7 +778,7 @@ begin
   begin
     Item := Writer[I];
     // Изменим коментарий
-    Item.Comment := 'Тестовый коментарий к файлу ' + Item.FileName;
+    Item.Comment := string('Тестовый коментарий к файлу ') + Item.FileName;
     // Установим пароль
     Item.Password := 'password' + IntToStr(Byte(I mod 3));
     // Изменим тип сжатия
@@ -762,8 +827,8 @@ begin
   Reader.ExtractAll(DstFolder);
   for I := 0 to TestFolderData.Count - 1 do
   begin
-    SrcFile := SrcFolder + TestFolderData[I];
-    DstFile := DstFolder + 'test_4\' + TestFolderData[I];
+    SrcFile := _L(SrcFolder + TestFolderData[I]);
+    DstFile := _L(DstFolder + 'test_4\' + TestFolderData[I]);
     if DirectoryExists(SrcFile) then Continue;
     CheckFiles(SrcFile, DstFile);
   end;
@@ -792,7 +857,7 @@ begin
   begin
     Item := Writer[I];
     // Изменим коментарий
-    Item.Comment := 'Тестовый коментарий к файлу ' + Item.FileName;
+    Item.Comment := string('Тестовый коментарий к файлу ') + Item.FileName;
     // Установим пароль
     Item.Password := 'password' + IntToStr(Byte(I mod 3));
     // Вместе с дескриптором
@@ -843,8 +908,8 @@ begin
   Reader.ExtractAll(DstFolder);
   for I := 0 to TestFolderData.Count - 1 do
   begin
-    SrcFile := SrcFolder + TestFolderData[I];
-    DstFile := DstFolder + 'test_41\' + TestFolderData[I];
+    SrcFile := _L(SrcFolder + TestFolderData[I]);
+    DstFile := _L(DstFolder + 'test_41\' + TestFolderData[I]);
     if DirectoryExists(SrcFile) then Continue;
     CheckFiles(SrcFile, DstFile);
   end;
@@ -875,7 +940,7 @@ begin
   CheckResult(ItemIndex);
 
   CheckResult(AddItem(Writer,
-    'AddStreamData\SubFolder1\Subfolder2\Test.txt', TestStringBlock[2]));
+    _L('AddStreamData\SubFolder1\Subfolder2\Test.txt'), TestStringBlock[2]));
 
   SrcFolder := GetTestFolderPath(1, True, True);
   CheckBuildResult(Writer.BuildZip(SrcFolder + ZipName));
@@ -888,7 +953,7 @@ begin
   CheckStream(0, DstFolder + 'test.txt');
   CheckStream(0, DstFolder + 'test0.txt');
   CheckStream(1, DstFolder + 'test2.txt');
-  CheckStream(2, DstFolder + 'AddStreamData\SubFolder1\Subfolder2\Test.txt');
+  CheckStream(2, _L(DstFolder + 'AddStreamData\SubFolder1\Subfolder2\Test.txt'));
 
   Clear;
   DeleteFolder(SrcFolder);
@@ -986,7 +1051,7 @@ var
 begin
   OldPath := Path;
   Path := MakeUniqueName(Path);
-  NewFilePath.AddPair(OldPath, Path);
+  NewFilePath.Add(OldPath + '=' + Path);
   Action := daUseNewFilePath;
 end;
 
@@ -1022,6 +1087,7 @@ begin
   begin
     if Data.Size <> 4 then
       raise Exception.Create('Неверный размер блока ExData');
+    Value := 0;
     Data.ReadBuffer(Value, Data.Size);
     if Value <> TestExDataBlob then
       raise Exception.Create('Неверное значение блока ExData');
@@ -1031,13 +1097,12 @@ end;
 
 procedure TFWZipUnitTest.TestExData;
 var
-  Count: TDataCount;
   SrcFolder, DstFolder, SrcFile, DstFile: string;
   I: Integer;
 begin
   Clear;
   SrcFolder := GetTestFolderPath(12, True, True);
-  Count := CreateTestDataInSrcFolder(SrcFolder);
+  CreateTestDataInSrcFolder(SrcFolder);
   Writer.AddFolder('', SrcFolder, '*.*', True);
 
   Method.Code := @OnSaveExData;
@@ -1072,13 +1137,12 @@ end;
 {$IFNDEF WINE}
 procedure TFWZipUnitTest.TestExtractOverride;
 var
-  Count: TDataCount;
   SrcFolder, DstFolder, SrcFile, DstFile: string;
   I, A: Integer;
 begin
   Clear;
   SrcFolder := GetTestFolderPath(10, True, True);
-  Count := CreateTestDataInSrcFolder(SrcFolder);
+  CreateTestDataInSrcFolder(SrcFolder);
   Writer.AddFolder(SrcFolder);
   CheckBuildResult(Writer.BuildZip(SrcFolder + ZipName));
 
@@ -1096,11 +1160,15 @@ begin
     Reader.ExtractAll(DstFolder);
     for I := 0 to TestFolderData.Count - 1 do
     begin
-      SrcFile := SrcFolder + TestFolderData[I];
-      DstFile := DstFolder + 'test_10\' + TestFolderData[I];
+      SrcFile := _L(SrcFolder + TestFolderData[I]);
+      DstFile := _L(DstFolder + 'test_10\' + TestFolderData[I]);
       if DirectoryExists(SrcFile) then Continue;
       CheckFiles(SrcFile, DstFile);
+      {$IFDEF LINUX}
+      A := NewFilePath.IndexOfName(_L(DstFolder + 'test_10\' + TestFolderData[I]));
+      {$ELSE}
       A := NewFilePath.IndexOfName('\\?\' + DstFolder + 'test_10\' + TestFolderData[I]);
+      {$ENDIF}
       CheckFiles(SrcFile, NewFilePath.ValueFromIndex[A]);
     end;
   finally
@@ -1143,12 +1211,11 @@ end;
 procedure TFWZipUnitTest.TestFind;
 const
   FileName = 'test.txt';
-  FileName2 = 'test2.txt';
 
   procedure Check(Value: Boolean; const Caption: string);
   begin
     if not Value then
-      raise Exception.Create('Ошибка при поиске: ' + Caption);
+      raise Exception.Create(string('Ошибка при поиске: ') + Caption);
   end;
 
 var
@@ -1279,7 +1346,7 @@ var
 begin
   DstFolder := GetTestFolderPath(22, False, True);
 
-  SetLength(Buff, 400);
+  SetLength(Buff{%H-}, 400);
   for I := 0 to 399 do
     Buff[I] := Byte(I);
 
@@ -1309,7 +1376,7 @@ var
 begin
   DstFolder := GetTestFolderPath(22, False, True);
 
-  SetLength(Buff, 400);
+  SetLength(Buff{%H-}, 400);
   for I := 0 to 399 do
     Buff[I] := Byte(I);
 
@@ -1349,7 +1416,7 @@ begin
 
   F := TFWFileMultiStream.CreateRead(DstFolder + ZipName, rsmFull);
   try
-    SetLength(CheckBuff, F.Size);
+    SetLength(CheckBuff{%H-}, F.Size);
     F.Position := 0;
     F.ReadBuffer(CheckBuff[0], F.Size);
   finally
@@ -1427,7 +1494,7 @@ var
 begin
   DstFolder := GetTestFolderPath(16, False, True);
 
-  SetLength(Buff, 400);
+  SetLength(Buff{%H-}, 400);
   for I := 0 to 399 do
     Buff[I] := Byte(I);
 
@@ -1449,7 +1516,7 @@ begin
 
   F := TFWFileMultiStream.CreateRead(DstFolder + ZipName, rsmFull);
   try
-    SetLength(CheckBuff, F.Size);
+    SetLength(CheckBuff{%H-}, F.Size);
     F.Position := 0;
     F.ReadBuffer(CheckBuff[0], F.Size);
   finally
@@ -1472,7 +1539,7 @@ var
 begin
   DstFolder := GetTestFolderPath(17, False, True);
 
-  SetLength(Buff, 400);
+  SetLength(Buff{%H-}, 400);
   for I := 0 to 399 do
     Buff[I] := Byte(I);
 
@@ -1491,7 +1558,7 @@ begin
 
   F := TFWFileMultiStream.CreateRead(DstFolder + ZipName, rsmFull);
   try
-    SetLength(CheckBuff, F.Size);
+    SetLength(CheckBuff{%H-}, F.Size);
     F.Position := 0;
     F.ReadBuffer(CheckBuff[0], F.Size);
   finally
@@ -1514,7 +1581,7 @@ var
 begin
   DstFolder := GetTestFolderPath(18, False, True);
 
-  SetLength(Buff, 400);
+  SetLength(Buff{%H-}, 400);
   for I := 0 to 399 do
     Buff[I] := Byte(I);
 
@@ -1537,7 +1604,7 @@ begin
 
   F := TFWFileMultiStream.CreateRead(DstFolder + ZipName, rsmFull);
   try
-    SetLength(CheckBuff, F.Size);
+    SetLength(CheckBuff{%H-}, F.Size);
     F.Position := 0;
     F.ReadBuffer(CheckBuff[0], F.Size);
   finally
@@ -1560,7 +1627,7 @@ var
 begin
   DstFolder := GetTestFolderPath(19, False, True);
 
-  SetLength(Buff, 400);
+  SetLength(Buff{%H-}, 400);
   for I := 0 to 399 do
     Buff[I] := Byte(I);
 
@@ -1591,7 +1658,7 @@ begin
 
   F := TFWFileMultiStream.CreateRead(DstFolder + ZipName, rsmFull);
   try
-    SetLength(CheckBuff, F.Size);
+    SetLength(CheckBuff{%H-}, F.Size);
     F.Position := 0;
     F.ReadBuffer(CheckBuff[0], F.Size);
   finally
@@ -1614,7 +1681,7 @@ var
 begin
   DstFolder := GetTestFolderPath(20, False, True);
 
-  SetLength(Buff, 400);
+  SetLength(Buff{%H-}, 400);
   for I := 0 to 399 do
     Buff[I] := Byte(I);
 
@@ -1646,7 +1713,7 @@ begin
 
   F := TFWFileMultiStream.CreateRead(DstFolder + ZipName, rsmFull);
   try
-    SetLength(CheckBuff, F.Size);
+    SetLength(CheckBuff{%H-}, F.Size);
     F.Position := 0;
     F.ReadBuffer(CheckBuff[0], F.Size);
   finally
@@ -1669,7 +1736,7 @@ var
 begin
   DstFolder := GetTestFolderPath(21, False, True);
 
-  SetLength(Buff, 400);
+  SetLength(Buff{%H-}, 400);
   for I := 0 to 399 do
     Buff[I] := Byte(I);
 
@@ -1703,7 +1770,7 @@ begin
 
   F := TFWFileMultiStream.CreateRead(DstFolder + ZipName, rsmFull);
   try
-    SetLength(CheckBuff, F.Size);
+    SetLength(CheckBuff{%H-}, F.Size);
     F.Position := 0;
     F.ReadBuffer(CheckBuff[0], F.Size);
   finally
@@ -1750,7 +1817,6 @@ end;
 
 procedure TFWZipUnitTest.TestMultyPartBuildWithException;
 var
-  Count: TDataCount;
   SrcFolder, DstFolder, DstFile: string;
   M: TFWFileMultiStream;
 begin
@@ -1758,13 +1824,11 @@ begin
   SrcFolder := GetTestFolderPath(209, True, True);
   DstFolder := GetTestFolderPath(209, False, True);
   DstFile := DstFolder + ZipName;
-  Count := CreateTestDataInSrcFolder(SrcFolder);
+  CreateTestDataInSrcFolder(SrcFolder);
 
   // лочим один из файлов для демонстрации
   Writer.AddFile(SrcFolder + TestFolderData[0]);
-  ZeroMemory(@hOFStruct, SizeOf(TOFStruct));
-  hFile := OpenFile(PAnsiChar(AnsiString(SrcFolder + TestFolderData[0])),
-    hOFStruct, OF_WRITE);
+  hLockedFile := FileOpen(SrcFolder + TestFolderData[0], WriteLock);
   try
     M := TFWFileMultiStream.CreateWrite(DstFile);
     try
@@ -1782,7 +1846,7 @@ begin
       M.Free;
     end;
   finally
-    CloseHandle(hFile);
+    FileClose(hLockedFile);
   end;
 
   // а теперь должно быть нормально
@@ -1808,8 +1872,7 @@ begin
   ClearFolder(DstFolder);
   Clear;
   Writer.AddFile(SrcFolder + TestFolderData[0]);
-  hFile := OpenFile(PAnsiChar(AnsiString(SrcFolder + TestFolderData[0])),
-    hOFStruct, OF_WRITE);
+  hLockedFile := FileOpen(SrcFolder + TestFolderData[0], WriteLock);
   try
     // Назначаем обработчик через который мы будем обрабатывать ошибку
     // В обработчике OnException1 будет создаваться копия файла
@@ -1823,14 +1886,13 @@ begin
       M.Free;
     end;
   finally
-    CloseHandle(hFile);
+    FileClose(hLockedFile);
   end;
 
   ClearFolder(DstFolder);
   Clear;
   Writer.AddFile(SrcFolder + TestFolderData[0]);
-  hFile := OpenFile(PAnsiChar(AnsiString(SrcFolder + TestFolderData[0])),
-    hOFStruct, OF_WRITE);
+  hLockedFile := FileOpen(SrcFolder + TestFolderData[0], WriteLock);
   try
     // снимаем исскуственную блокировку файла и выставляем
     // свойство Action в eaRetry
@@ -1844,14 +1906,13 @@ begin
       M.Free;
     end;
   finally
-    CloseHandle(hFile);
+    FileClose(hLockedFile);
   end;
 
   ClearFolder(DstFolder);
   Clear;
   Writer.AddFile(SrcFolder + TestFolderData[0]);
-  hFile := OpenFile(PAnsiChar(AnsiString(SrcFolder + TestFolderData[0])),
-    hOFStruct, OF_WRITE);
+  hLockedFile := FileOpen(SrcFolder + TestFolderData[0], WriteLock);
   try
     // загружаем данные через стрим
     Method.Code := @OnException3;
@@ -1864,7 +1925,7 @@ begin
       M.Free;
     end;
   finally
-    CloseHandle(hFile);
+    FileClose(hLockedFile);
   end;
 
   Clear;
@@ -1918,7 +1979,6 @@ end;
 
 procedure TFWZipUnitTest.TestMultyPartBuildWithExistingFile2;
 var
-  Count: TDataCount;
   SrcFolder, DstFolder: string;
   SrcFile, DstFile, Ext: string;
   I: Integer;
@@ -1926,7 +1986,7 @@ var
 begin
   Clear;
   SrcFolder := GetTestFolderPath(203, True, True);
-  Count := CreateTestDataInSrcFolder(SrcFolder);
+  CreateTestDataInSrcFolder(SrcFolder);
   if Writer.AddFolder('', SrcFolder, '*.bin;*.no_txt', True) <> 3 then
     raise EFWZipUnitTestException.Create('Ошибка инициализации архива. Неверное количество добавленных файлов');
 
@@ -1984,7 +2044,7 @@ begin
   begin
     Item := Writer[I];
     // Изменим коментарий
-    Item.Comment := 'Тестовый коментарий к файлу ' + Item.FileName;
+    Item.Comment := string('Тестовый коментарий к файлу ') + Item.FileName;
     // Установим пароль
     Item.Password := 'password' + IntToStr(Byte(I mod 3));
     // Изменим тип сжатия
@@ -2086,7 +2146,7 @@ begin
   begin
     Item := Writer[I];
     // Изменим коментарий
-    Item.Comment := 'Тестовый коментарий к файлу ' + Item.FileName;
+    Item.Comment := string('Тестовый коментарий к файлу ') + Item.FileName;
     // Установим пароль
     Item.Password := 'password' + IntToStr(Byte(I mod 3));
     // Вместе с дескриптором
@@ -2191,7 +2251,7 @@ begin
   CheckResult(ItemIndex);
 
   CheckResult(AddItem(Writer,
-    'AddStreamData\SubFolder1\Subfolder2\Test.txt', TestStringBlock[2]));
+    _L('AddStreamData\SubFolder1\Subfolder2\Test.txt'), TestStringBlock[2]));
 
   SrcFolder := GetTestFolderPath(201, True, True);
 
@@ -2217,7 +2277,7 @@ begin
   CheckStream(0, DstFolder + 'test.txt');
   CheckStream(0, DstFolder + 'test0.txt');
   CheckStream(1, DstFolder + 'test2.txt');
-  CheckStream(2, DstFolder + 'AddStreamData\SubFolder1\Subfolder2\Test.txt');
+  CheckStream(2, DstFolder + _L('AddStreamData\SubFolder1\Subfolder2\Test.txt'));
 
   Clear;
   DeleteFolder(SrcFolder);
@@ -2351,14 +2411,13 @@ end;
 
 procedure TFWZipUnitTest.TestMultyPartExData;
 var
-  Count: TDataCount;
   SrcFolder, DstFolder, SrcFile, DstFile: string;
   I: Integer;
   M: TFWFileMultiStream;
 begin
   Clear;
   SrcFolder := GetTestFolderPath(212, True, True);
-  Count := CreateTestDataInSrcFolder(SrcFolder);
+  CreateTestDataInSrcFolder(SrcFolder);
   Writer.AddFolder('', SrcFolder, '*.*', True);
 
   Method.Code := @OnSaveExData;
@@ -2403,14 +2462,13 @@ end;
 {$IFNDEF WINE}
 procedure TFWZipUnitTest.TestMultyPartExtractOverride;
 var
-  Count: TDataCount;
   SrcFolder, DstFolder, SrcFile, DstFile: string;
   I, A: Integer;
   M: TFWFileMultiStream;
 begin
   Clear;
   SrcFolder := GetTestFolderPath(210, True, True);
-  Count := CreateTestDataInSrcFolder(SrcFolder);
+  CreateTestDataInSrcFolder(SrcFolder);
   Writer.AddFolder(SrcFolder);
 
   M := TFWFileMultiStream.CreateWrite(SrcFolder + ZipName);
@@ -2436,11 +2494,15 @@ begin
       Reader.ExtractAll(DstFolder);
       for I := 0 to TestFolderData.Count - 1 do
       begin
-        SrcFile := SrcFolder + TestFolderData[I];
-        DstFile := DstFolder + 'test_210\' + TestFolderData[I];
+        SrcFile := _L(SrcFolder + TestFolderData[I]);
+        DstFile := _L(DstFolder + 'test_210\' + TestFolderData[I]);
         if DirectoryExists(SrcFile) then Continue;
         CheckFiles(SrcFile, DstFile);
+        {$IFDEF LINUX}
+        A := NewFilePath.IndexOfName(_L(DstFolder + 'test_210\' + TestFolderData[I]));
+        {$ELSE}
         A := NewFilePath.IndexOfName('\\?\' + DstFolder + 'test_210\' + TestFolderData[I]);
+        {$ENDIF}
         CheckFiles(SrcFile, NewFilePath.ValueFromIndex[A]);
       end;
     finally
@@ -2804,7 +2866,11 @@ end;
 initialization
 
   InitFolders;
+  {$IFDEF FPC}
+  RegisterTest(TFWZipUnitTest);
+  {$ELSE}
   RegisterTest(TFWZipUnitTest.Suite);
+  {$ENDIF}
 
 finalization
 

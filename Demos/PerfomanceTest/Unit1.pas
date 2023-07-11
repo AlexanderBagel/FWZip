@@ -2,10 +2,10 @@
 //
 //  ****************************************************************************
 //  * Project   : FWZip - FWZipPerfomance
-//  * Purpose   : Тестирование производительности FWZip
-//  * Author    : Александр (Rouse_) Багель
-//  * Copyright : © Fangorn Wizards Lab 1998 - 2013.
-//  * Version   : 1.0.10
+//  * Purpose   : РўРµСЃС‚РёСЂРѕРІР°РЅРёРµ РїСЂРѕРёР·РІРѕРґРёС‚РµР»СЊРЅРѕСЃС‚Рё FWZip
+//  * Author    : РђР»РµРєСЃР°РЅРґСЂ (Rouse_) Р‘Р°РіРµР»СЊ
+//  * Copyright : В© Fangorn Wizards Lab 1998 - 2023.
+//  * Version   : 2.0.0
 //  * Home Page : http://rouse.drkb.ru
 //  * Home Blog : http://alexander-bagel.blogspot.ru
 //  ****************************************************************************
@@ -13,13 +13,17 @@
 //  * Latest Source  : https://github.com/AlexanderBagel/FWZip
 //  ****************************************************************************
 //
-//  Используемые источники:
+//  РСЃРїРѕР»СЊР·СѓРµРјС‹Рµ РёСЃС‚РѕС‡РЅРёРєРё:
 //  ftp://ftp.info-zip.org/pub/infozip/doc/appnote-iz-latest.zip
-//  http://zlib.net/zlib-1.2.5.tar.gz
+//  https://zlib.net/zlib-1.2.13.tar.gz
 //  http://www.base2ti.com/
 //
 
 unit Unit1;
+
+{$IFDEF FPC}
+  {$MODE Delphi}
+{$ENDIF}
 
 interface
 
@@ -28,9 +32,14 @@ interface
 {$WARN UNIT_PLATFORM OFF}
 
 uses
-  Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
-  Dialogs, StdCtrls, ExtCtrls, FileCtrl, ComCtrls,
-  FWZipWriter, FWZipReader, FWZipConsts, Contnrs;
+{$IFDEF FPC}
+  LCLIntf, LCLType,
+{$ELSE}
+  Windows, FileCtrl, 
+{$ENDIF}
+  SysUtils, Variants, Classes, Graphics, Controls, Forms,
+  Dialogs, StdCtrls, ExtCtrls, ComCtrls,
+  FWZipWriter, FWZipReader, FWZipConsts;
 
 type
   TForm1 = class(TForm)
@@ -84,13 +93,26 @@ var
 
 implementation
 
-{$R *.dfm}
+{$IFDEF FPC}
+  {$R *.lfm}
+{$ELSE}
+  {$R *.dfm}
+{$ENDIF}
+
+function GetTicks: UInt64;
+begin
+  {$IFDEF FPC}
+  Result := GetTickCount64;
+  {$ELSE}
+  Result := GetTickCount;
+  {$ENDIF}
+end;
 
 procedure TForm1.Button1Click(Sender: TObject);
 var
   Dir: string;
 begin
-  if SelectDirectory('Укажите папку для сжатия', '', Dir) then
+  if SelectDirectory('РЈРєР°Р¶РёС‚Рµ РїР°РїРєСѓ РґР»СЏ СЃР¶Р°С‚РёСЏ', '', Dir) then
     LabeledEdit1.Text := Dir;
 end;
 
@@ -99,7 +121,7 @@ var
   I: Integer;
   TotalSize: Int64;
   Heap: THeapStatus;
-  TicCount: DWORD;
+  TicCount: Uint64;
   Item: TFWZipWriterItem;
   Writer: TFWZipWriter;
 begin
@@ -121,8 +143,8 @@ begin
         Item.NeedDescriptor := True;
       end;
     end;
-    Label3.Caption := 'Общее количество элементов: ' + IntToStr(Writer.Count);
-    Label4.Caption := 'Общий размер элементов: ' + IntToStr(TotalSize);
+    Label3.Caption := 'РћР±С‰РµРµ РєРѕР»РёС‡РµСЃС‚РІРѕ СЌР»РµРјРµРЅС‚РѕРІ: ' + IntToStr(Writer.Count);
+    Label4.Caption := 'РћР±С‰РёР№ СЂР°Р·РјРµСЂ СЌР»РµРјРµРЅС‚РѕРІ: ' + IntToStr(TotalSize);
     Writer.OnProgress := OnProgress;
     SetEnabledState(False);
     try
@@ -132,17 +154,17 @@ begin
       AverageHeapSize := 0;
       TotalGetHeapStatusCount := 0;
       StopProcess := False;
-      TicCount := GetTickCount;
+      TicCount := GetTicks;
       Writer.BuildZip(
         IncludeTrailingPathDelimiter(LabeledEdit1.Text) + 'FWZipTest.zip');
       if TotalGetHeapStatusCount = 0 then
         TotalGetHeapStatusCount := 1;
       ShowMessage(Format(
-        'Пиковый расход памяти: %d байт' + sLineBreak +
-        'Средний расход памяти: %d байт' + sLineBreak +
-        'Общее время работы: %d секунд',
+        'РџРёРєРѕРІС‹Р№ СЂР°СЃС…РѕРґ РїР°РјСЏС‚Рё: %d Р±Р°Р№С‚' + sLineBreak +
+        'РЎСЂРµРґРЅРёР№ СЂР°СЃС…РѕРґ РїР°РјСЏС‚Рё: %d Р±Р°Р№С‚' + sLineBreak +
+        'РћР±С‰РµРµ РІСЂРµРјСЏ СЂР°Р±РѕС‚С‹: %d СЃРµРєСѓРЅРґ',
         [MaxHeapSize, AverageHeapSize div TotalGetHeapStatusCount,
-         (GetTickCount - TicCount) div 1000]));
+         (GetTicks - TicCount) div 1000]));
     finally
       SetEnabledState(True);
     end;
@@ -163,10 +185,13 @@ var
   I: Integer;
   TotalSize: Int64;
   Heap: THeapStatus;
-  TicCount: DWORD;
+  TicCount: Uint64;
   Path: string;
   Reader: TFWZipReader;
 begin
+  {$IFDEF FPC}
+  Path := '';
+  {$ENDIF}
   SetLength(Path, MAX_PATH);
   Path := LabeledEdit3.Text;
   Path := ChangeFileExt(Path, '');
@@ -176,8 +201,8 @@ begin
     TotalSize := 0;
     for I := 0 to Reader.Count - 1 do
       Inc(TotalSize, Reader[I].UncompressedSize);
-    Label3.Caption := 'Общее количество элементов: ' + IntToStr(Reader.Count);
-    Label4.Caption := 'Общий размер элементов: ' + IntToStr(TotalSize);
+    Label3.Caption := 'РћР±С‰РµРµ РєРѕР»РёС‡РµСЃС‚РІРѕ СЌР»РµРјРµРЅС‚РѕРІ: ' + IntToStr(Reader.Count);
+    Label4.Caption := 'РћР±С‰РёР№ СЂР°Р·РјРµСЂ СЌР»РµРјРµРЅС‚РѕРІ: ' + IntToStr(TotalSize);
     Reader.OnProgress := OnProgress;
     if LabeledEdit4.Text <> '' then
       Reader.PasswordList.Add(LabeledEdit4.Text);
@@ -190,7 +215,7 @@ begin
       TotalGetHeapStatusCount := 0;
       StopProcess := False;
       Memo1.Lines.Clear;
-      TicCount := GetTickCount;
+      TicCount := GetTicks;
       if TButton(Sender).Tag = 0 then
         Reader.ExtractAll(Path)
       else
@@ -198,11 +223,11 @@ begin
       if TotalGetHeapStatusCount = 0 then
         TotalGetHeapStatusCount := 1;
       ShowMessage(Format(
-        'Пиковый расход памяти: %d байт' + sLineBreak +
-        'Средний расход памяти: %d байт' + sLineBreak +
-        'Общее время работы: %d секунд',
+        'РџРёРєРѕРІС‹Р№ СЂР°СЃС…РѕРґ РїР°РјСЏС‚Рё: %d Р±Р°Р№С‚' + sLineBreak +
+        'РЎСЂРµРґРЅРёР№ СЂР°СЃС…РѕРґ РїР°РјСЏС‚Рё: %d Р±Р°Р№С‚' + sLineBreak +
+        'РћР±С‰РµРµ РІСЂРµРјСЏ СЂР°Р±РѕС‚С‹: %d СЃРµРєСѓРЅРґ',
         [MaxHeapSize, AverageHeapSize div TotalGetHeapStatusCount,
-         (GetTickCount - TicCount) div 1000]));
+         (GetTicks - TicCount) div 1000]));
     finally
       SetEnabledState(True);
     end;
@@ -229,10 +254,10 @@ end;
 
 procedure TForm1.ClearZipData;
 begin
-  Label1.Caption := 'Текущий расход памяти: 0 байт';
-  Label2.Caption := 'Пиковый расход памяти: 0 байт';
-  Label3.Caption := 'Общее количество элементов: 0';
-  Label4.Caption := 'Общий размер элементов: 0';
+  Label1.Caption := 'РўРµРєСѓС‰РёР№ СЂР°СЃС…РѕРґ РїР°РјСЏС‚Рё: 0 Р±Р°Р№С‚';
+  Label2.Caption := 'РџРёРєРѕРІС‹Р№ СЂР°СЃС…РѕРґ РїР°РјСЏС‚Рё: 0 Р±Р°Р№С‚';
+  Label3.Caption := 'РћР±С‰РµРµ РєРѕР»РёС‡РµСЃС‚РІРѕ СЌР»РµРјРµРЅС‚РѕРІ: 0';
+  Label4.Caption := 'РћР±С‰РёР№ СЂР°Р·РјРµСЂ СЌР»РµРјРµРЅС‚РѕРІ: 0';
   Label5.Caption := '';
 end;
 
@@ -289,8 +314,8 @@ begin
     MaxHeapSize := HeapSize;
   Inc(TotalGetHeapStatusCount);
   Inc(AverageHeapSize, HeapSize);
-  Label1.Caption := 'Текущий расход памяти: ' + IntToStr(HeapSize) + ' байт';
-  Label2.Caption := 'Пиковый расход памяти: ' + IntToStr(MaxHeapSize) + ' байт';
+  Label1.Caption := 'РўРµРєСѓС‰РёР№ СЂР°СЃС…РѕРґ РїР°РјСЏС‚Рё: ' + IntToStr(HeapSize) + ' Р±Р°Р№С‚';
+  Label2.Caption := 'РџРёРєРѕРІС‹Р№ СЂР°СЃС…РѕРґ РїР°РјСЏС‚Рё: ' + IntToStr(MaxHeapSize) + ' Р±Р°Р№С‚';
   Application.ProcessMessages;
   Application.ProcessMessages;
 end;

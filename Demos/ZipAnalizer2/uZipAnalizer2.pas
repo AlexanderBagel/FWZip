@@ -1,12 +1,12 @@
-////////////////////////////////////////////////////////////////////////////////
+ï»¿////////////////////////////////////////////////////////////////////////////////
 //
 //  ****************************************************************************
 //  * Project   : FWZip - ZipAnalizer2
 //  * Unit Name : uZipAnalizer2
-//  * Purpose   : Âûâîä ïàðàìåòðîâ àðõèâà ïðè ïîìîùè ïîèñêà ñèãíàòóð
-//  * Author    : Àëåêñàíäð (Rouse_) Áàãåëü
-//  * Copyright : © Fangorn Wizards Lab 1998 - 2020.
-//  * Version   : 1.1.0
+//  * Purpose   : Ð’Ñ‹Ð²Ð¾Ð´ Ð¿Ð°Ñ€Ð°Ð¼ÐµÑ‚Ñ€Ð¾Ð² Ð°Ñ€Ñ…Ð¸Ð²Ð° Ð¿Ñ€Ð¸ Ð¿Ð¾Ð¼Ð¾Ñ‰Ð¸ Ð¿Ð¾Ð¸ÑÐºÐ° ÑÐ¸Ð³Ð½Ð°Ñ‚ÑƒÑ€
+//  * Author    : ÐÐ»ÐµÐºÑÐ°Ð½Ð´Ñ€ (Rouse_) Ð‘Ð°Ð³ÐµÐ»ÑŒ
+//  * Copyright : Â© Fangorn Wizards Lab 1998 - 2023.
+//  * Version   : 2.0.0
 //  * Home Page : http://rouse.drkb.ru
 //  * Home Blog : http://alexander-bagel.blogspot.ru
 //  ****************************************************************************
@@ -14,20 +14,28 @@
 //  * Latest Source  : https://github.com/AlexanderBagel/FWZip
 //  ****************************************************************************
 //
-//  Èñïîëüçóåìûå èñòî÷íèêè:
+//  Ð˜ÑÐ¿Ð¾Ð»ÑŒÐ·ÑƒÐµÐ¼Ñ‹Ðµ Ð¸ÑÑ‚Ð¾Ñ‡Ð½Ð¸ÐºÐ¸:
 //  ftp://ftp.info-zip.org/pub/infozip/doc/appnote-iz-latest.zip
-//  http://zlib.net/zlib-1.2.5.tar.gz
+//  https://zlib.net/zlib-1.2.13.tar.gz
 //  http://www.base2ti.com/
 //
 
 unit uZipAnalizer2;
 
+{$IFDEF FPC}
+  {$MODE Delphi}
+  {$H+}
+{$ENDIF}
+
 interface
 
 uses
-  Windows, Messages, SysUtils, Classes, Controls, Forms,
+{$IFDEF FPC}
+  LCLIntf, LCLType,
+{$ENDIF}
+  SysUtils, Classes, Controls, Forms,
   Dialogs, StdCtrls, ComCtrls, ExtCtrls, Menus,
-  FWZipConsts, FWZipZLib;
+  FWZipConsts, FWZipZLib, FWZipUtils;
 
 type
   TdlgZipAnalizer = class(TForm)
@@ -35,7 +43,7 @@ type
     btnBrowse: TButton;
     btnAnalize: TButton;
     GroupBox: TGroupBox;
-    edReport: TRichEdit;
+    edReport: TMemo;
     OpenDialog: TOpenDialog;
     PopupMenu: TPopupMenu;
     mnuSave: TMenuItem;
@@ -43,7 +51,6 @@ type
     procedure btnBrowseClick(Sender: TObject);
     procedure edPathChange(Sender: TObject);
     procedure btnAnalizeClick(Sender: TObject);
-    procedure FormCreate(Sender: TObject);
     procedure mnuSaveClick(Sender: TObject);
     procedure PopupMenuPopup(Sender: TObject);
   private
@@ -58,7 +65,7 @@ type
     procedure ShowZip64(Stream: TStream);
     procedure ShowZip64Locator(Stream: TStream);
     procedure ShowEndOfCentralDir(Stream: TStream);
-    procedure LoadStringValue(Stream: TStream; var Value: string;
+    procedure LoadStringValue(Stream: TStream; out Value: string;
       nSize: Cardinal; UTF: Boolean);
   end;
 
@@ -114,14 +121,11 @@ begin
   if (Value and 7) in [PBF_COMPRESS_NORMAL, PBF_CRYPTED] then
     AddValue('PBF_COMPRESS_NORMAL');
 
-  if PBF_COMPRESS_MAXIMUM and Value = PBF_COMPRESS_MAXIMUM then
-    AddValue('PBF_COMPRESS_MAXIMUM');
-
-  if PBF_COMPRESS_FAST and Value = PBF_COMPRESS_FAST then
-    AddValue('PBF_COMPRESS_FAST');
-
-  if PBF_COMPRESS_SUPERFAST and Value = PBF_COMPRESS_SUPERFAST then
-    AddValue('PBF_COMPRESS_SUPERFAST');
+  case Value and 6 of
+    PBF_COMPRESS_MAXIMUM: AddValue('PBF_COMPRESS_MAXIMUM');
+    PBF_COMPRESS_FAST: AddValue('PBF_COMPRESS_FAST');
+    PBF_COMPRESS_SUPERFAST: AddValue('PBF_COMPRESS_SUPERFAST');
+  end;
 
   if PBF_CRYPTED and Value = PBF_CRYPTED then
     AddValue('PBF_CRYPTED');
@@ -152,6 +156,9 @@ end;
 
 procedure TdlgZipAnalizer.btnBrowseClick(Sender: TObject);
 begin
+  UseLongNamePrefix := False;
+  OpenDialog.InitialDir :=
+    PathCanonicalize(ExtractFilePath(ParamStr(0)) + '..\DemoResults');
   if OpenDialog.Execute then
   begin
     edPath.Text := OpenDialog.FileName;
@@ -200,7 +207,7 @@ begin
       for I := 0 to Len - 4 do
       begin
         for A := 0 to 5 do
-          if PDWORD(pCursor)^ = KnownSigns[A] then
+          if PCardinal(pCursor)^ = KnownSigns[A] then
           begin
             Result := KnownSigns[A];
             Break;
@@ -225,18 +232,16 @@ begin
   end;
 end;
 
-procedure TdlgZipAnalizer.FormCreate(Sender: TObject);
-begin
-  edReport.PlainText := True;
-end;
-
 procedure TdlgZipAnalizer.LoadStringValue(Stream: TStream;
-  var Value: string; nSize: Cardinal; UTF: Boolean);
+  out Value: string; nSize: Cardinal; UTF: Boolean);
 var
   aString: AnsiString;
 begin
   if Integer(nSize) > 0 then
   begin
+    {$IFDEF FPC}
+    aString := '';
+    {$ENDIF}
     SetLength(aString, nSize);
     Stream.ReadBuffer(aString[1], nSize);
     if UTF then
@@ -249,10 +254,7 @@ begin
       {$ENDIF}
     end
     else
-    begin
-      OemToAnsi(@aString[1], @aString[1]);
-      Value := string(aString);
-    end;
+      Value := string(ConvertFromOemString(aString));
   end;
 end;
 
@@ -303,6 +305,9 @@ var
   FileName, Comment: string;
 begin
   Log('CENTRAL_FILE_HEADER_SIGNATURE found at offset: ' + IntToStr(Stream.Position));
+  {$IFDEF FPC}
+  Data := Default(TCentralDirectoryFileHeader);
+  {$ENDIF}
   Stream.ReadBuffer(Data, SizeOf(TCentralDirectoryFileHeader));
   with Data do
   begin
@@ -346,6 +351,9 @@ var
   StartPos: Int64;
 begin
   StartPos := Stream.Position;
+  {$IFDEF FPC}
+  Data := Default(TDataDescriptor);
+  {$ENDIF}
   Stream.ReadBuffer(Data, SizeOf(TDataDescriptor));
   if Data.Crc32 = LOCAL_FILE_HEADER_SIGNATURE then
   begin
@@ -373,6 +381,9 @@ var
   Comment: string;
 begin
   Log('END_OF_CENTRAL_DIR_SIGNATURE found at offset: ' + IntToStr(Stream.Position));
+  {$IFDEF FPC}
+  Data := Default(TEndOfCentralDir);
+  {$ENDIF}
   Stream.ReadBuffer(Data, SizeOf(TEndOfCentralDir));
   with Data do
   begin
@@ -403,7 +414,7 @@ var
 
   function GetOffset(Value: Integer): Pointer;
   begin
-    Result := Pointer(Integer(EOFBuff) - Value);
+    Result := UIntToPtr(PtrToUInt(EOFBuff) - NativeUInt(Value));
   end;
 
   function ByteToStr(Bytes: PByte; Size: Integer): string;
@@ -414,6 +425,9 @@ var
   var
     I: Integer;
   begin
+    {$IFDEF FPC}
+    Result := '';
+    {$ENDIF}
     SetLength(Result, Size shl 1);
     for I := 0 to Size - 1 do
     begin
@@ -427,7 +441,6 @@ var
   ExDataStream: TMemoryStream;
   StartPos: Int64;
   FileTime: TFileTime;
-  SystemTime: TSystemTime;
 begin
   if Size = 0 then Exit;
   StartPos := Stream.Position;
@@ -437,7 +450,7 @@ begin
   try
     BuffCount := Size;
     Stream.ReadBuffer(Buff^, BuffCount);
-    EOFBuff := Pointer(Integer(Buff) + BuffCount);
+    EOFBuff := UIntToPtr(PtrToUInt(Buff) + NativeUInt(BuffCount));
     while BuffCount > 0 do
     begin
       HeaderID := PWord(GetOffset(BuffCount))^;
@@ -513,23 +526,17 @@ begin
           FileTime := PFileTime(GetOffset(BuffCount))^;
           Dec(BuffCount, SizeOf(TFileTime));
           Dec(BlockSize, SizeOf(TFileTime));
-          FileTimeToLocalFileTime(FileTime, FileTime);
-          FileTimeToSystemTime(FileTime, SystemTime);
-          Log(Format('Last Write Time: %s', [DateTimeToStr(SystemTimeToDateTime(SystemTime))]));
+          Log(Format('Last Write Time: %s', [DateTimeToStr(FileTimeToLocalDateTime(FileTime))]));
 
           FileTime := PFileTime(GetOffset(BuffCount))^;
           Dec(BuffCount, SizeOf(TFileTime));
           Dec(BlockSize, SizeOf(TFileTime));
-          FileTimeToLocalFileTime(FileTime, FileTime);
-          FileTimeToSystemTime(FileTime, SystemTime);
-          Log(Format('Last Access Time: %s', [DateTimeToStr(SystemTimeToDateTime(SystemTime))]));
+          Log(Format('Last Access Time: %s', [DateTimeToStr(FileTimeToLocalDateTime(FileTime))]));
 
           FileTime := PFileTime(GetOffset(BuffCount))^;
           Dec(BuffCount, SizeOf(TFileTime));
           Dec(BlockSize, SizeOf(TFileTime));
-          FileTimeToLocalFileTime(FileTime, FileTime);
-          FileTimeToSystemTime(FileTime, SystemTime);
-          Log(Format('Creation Time: %s', [DateTimeToStr(SystemTimeToDateTime(SystemTime))]));
+          Log(Format('Creation Time: %s', [DateTimeToStr(FileTimeToLocalDateTime(FileTime))]));
 
           Log(Delim);
        end;
@@ -559,6 +566,9 @@ var
   FileName: string;
 begin
   Log('LOCAL_FILE_HEADER_SIGNATURE found at offset: ' + IntToStr(Stream.Position));
+  {$IFDEF FPC}
+  Data := Default(TLocalFileHeader);
+  {$ENDIF}
   Stream.ReadBuffer(Data, SizeOf(TLocalFileHeader));
   with Data do
   begin
@@ -587,6 +597,9 @@ var
   Data: TZip64EOFCentralDirectoryRecord;
 begin
   Log('ZIP64_END_OF_CENTRAL_DIR_SIGNATURE found at offset: ' + IntToStr(Stream.Position));
+  {$IFDEF FPC}
+  Data := Default(TZip64EOFCentralDirectoryRecord);
+  {$ENDIF}
   Stream.ReadBuffer(Data, SizeOf(TZip64EOFCentralDirectoryRecord));
   with Data do
   begin
@@ -610,6 +623,9 @@ var
   Data: TZip64EOFCentralDirectoryLocator;
 begin
   Log('ZIP64_END_OF_CENTRAL_DIR_LOCATOR_SIGNATURE found at offset: ' + IntToStr(Stream.Position));
+  {$IFDEF FPC}
+  Data := Default(TZip64EOFCentralDirectoryLocator);
+  {$ENDIF}
   Stream.ReadBuffer(Data, SizeOf(TZip64EOFCentralDirectoryLocator));
   with Data do
   begin
@@ -623,3 +639,4 @@ begin
 end;
 
 end.
+

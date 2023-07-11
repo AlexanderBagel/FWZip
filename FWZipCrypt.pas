@@ -5,8 +5,8 @@
 //  * Unit Name : FWZipCrypt
 //  * Purpose   : Реализация криптографии по методу PKWARE
 //  * Author    : Александр (Rouse_) Багель
-//  * Copyright : © Fangorn Wizards Lab 1998 - 2015.
-//  * Version   : 1.0.11
+//  * Copyright : © Fangorn Wizards Lab 1998 - 2023.
+//  * Version   : 2.0.0
 //  * Home Page : http://rouse.drkb.ru
 //  * Home Blog : http://alexander-bagel.blogspot.ru
 //  ****************************************************************************
@@ -16,11 +16,16 @@
 //
 //  Используемые источники:
 //  ftp://ftp.info-zip.org/pub/infozip/doc/appnote-iz-latest.zip
-//  http://zlib.net/zlib-1.2.5.tar.gz
+//  https://zlib.net/zlib-1.2.13.tar.gz
 //  http://www.base2ti.com/
 //
 
 unit FWZipCrypt;
+
+{$IFDEF FPC}
+  {$MODE Delphi}
+  {$H+}
+{$ENDIF}
 
 interface
 
@@ -30,9 +35,12 @@ interface
   {$RANGECHECKS OFF}
 
 uses
-  Windows,
   Classes,
-  FWZipConsts;
+  {$IFDEF FPC}
+  LConvEncoding,
+  {$ENDIF}
+  FWZipConsts,
+  FWZipUtils;
 
 {
 XIII. Decryption
@@ -187,6 +195,9 @@ const
 constructor TFWZipKeys.Create(const Password: AnsiString);
 var
   I: Integer;
+  {$IFDEF FPC}
+  RawBytePassword: RawByteString;
+  {$ENDIF}
 begin
   inherited Create;
 {
@@ -203,8 +214,14 @@ end loop
 
 }
   FKeys := DefaultKeys;
+  {$IFDEF FPC}
+  RawBytePassword := UTF8ToCP1251(Password);
+  for I := 1 to Length(RawBytePassword) do
+    UpdateKeys(Byte(RawBytePassword[I]));
+  {$ELSE}
   for I := 1 to Length(Password) do
     UpdateKeys(Byte(Password[I]));
+  {$ENDIF}
 end;
 
 function TFWZipKeys.DecryptByte: Byte;
@@ -336,7 +353,7 @@ loop for i <- 0 to 11
     buffer(i) <- C
 end loop
 }
-  Stream.ReadBuffer(Buffer[0], EncryptedHeaderSize);
+  Stream.ReadBuffer({%H-}Buffer[0], EncryptedHeaderSize);
   for I := 0 to LastEncryptedHeaderByte do
   begin
     C := Buffer[I] xor DecryptByte;

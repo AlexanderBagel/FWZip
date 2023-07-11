@@ -5,8 +5,8 @@
 //  * Unit Name : FWZipModifier
 //  * Purpose   : Класс для модификации созданного ранее ZIP архива
 //  * Author    : Александр (Rouse_) Багель
-//  * Copyright : © Fangorn Wizards Lab 1998 - 2021.
-//  * Version   : 1.1.2
+//  * Copyright : © Fangorn Wizards Lab 1998 - 2023.
+//  * Version   : 2.0.0
 //  * Home Page : http://rouse.drkb.ru
 //  * Home Blog : http://alexander-bagel.blogspot.ru
 //  ****************************************************************************
@@ -16,16 +16,20 @@
 //
 //  Используемые источники:
 //  ftp://ftp.info-zip.org/pub/infozip/doc/appnote-iz-latest.zip
-//  http://zlib.net/zlib-1.2.5.tar.gz
+//  https://zlib.net/zlib-1.2.13.tar.gz
 //  http://www.base2ti.com/
 //
 
 unit FWZipModifier;
 
+{$IFDEF FPC}
+  {$MODE Delphi}
+  {$H+}
+{$ENDIF}
+
 interface
 
 uses
-  Windows,
   Classes,
   SysUtils,
   FWZipConsts,
@@ -47,7 +51,7 @@ type
   public
     constructor Create(Owner: TFWZipWriter;
       const InitFilePath: string;
-      InitAttributes: TWin32FileAttributeData;
+      InitAttributes: TFileAttributeData;
       const InitFileName: string = ''); override;
   end;
 
@@ -116,7 +120,7 @@ type
 //  при добавлении их посредством класса TFWZipModifier
 // =============================================================================
 constructor TFWZipModifierItem.Create(Owner: TFWZipWriter;
-  const InitFilePath: string; InitAttributes: TWin32FileAttributeData;
+  const InitFilePath: string; InitAttributes: TFileAttributeData;
   const InitFileName: string);
 begin
   inherited Create(Owner, InitFilePath, InitAttributes, InitFileName);

@@ -7,8 +7,8 @@
 //  *           : Вынесено из ZLibEx в отдельный модуль
 //  *           : для совместимости со старыми версиями Delphi
 //  * Author    : Александр (Rouse_) Багель
-//  * Copyright : © Fangorn Wizards Lab 1998 - 2021.
-//  * Version   : 1.1.1
+//  * Copyright : © Fangorn Wizards Lab 1998 - 2023.
+//  * Version   : 2.0.0
 //  * Home Page : http://rouse.drkb.ru
 //  * Home Blog : http://alexander-bagel.blogspot.ru
 //  ****************************************************************************
@@ -18,7 +18,7 @@
 //
 //  Используемые источники:
 //  ftp://ftp.info-zip.org/pub/infozip/doc/appnote-iz-latest.zip
-//  http://zlib.net/zlib-1.2.5.tar.gz
+//  https://zlib.net/zlib-1.2.13.tar.gz
 //  http://www.base2ti.com/
 //
 
@@ -32,6 +32,12 @@
 
 unit FWZipZLib;
 
+{$IFDEF FPC}
+  {$MODE Delphi}
+  {$H+}
+  {$WARN 5024 off : Parameter "$1" not used}
+{$ENDIF}
+
 interface
 
 {$I fwzip.inc}
@@ -39,13 +45,17 @@ interface
 uses
   Classes,
   SysUtils,
-  {$IFDEF USE_ZLIB_EX}
-  ZLibExApi
+  {$IFDEF USE_ZLIB_FPC}
+  	FWZipZLibFPC
   {$ELSE}
-    {$IFDEF USE_ZLIB_DLL}
-    ZLib_external
+    {$IFDEF USE_ZLIB_EX}
+    ZLibExApi
     {$ELSE}
-    ZLib
+      {$IFDEF USE_ZLIB_DLL}
+      ZLib_external
+      {$ELSE}
+      ZLib
+      {$ENDIF}
     {$ENDIF}
   {$ENDIF};
 
@@ -170,7 +180,7 @@ const
 
   {** return code messages **********************************************************************}
 
-  z_errmsg: Array [0..9] of String = (
+  _z_errmsg: Array [0..9] of String = (
     'Need dictionary',      // Z_NEED_DICT      (2)
     'Stream end',           // Z_STREAM_END     (1)
     'OK',                   // Z_OK             (0)
@@ -199,8 +209,6 @@ type
     function  GetStreamPosition: TStreamPos;
     procedure SetStreamPosition(value: TStreamPos);
   protected
-    constructor Create(stream: TStream);
-
     function GetSize: Int64; override;
 
     function  StreamRead(var buffer; count: Longint): Longint;
@@ -215,6 +223,8 @@ type
     property StreamPosition: TStreamPos read GetStreamPosition write SetStreamPosition;
 
     property OnProgress: TNotifyEvent read FOnProgress write FOnProgress;
+  public
+	  constructor Create(stream: TStream);
   end;
 
   {** TZCompressionStream ***********************************************************************}
@@ -370,7 +380,7 @@ end;
 
 constructor EZLibError.Create(code: Integer; const dummy: String);
 begin
-  inherited Create(z_errmsg[2 - code]);
+  inherited Create(_z_errmsg[2 - code]);
 
   FErrorCode := code;
 end;
@@ -518,7 +528,7 @@ begin
   inherited Destroy;
 end;
 
-function TZCompressionStream.Read(var buffer; count: Longint): Longint;
+function TZCompressionStream.{%H-}Read(var buffer; count: Longint): Longint;
 begin
   raise EZCompressionError.Create(SZInvalid);
 end;
@@ -656,7 +666,7 @@ begin
   result := Cardinal(count) - Cardinal(FZStream.avail_out);
 end;
 
-function TZDecompressionStream.Write(const Buffer; Count: Longint): Longint;
+function TZDecompressionStream.{%H-}Write(const Buffer; Count: Longint): Longint;
 begin
   raise EZDecompressionError.Create(SZInvalid);
 end;
@@ -683,7 +693,7 @@ begin
 
     if offset > 0 then
     begin
-      for i := 1 to offset div SizeOf(buf) do ReadBuffer(buf, SizeOf(buf));
+      for i := 1 to offset div SizeOf(buf) do ReadBuffer(buf{%H-}, SizeOf(buf));
       ReadBuffer(buf, offset mod SizeOf(buf));
     end;
   end

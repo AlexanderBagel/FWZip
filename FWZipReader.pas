@@ -5,8 +5,8 @@
 //  * Unit Name : FWZipReader
 //  * Purpose   : Набор классов для распаковки ZIP архива
 //  * Author    : Александр (Rouse_) Багель
-//  * Copyright : © Fangorn Wizards Lab 1998 - 2022.
-//  * Version   : 1.1.2
+//  * Copyright : © Fangorn Wizards Lab 1998 - 2023.
+//  * Version   : 2.0.0
 //  * Home Page : http://rouse.drkb.ru
 //  * Home Blog : http://alexander-bagel.blogspot.ru
 //  ****************************************************************************
@@ -16,27 +16,32 @@
 //
 //  Используемые источники:
 //  ftp://ftp.info-zip.org/pub/infozip/doc/appnote-iz-latest.zip
-//  http://zlib.net/zlib-1.2.5.tar.gz
+//  https://zlib.net/zlib-1.2.13.tar.gz
 //  http://www.base2ti.com/
 //
 
 unit FWZipReader;
+
+{$IFDEF FPC}
+  {$MODE Delphi}
+  {$H+}
+{$ENDIF}
 
 interface
 
 {$I fwzip.inc}
 
 uses
-  Windows,
   SysUtils,
   Classes,
   Contnrs,
+  Masks,
   FWZipConsts,
   FWZipCrc32,
   FWZipCrypt,
   FWZipStream,
-  Masks,
-  FWZipZLib;
+  FWZipZLib,
+  FWZipUtils;
 
 type
   TFWZipReader = class;
@@ -65,8 +70,7 @@ type
     procedure LoadStringValue(var Value: string; nSize: Cardinal;
       CheckEncoding: Boolean);
     procedure LoadLocalFileHeader;
-    constructor InitFromStream(Owner: TFWZipReader;
-      Index: Integer; Value: TStream);
+    {%H-}constructor InitFromStream(Owner: TFWZipReader; Index: Integer);
   protected
     property LocalFileHeader: TLocalFileHeader read FLocalFileHeader;
     property CentralDirFileHeader: TCentralDirectoryFileHeader
@@ -81,7 +85,7 @@ type
     function Extract(const Path, NewFileName, Password: string): TExtractResult; overload;
     function ExtractToStream(Value: TStream; const Password: string;
       CheckCRC32: Boolean = True): TExtractResult;
-    property Attributes: TWin32FileAttributeData read FFileHeader.Attributes;
+    property Attributes: TFileAttributeData read FFileHeader.Attributes;
     property Comment: string index 0 read GetString;
     property ItemIndex: Integer read FItemIndex;
     property IsFolder: Boolean read FIsFolder;
@@ -278,7 +282,6 @@ function TFWZipReaderItem.Extract(
 var
   UnpackedFile: TFileStream;
   FullPath: string;
-  hFile: THandle;
   FileDate: Integer;
   DuplicateAction: TDuplicateAction;
   ResultFileName: string;
@@ -298,9 +301,10 @@ begin
   else
     ResultFileName := NewFileName;
 
-  FullPath := StringReplace(
-    IncludeTrailingPathDelimiter(FullPath) + ResultFileName,
-    ZIP_SLASH, '\', [rfReplaceAll]);
+  FullPath := IncludeTrailingPathDelimiter(FullPath) + ResultFileName;
+  {$IFDEF MSWINDOWS}
+  FullPath := StringReplace(FullPath, ZIP_SLASH, '\', [rfReplaceAll]);
+  {$ENDIF}
 
 // BAD CODE
 //  // Rouse_ 23.03.2015
@@ -345,7 +349,7 @@ begin
 
         // перезаписать
         daOverwrite:
-          SetFileAttributes(PChar(FullPath), FILE_ATTRIBUTE_NORMAL);
+          SetNormalFileAttributes(FullPath);
 
         // распаковать с другим именем
         daUseNewFilePath:
@@ -378,19 +382,7 @@ begin
     end;
 
     if IsAttributesPresent(FFileHeader.Attributes) then
-    begin
-      hFile := FileOpen(FullPath, fmOpenWrite);
-      try
-        SetFileTime(hFile,
-          @FFileHeader.Attributes.ftCreationTime,
-          @FFileHeader.Attributes.ftLastAccessTime,
-          @FFileHeader.Attributes.ftLastWriteTime);
-      finally
-        FileClose(hFile);
-      end;
-      SetFileAttributes(PChar(FullPath),
-        FFileHeader.Attributes.dwFileAttributes);
-    end
+      SetFileAttributes(FullPath, FFileHeader.Attributes)
     else
     begin
       FileDate :=
@@ -473,7 +465,11 @@ var
   CRC32Stream: TFWZipCRC32Stream;
 begin
   Result := erError;
-  // CurrItemCRC32 := 0; Tokyo здесь генерирует ворнинг, в отличие от старых компилеров
+  {$IFNDEF FPC}
+    {$IF COMPILERVERSION < 32.0 }
+    CurrItemCRC32 := 0; // Tokyo здесь генерирует ворнинг, в отличие от старых компилеров
+    {$IFEND}
+  {$ENDIF}
   FTotalExtracted := 0;
   Decryptor := nil;
   try
@@ -597,17 +593,17 @@ begin
                   end
                   else
                     DoProgress(Decompressor, psException);
-                  raise EZipReaderRead.CreateFmt(
-                    'Ошибка распаковки данных элемента №%d "%s".' + sLineBreak +
-                    E.ClassName + ': ' + E.Message, [ItemIndex, FileName]);
+                  raise EZipReaderRead.CreateFmt(string(
+                    'Ошибка распаковки данных элемента №%d "%s".' + sLineBreak) +
+                    ExceptionMessage(E), [ItemIndex, FileName]);
                 end;
 
                 // Rouse_ 01.11.2013
                 // Для остальных исключений тоже нужно говорить с каким элементом беда приключилась.
                 on E: Exception do
-                  raise EZipReaderRead.CreateFmt(
-                    'Ошибка распаковки данных элемента №%d "%s".' + sLineBreak +
-                    E.ClassName + ': ' + E.Message, [ItemIndex, FileName]);
+                  raise EZipReaderRead.CreateFmt(string(
+                    'Ошибка распаковки данных элемента №%d "%s".' + sLineBreak) +
+                    ExceptionMessage(E), [ItemIndex, FileName]);
 
               end;
               CurrItemCRC32 := CRC32Stream.CRC32;
@@ -661,8 +657,7 @@ end;
 //  Конструктор элемента архива.
 //  Инициализация класса происходит на основе данных из архива
 // =============================================================================
-constructor TFWZipReaderItem.InitFromStream(Owner: TFWZipReader;
-  Index: Integer; Value: TStream);
+constructor TFWZipReaderItem.InitFromStream(Owner: TFWZipReader; Index: Integer);
 var
   Len: Integer;
 begin
@@ -735,7 +730,7 @@ var
 
   function GetOffset(Value: Integer): Pointer;
   begin
-    Result := Pointer(UInt64(EOFBuff) - UInt64(Value));
+    Result := UIntToPtr(PtrToUInt(EOFBuff) - NativeUInt(Value));
   end;
 
 var
@@ -750,7 +745,7 @@ begin
       raise EZipReaderRead.CreateFmt(
         'Отсутствуют данные поля ExtraField элемента №%d "%s"', [ItemIndex, FileName]);
 
-    EOFBuff := Pointer(UInt64(Buff) + UInt64(BuffCount));
+    EOFBuff := UIntToPtr(PtrToUInt(Buff) + NativeUInt(BuffCount));
     while BuffCount > 0 do
     begin
       HeaderID := PWord(GetOffset(BuffCount))^;
@@ -977,6 +972,9 @@ var
 begin
   if Integer(nSize) > 0 then
   begin
+    {$IFDEF FPC}
+    aString := '';
+    {$ENDIF}
     SetLength(aString, nSize);
 
     if FOwner.ZIPStream.Read(aString[1], nSize) <> Integer(nSize) then
@@ -997,10 +995,7 @@ begin
       {$ENDIF}
     end
     else
-    begin
-      OemToAnsi(@aString[1], @aString[1]);
-      Value := string(aString);
-    end;
+      Value := string(ConvertFromOemString(aString));
   end;
 end;
 
@@ -1138,7 +1133,7 @@ var
 begin
   Result := -1;
   for I := 0 to Count - 1 do
-    if AnsiCompareText(Item[I].FileName, FileName) = 0 then
+    if {%H-}AnsiCompareText(Item[I].FileName, FileName) = 0 then
     begin
       Result := I;
       Break;
@@ -1170,7 +1165,7 @@ var
 begin
   EndOfLoadCentralDirectory := FZIPStream.Position + SizeOfCentralDirectory;
   while FZIPStream.Position < EndOfLoadCentralDirectory do
-    FLocalFiles.Add(TFWZipReaderItem.InitFromStream(Self, Count, FZIPStream));
+    FLocalFiles.Add(TFWZipReaderItem.InitFromStream(Self, Count));
 
   // Rouse_ 01.11.2013
   // Исключение будем поднимать только в случае если заявленное кол-во элементов
@@ -1258,7 +1253,7 @@ begin
   // Спасибо v1ctar за найденый глюк
   //FFileStream.Free;
   FreeAndNil(FFileStream);
-  FFileStream := TFileStream.Create(Value, fmOpenRead or fmShareDenyWrite);
+  FFileStream := TFileStream.Create(PathCanonicalize(Value), fmOpenRead or fmShareDenyWrite);
   LoadFromStream(FFileStream, SFXOffset, ZipEndOffset);
 end;
 
@@ -1315,7 +1310,7 @@ begin
   try
     while Offset > StartZipDataOffset do
     begin
-      Dec(Offset, BuffSize - SignOffset);
+      {%H-}Dec(Offset, BuffSize - SignOffset);
       if Offset < StartZipDataOffset then
       begin
         Inc(BuffSize, Offset - StartZipDataOffset);
@@ -1394,7 +1389,7 @@ begin
     if FZIPStream.Read(Value[1], nSize) <> Integer(nSize) then
       raise EZipReaderRead.Create('Ошибка чтения коментария к архиву');
 
-    OemToAnsi(@Value[1], @Value[1]);
+    Value := ConvertFromOemString(Value);
   end;
 end;
 
@@ -1454,7 +1449,6 @@ var
   ExtractResult: TExtractResult;
   CancelExtract, Handled: Boolean;
   Password: string;
-  FreeAvailable, TotalSpace: TLargeInteger;
   ExtractList: TList;
   FakeStream: TFakeStream;
 begin
@@ -1466,13 +1460,13 @@ begin
     for I := 0 to Count - 1 do
       if ExtractMask = '' then
       begin
-        ExtractList.Add(Pointer(I));
+        ExtractList.Add(UIntToPtr(I));
         Inc(FTotalSizeCount, Item[I].UncompressedSize);
       end
       else
         if MatchesMask(Item[I].FileName, ExtractMask) then
         begin
-          ExtractList.Add(Pointer(I));
+          ExtractList.Add(UIntToPtr(I));
           Inc(FTotalSizeCount, Item[I].UncompressedSize);
         end;
 
@@ -1484,10 +1478,11 @@ begin
         Path := GetCurrentDir;
 
       // Проверка хватит ли места на диске?
-      if GetDiskFreeSpaceEx(PChar(Path), FreeAvailable, TotalSpace, nil) then
-        if FreeAvailable <= FTotalSizeCount then
-          raise EZipReader.CreateFmt('Недостаточно места на диске "%s".' + sLineBreak +
-            'Необходимо освободить %s.', [Path[1], FileSizeToStr(FTotalSizeCount)]);
+      if GetDiskFreeAvailable(PChar(Path)) <= FTotalSizeCount then
+        raise EZipReader.CreateFmt('Недостаточно места на диске "%s".' + sLineBreak +
+          'Необходимо освободить %s.',
+          [Path{$IFDEF MSWINDOWS}[1]{$ENDIF},
+          FileSizeToStr(FTotalSizeCount)]);
     end;
 
     FakeStream := TFakeStream.Create;
@@ -1495,7 +1490,7 @@ begin
       for I := 0 to ExtractList.Count - 1 do
       begin
         FakeStream.Size := 0;
-        CurrentItem := Item[Integer(ExtractList[I])];
+        CurrentItem := Item[Integer(PtrToUInt(ExtractList[I]))];
         DoProgress(Self, CurrentItem.FileName, 0, CurrentItem.UncompressedSize, psStart);
         OldExtractEvent := CurrentItem.OnProgress;
         try
@@ -1559,7 +1554,7 @@ begin
               begin
                 Handled := False;
                 if Assigned(FException) then
-                  FException(Self, E, Integer(ExtractList[I]), Handled);
+                  FException(Self, E, Integer(PtrToUInt(ExtractList[I])), Handled);
                 if not Handled then
                   // Rouse_ 20.02.2012
                   // Неверно перевозбуждено исключение
