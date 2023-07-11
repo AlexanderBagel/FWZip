@@ -6,7 +6,7 @@
 //  * Purpose   : Класс для модификации созданного ранее ZIP архива
 //  * Author    : Александр (Rouse_) Багель
 //  * Copyright : © Fangorn Wizards Lab 1998 - 2023.
-//  * Version   : 2.0.0
+//  * Version   : 2.0.1
 //  * Home Page : http://rouse.drkb.ru
 //  * Home Blog : http://alexander-bagel.blogspot.ru
 //  ****************************************************************************
@@ -350,7 +350,7 @@ var
   NewItem: TFWZipModifierItem;
   ReaderIndex: TReaderIndex;
   I: Integer;
-  ExDataSize: Word;
+  {%H-}ExDataSize: Word;
   ExDataRecord: TExDataRecord;
 begin
   NewItem := TFWZipModifierItem(Item[Index]);

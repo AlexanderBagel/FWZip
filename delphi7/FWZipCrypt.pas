@@ -6,7 +6,7 @@
 //  * Purpose   : Реализация криптографии по методу PKWARE
 //  * Author    : Александр (Rouse_) Багель
 //  * Copyright : © Fangorn Wizards Lab 1998 - 2023.
-//  * Version   : 2.0.0
+//  * Version   : 2.0.1
 //  * Home Page : http://rouse.drkb.ru
 //  * Home Blog : http://alexander-bagel.blogspot.ru
 //  ****************************************************************************
@@ -287,7 +287,7 @@ end;
 procedure TFWZipCryptor.GenerateEncryptionHeader(Stream: TStream;
   IsDescryptorFlagPresent: Boolean; CRC32, FileDate: Cardinal);
 var
-  Buffer: array [0..EncryptedHeaderSize - 1] of Byte;
+  {%H-}Buffer: array [0..EncryptedHeaderSize - 1] of Byte;
   I: Integer;
 begin
   // реверсированный вариант TFWZipDecryptor.LoadEncryptionHeader

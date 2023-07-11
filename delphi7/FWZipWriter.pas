@@ -6,7 +6,7 @@
 //  * Purpose   : Класс для создания ZIP архива
 //  * Author    : Александр (Rouse_) Багель
 //  * Copyright : © Fangorn Wizards Lab 1998 - 2023.
-//  * Version   : 2.0.0
+//  * Version   : 2.0.1
 //  * Home Page : http://rouse.drkb.ru
 //  * Home Blog : http://alexander-bagel.blogspot.ru
 //  ****************************************************************************
@@ -1306,7 +1306,7 @@ procedure TFWZipWriter.FillExData(Stream: TStream; Index: Integer);
 var
   ExDataStream: TMemoryStream;
   EmptyExData: Boolean;
-  UserExDataBlockCount, ExDataSize: Integer;
+  UserExDataBlockCount, {%H-}ExDataSize: Integer;
   ExDataHeaderTag: Word;
 begin
   if Assigned(FSaveExData) then
@@ -1368,7 +1368,7 @@ begin
     Value.Header.GeneralPurposeBitFlag :=
       Value.Header.GeneralPurposeBitFlag or PBF_CRYPTED;
 
-  case CurrentItem.CompressionLevel of
+  {%H-}case CurrentItem.CompressionLevel of
     clNone:; // данный режим компрессии не поддерживается, сразу меняем на Store
     clFastest:
       Value.Header.GeneralPurposeBitFlag :=
@@ -1542,7 +1542,7 @@ procedure TFWZipWriter.SaveCentralDirectory(Stream: TStream);
 var
   I, DiskNumber: Integer;
   RealtiveOffset, VolumeSize: Int64;
-  ExDataHeader: TExDataHeaderAndSize;
+  {%H-}ExDataHeader: TExDataHeaderAndSize;
   ExDataNTFS: TExDataNTFS;
   ZIP64Data: TMemoryStream;
   TotalExDataStream: TMemoryStream;
@@ -1691,7 +1691,7 @@ end;
 procedure TFWZipWriter.SaveEndOfCentralDirectory(Stream: TStream);
 var
   eo64cd: TZip64EOFCentralDirectoryRecord;
-  locator: TZip64EOFCentralDirectoryLocator;
+  {%H-}locator: TZip64EOFCentralDirectoryLocator;
   eocd: TEndOfCentralDir;
   eo64cdOffset: Int64;
   DiskNumber: Integer;
@@ -1920,7 +1920,7 @@ var
   lfh: TLocalFileHeader;
   dd: TDataDescriptor;
   UseDescriptor: Boolean;
-  Info64: TExDataInfo64;
+  {%H-}Info64: TExDataInfo64;
 begin
   FcdfhOffset := Stream.Position;
   for I := 0 to Count - 1 do

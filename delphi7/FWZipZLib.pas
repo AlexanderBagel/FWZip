@@ -8,7 +8,7 @@
 //  *           : для совместимости со старыми версиями Delphi
 //  * Author    : Александр (Rouse_) Багель
 //  * Copyright : © Fangorn Wizards Lab 1998 - 2023.
-//  * Version   : 2.0.0
+//  * Version   : 2.0.1
 //  * Home Page : http://rouse.drkb.ru
 //  * Home Blog : http://alexander-bagel.blogspot.ru
 //  ****************************************************************************
@@ -35,7 +35,6 @@ unit FWZipZLib;
 {$IFDEF FPC}
   {$MODE Delphi}
   {$H+}
-  {$WARN 5024 off : Parameter "$1" not used}
 {$ENDIF}
 
 interface
@@ -212,11 +211,11 @@ type
     function GetSize: Int64; override;
 
     function  StreamRead(var buffer; count: Longint): Longint;
-    function  StreamWrite(const buffer; count: Longint): Longint;
+    function  StreamWrite(const {%H-}buffer; count: Longint): Longint;
     function  StreamSeek(offset: Longint; origin: Word): Longint;
 
     procedure StreamReadBuffer(var buffer; count: Longint);
-    procedure StreamWriteBuffer(const buffer; count: Longint);
+    procedure StreamWriteBuffer(const {%H-}buffer; count: Longint);
 
     procedure DoProgress; dynamic;
 

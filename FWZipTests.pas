@@ -6,7 +6,7 @@
 //  * Purpose   : Набор классов для юниттестирования FWZip
 //  * Author    : Александр (Rouse_) Багель
 //  * Copyright : © Fangorn Wizards Lab 1998 - 2023.
-//  * Version   : 2.0.0
+//  * Version   : 2.0.1
 //  * Home Page : http://rouse.drkb.ru
 //  * Home Blog : http://alexander-bagel.blogspot.ru
 //  ****************************************************************************
@@ -517,7 +517,7 @@ var
 procedure DropLock;
 begin
   FileClose(hLockedFile);
-  hLockedFile := INVALID_HANDLE_VALUE;
+  hLockedFile := 0;
 end;
 
 procedure OnException1(Self, Sender: TObject; E: Exception;
@@ -1061,7 +1061,7 @@ const
 procedure OnSaveExData(Self, Sender: TObject; ItemIndex: Integer;
   UserExDataBlockCount: Integer; var Tag: Word; Data: TStream);
 var
-  RandomValue: Cardinal;
+  {%H-}RandomValue: Cardinal;
 begin
   case UserExDataBlockCount of
     0:
@@ -1164,11 +1164,7 @@ begin
       DstFile := _L(DstFolder + 'test_10\' + TestFolderData[I]);
       if DirectoryExists(SrcFile) then Continue;
       CheckFiles(SrcFile, DstFile);
-      {$IFDEF LINUX}
       A := NewFilePath.IndexOfName(_L(DstFolder + 'test_10\' + TestFolderData[I]));
-      {$ELSE}
-      A := NewFilePath.IndexOfName('\\?\' + DstFolder + 'test_10\' + TestFolderData[I]);
-      {$ENDIF}
       CheckFiles(SrcFile, NewFilePath.ValueFromIndex[A]);
     end;
   finally
@@ -2498,11 +2494,7 @@ begin
         DstFile := _L(DstFolder + 'test_210\' + TestFolderData[I]);
         if DirectoryExists(SrcFile) then Continue;
         CheckFiles(SrcFile, DstFile);
-        {$IFDEF LINUX}
         A := NewFilePath.IndexOfName(_L(DstFolder + 'test_210\' + TestFolderData[I]));
-        {$ELSE}
-        A := NewFilePath.IndexOfName('\\?\' + DstFolder + 'test_210\' + TestFolderData[I]);
-        {$ENDIF}
         CheckFiles(SrcFile, NewFilePath.ValueFromIndex[A]);
       end;
     finally
