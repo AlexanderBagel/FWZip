@@ -6,7 +6,7 @@
 //  * Purpose   : Набор платформозависимых методов
 //  * Author    : Александр (Rouse_) Багель
 //  * Copyright : © Fangorn Wizards Lab 1998 - 2023.
-//  * Version   : 2.0.0
+//  * Version   : 2.0.1
 //  * Home Page : http://rouse.drkb.ru
 //  * Home Blog : http://alexander-bagel.blogspot.ru
 //  ****************************************************************************
@@ -291,6 +291,7 @@ function ConvertToOemString(const Value: AnsiString): AnsiString;
 begin
   Result := Value;
   if Result = '' then Exit;
+  UniqueString(Result);
   {$IFDEF FPC}
   Result := UTF8ToCP866(Value);
   {$ELSE}
@@ -302,6 +303,7 @@ function ConvertFromOemString(const Value: AnsiString): AnsiString;
 begin
   Result := Value;
   if Result = '' then Exit;
+  UniqueString(Result);
   {$IFDEF FPC}
   Result := CP866ToUTF8(Value);
   {$ELSE}
