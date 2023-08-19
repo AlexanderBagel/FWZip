@@ -6,7 +6,7 @@
 //  * Purpose   : Набор классов для распаковки ZIP архива
 //  * Author    : Александр (Rouse_) Багель
 //  * Copyright : © Fangorn Wizards Lab 1998 - 2023.
-//  * Version   : 2.0.0
+//  * Version   : 2.0.1
 //  * Home Page : http://rouse.drkb.ru
 //  * Home Blog : http://alexander-bagel.blogspot.ru
 //  ****************************************************************************
@@ -440,6 +440,14 @@ function TFWZipReaderItem.ExtractToStream(Value: TStream;
     end;
   end;
 
+  procedure RaiseStrongCrypt;
+  begin
+    raise EZipReaderItem.CreateFmt(
+      'Ошибка извлечения данных элемента №%d "%s".' + sLineBreak +
+      'Не поддерживаемый режим шифрования',
+      [ItemIndex, FileName]);
+  end;
+
 const
   CompressionMetods: array [0..12] of string = (
     'Store',
@@ -484,16 +492,18 @@ begin
     FOwner.ZIPStream.Position := FFileHeader.DataOffset;
     RealCompressedSize := FFileHeader.CompressedSize;
 
+    // Проверка неподдерживаемой AES криптографии через
+    // указанный метод компрессии
+    if FFileHeader.Header.CompressionMethod = Z_AES_COMPRESSION then
+      RaiseStrongCrypt;
+
     // Если файл зашифрован, необходимо инициализировать ключ для распаковки
     if FFileHeader.Header.GeneralPurposeBitFlag and PBF_CRYPTED <> 0 then
     begin
 
       if FFileHeader.Header.GeneralPurposeBitFlag and
         PBF_STRONG_CRYPT <> 0 then
-        raise EZipReaderItem.CreateFmt(
-          'Ошибка извлечения данных элемента №%d "%s".' + sLineBreak +
-          'Не поддерживаемый режим шифрования',
-          [ItemIndex, FileName]);
+        RaiseStrongCrypt;
 
       if Password = '' then
       begin

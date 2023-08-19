@@ -6,7 +6,7 @@
 //  * Purpose   : Типы и константы используемые для работы с ZIP архивами
 //  * Author    : Александр (Rouse_) Багель
 //  * Copyright : © Fangorn Wizards Lab 1998 - 2023.
-//  * Version   : 2.0.0
+//  * Version   : 2.0.1
 //  * Home Page : http://rouse.drkb.ru
 //  * Home Blog : http://alexander-bagel.blogspot.ru
 //  ****************************************************************************
@@ -271,6 +271,11 @@ const
   PBF_STRONG_CRYPT = 64;
 
   PBF_UTF8 = $800;
+
+  // Unsupported Zip formats
+  // AES is an encryption method, not a compression method.
+  // Since AES is an extension to the Zip file format, it reports as compression method 99.
+  Z_AES_COMPRESSION = 99;
 
   // константы поддерживаемых полей ExData
   SUPPORTED_EXDATA_ZIP64 = 1;
