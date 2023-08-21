@@ -67,9 +67,9 @@ type
     procedure CheckLoadReaderWidthExcept(const Path: string);
   protected
     procedure TearDown; override;
-  published
     // Тесты преобразования времени
     procedure TestDateTimeConvertion;
+  published
     // Легкие тесты обычного архива
     procedure TestBuildWithStream;
     procedure TestBuildWithExistingFile;
@@ -600,6 +600,9 @@ var
   F: TFileTime;
   FileDate: Cardinal;
 begin
+  {$MESSAGE 'Этот тест завязан на UTC и пока что отключен'}
+  // нужно в цикле менять локальный часовой пояс и проверять уже по локальным значениям
+  // сейчас цифры актуальны только для Бишкека UTC +6
   PUInt64(@ConstDateTime)^ := 4675509705865876384; // '11.02.2005 10:40:12'
 
   F := DateTimeToFileTime(ConstDateTime);

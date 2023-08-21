@@ -240,7 +240,7 @@ type
 
     destructor  Destroy; override;
 
-    function  Read(var buffer; count: Longint): Longint; override;
+    function  Read(var {%H-}buffer; {%H-}count: Longint): Longint; override;
     function  Write(const buffer; count: Longint): Longint; override;
     function  Seek(offset: Longint; origin: Word): Longint; override;
 
@@ -261,7 +261,7 @@ type
     destructor  Destroy; override;
 
     function  Read(var buffer; count: Longint): Longint; override;
-    function  Write(const buffer; count: Longint): Longint; override;
+    function  Write(const {%H-}buffer; {%H-}count: Longint): Longint; override;
     function  Seek(offset: Longint; origin: Word): Longint; override;
 
     property OnProgress;
@@ -274,7 +274,7 @@ type
   private
     FErrorCode: Integer;
   public
-    constructor Create(code: Integer; const dummy: String = ''); overload;
+    constructor Create(code: Integer; const {%H-}dummy: String = ''); overload;
     constructor Create(error: TZError; const dummy: String = ''); overload;
 
     property ErrorCode: Integer read FErrorCode write FErrorCode;
@@ -283,12 +283,14 @@ type
   EZCompressionError = class(EZLibError);
   EZDecompressionError = class(EZLibError);
 
+  {$IFDEF USE_OLDEST_METHODS}
   procedure ZCompress(const inBuffer: Pointer; inSize: Integer;
     out outBuffer: Pointer; out outSize: Integer;
     level: TCompressionLevel = clDefault);
 
   procedure ZDecompress(const inBuffer: Pointer; inSize: Integer;
     out outBuffer: Pointer; out outSize: Integer; outEstimate: Integer = 0);
+  {$ENDIF}
 
 implementation
 
@@ -399,6 +401,8 @@ end;
 
 {** buffer routines *****************************************************************************}
 
+{$IFDEF USE_OLDEST_METHODS}
+
 procedure ZCompress(const inBuffer: Pointer; inSize: Integer;
   out outBuffer: Pointer; out outSize: Integer;
   level: TCompressionLevel);
@@ -418,7 +422,7 @@ begin
     zstream.next_out := outBuffer;
     zstream.avail_out := outSize;
 
-    ZCompressCheck(DeflateInit(zstream, ZLevels[level]));
+    ZCompressCheck(ZDeflateInit(zstream, level));
 
     try
       while ZCompressCheck(deflate(zstream, Z_FINISH), False) <> Z_STREAM_END do
@@ -461,7 +465,7 @@ begin
     zstream.next_out := outBuffer;
     zstream.avail_out := outSize;
 
-    ZDecompressCheck(InflateInit(zstream));
+    ZDecompressCheck(ZInflateInit(zstream));
 
     try
       while ZDecompressCheck(inflate(zstream, Z_NO_FLUSH), False) <> Z_STREAM_END do
@@ -482,6 +486,8 @@ begin
     raise;
   end;
 end;
+
+{$ENDIF}
 
 {** TCustomZStream ******************************************************************************}
 
