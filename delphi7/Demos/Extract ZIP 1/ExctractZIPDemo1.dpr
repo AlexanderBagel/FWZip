@@ -7,7 +7,7 @@
 //  *           : Используется архив созданный демоприложением CreateZIPDemo1
 //  * Author    : Александр (Rouse_) Багель
 //  * Copyright : © Fangorn Wizards Lab 1998 - 2023.
-//  * Version   : 2.0.0
+//  * Version   : 2.0.1
 //  * Home Page : http://rouse.drkb.ru
 //  * Home Blog : http://alexander-bagel.blogspot.ru
 //  ****************************************************************************
@@ -36,7 +36,8 @@ uses
   Classes,
   SysUtils,
   TypInfo,
-  FWZipReader;
+  FWZipReader,
+  FWZipUtils;
 
 function ExtractResultStr(Value: TExtractResult): string;
 begin
