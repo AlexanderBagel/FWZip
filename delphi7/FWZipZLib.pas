@@ -283,18 +283,26 @@ type
   EZCompressionError = class(EZLibError);
   EZDecompressionError = class(EZLibError);
 
+  procedure ZCompress(const inBuffer: Pointer; inSize: Integer;
+    out outBuffer: Pointer; out outSize: Integer;
+    level: TCompressionLevel = clDefault);
+
+  procedure ZDecompress(const inBuffer: Pointer; inSize: Integer;
+    out outBuffer: Pointer; out outSize: Integer; outEstimate: Integer = 0);
+
 implementation
 
 const
   SZInvalid = 'Invalid ZStream operation!';
 
-function ZCompressCheck(code: Integer): Integer;
+function ZCompressCheck(code: Integer; raiseBufferError: Boolean = True): Integer;
 begin
   result := code;
 
   if code < 0 then
   begin
-    raise EZCompressionError.Create(code);
+    if (code <> Z_BUF_ERROR) or raiseBufferError then
+      raise EZCompressionError.Create(code);
   end;
 end;
 
@@ -387,6 +395,92 @@ end;
 constructor EZLibError.Create(error: TZError; const dummy: String);
 begin
   Create(ZErrors[error], dummy);
+end;
+
+{** buffer routines *****************************************************************************}
+
+procedure ZCompress(const inBuffer: Pointer; inSize: Integer;
+  out outBuffer: Pointer; out outSize: Integer;
+  level: TCompressionLevel);
+const
+  delta = 256;
+var
+  zstream: TZStreamRec;
+begin
+  zstream := Default(TZStreamRec);
+
+  outSize := ((inSize + (inSize div 10) + 12) + 255) and not 255;
+  GetMem(outBuffer, outSize);
+
+  try
+    zstream.next_in := inBuffer;
+    zstream.avail_in := inSize;
+    zstream.next_out := outBuffer;
+    zstream.avail_out := outSize;
+
+    ZCompressCheck(DeflateInit(zstream, ZLevels[level]));
+
+    try
+      while ZCompressCheck(deflate(zstream, Z_FINISH), False) <> Z_STREAM_END do
+      begin
+        Inc(outSize, delta);
+        ReallocMem(outBuffer, outSize);
+        zstream.next_out := PByte(outBuffer) + zstream.total_out;
+        zstream.avail_out := delta;
+      end;
+    finally
+      ZCompressCheck(deflateEnd(zstream));
+    end;
+
+    ReallocMem(outBuffer, zstream.total_out);
+    outSize := zstream.total_out;
+  except
+    FreeMem(outBuffer);
+    raise;
+  end;
+end;
+
+procedure ZDecompress(const inBuffer: Pointer; inSize: Integer;
+  out outBuffer: Pointer; out outSize: Integer; outEstimate: Integer);
+var
+  zstream: TZStreamRec;
+  delta: Integer;
+begin
+  zstream := Default(TZStreamRec);
+
+  delta := (inSize + 255) and not 255;
+
+  if outEstimate = 0 then outSize := delta
+  else outSize := outEstimate;
+
+  GetMem(outBuffer, outSize);
+
+  try
+    zstream.next_in := inBuffer;
+    zstream.avail_in := inSize;
+    zstream.next_out := outBuffer;
+    zstream.avail_out := outSize;
+
+    ZDecompressCheck(InflateInit(zstream));
+
+    try
+      while ZDecompressCheck(inflate(zstream, Z_NO_FLUSH), False) <> Z_STREAM_END do
+      begin
+        Inc(outSize, delta);
+        ReallocMem(outBuffer, outSize);
+        zstream.next_out := PByte(outBuffer) + zstream.total_out;
+        zstream.avail_out := delta;
+      end;
+    finally
+      ZDecompressCheck(inflateEnd(zstream));
+    end;
+
+    ReallocMem(outBuffer, zstream.total_out);
+    outSize := zstream.total_out;
+  except
+    FreeMem(outBuffer);
+    raise;
+  end;
 end;
 
 {** TCustomZStream ******************************************************************************}
