@@ -86,6 +86,7 @@ uses
   // ===========================================================================
   function PathCanonicalize(const AFilePath: string): string;
   function MakeUniqueName(const AFilePath: string): string;
+  function ForceDirectoriesEx(Dir: string): Boolean;
 
   // преобразование времени
   // ===========================================================================
@@ -332,7 +333,7 @@ end;
 function IncludeLongNamePrefix(const Value: string): string;
 begin
   {$IFDEF MSWINDOWS}
-  if UseLongNamePrefix and not LongPrefixPresent(Value) then
+  if UseLongNamePrefix and not LongPrefixPresent(Value) and (Length(Value) > MAX_PATH) then
     Result := LongNamePrefix + Value
   else
   {$ENDIF}
@@ -531,6 +532,49 @@ begin
       Result := AnsiString(PWideChar(UnicodeResult));
   {$ENDIF}
 {$ENDIF}
+end;
+
+function ForceDirectoriesEx(Dir: string): Boolean;
+
+// Обход ошибки ForceDirectories в случае использования префикса для
+// поддержки длинных имен. Проверить ошибку можно вот таким кодом:
+//
+//  S := '\\?\w:\test\'; // этой папки быть не должно!
+//  ForceDirectories(S); // с префиксом она не создастся
+//
+// Глюк заключается в том что при вызове DirectoryExists на строке "\\?\w:"
+// функция GetFileAttributes возвращает INVALID_FILE_ATTRIBUTES,
+// требуя чтобы для корня был указан слэш в конце в случае использования префикса,
+// причем про эту особенность в MSDN нигде не написано.
+//
+// Соответсвтенно т.к. это будет второй рекурсивный вызов,
+// он вернет первому False и в первом не выполнится CreateDir
+
+  {$IFDEF MSWINDOWS}
+  function InternalForce(Dir: string): Boolean;
+  var
+    PreviosDir: string;
+  begin
+    Result := Dir <> '';
+    if not Result or DirectoryExists(Dir) then
+      Exit;
+
+    Dir := ExcludeTrailingPathDelimiter(Dir);
+    PreviosDir := ExtractFilePath(Dir);
+    if PreviosDir = Dir then
+      Result := True
+    else
+      Result := InternalForce(PreviosDir) and CreateDir(Dir);
+  end;
+  {$ENDIF}
+
+begin
+  {$IFDEF MSWINDOWS}
+  if LongPrefixPresent(Dir) then
+    Result := InternalForce(Dir)
+  else
+  {$ENDIF}
+    Result := ForceDirectories(Dir);
 end;
 
 function FileTimeToLocalFileDate(AFileTime: TFileTime): Cardinal;

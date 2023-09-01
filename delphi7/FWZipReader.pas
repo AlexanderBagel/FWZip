@@ -323,10 +323,10 @@ begin
 
   if IsFolder then
   begin
-    ForceDirectories(FullPath);
+    ForceDirectoriesEx(FullPath);
     Exit;
   end;
-  ForceDirectories(ExtractFilePath(FullPath));
+  ForceDirectoriesEx(ExtractFilePath(FullPath));
   try
 
     // проверка на существование файла

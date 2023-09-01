@@ -861,7 +861,7 @@ begin
   Result := brFailed;
   if Count = 0 then Exit;
   ZipFilePath := PathCanonicalize(ZipFilePath);
-  ForceDirectories(ExtractFilePath(ZipFilePath));
+  ForceDirectoriesEx(ExtractFilePath(ZipFilePath));
   ZIP := TFileStream.Create(ZipFilepath, fmCreate);
   try
     Result := BuildZip(ZIP);

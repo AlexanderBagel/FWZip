@@ -193,7 +193,7 @@ begin
   _SorceFolder := PathCanonicalize(RootFolder + _L('fwziptest\src\'));
   ForceDirectories(_SorceFolder);
   _DestinationFolder := PathCanonicalize(RootFolder + _L('fwziptest\dst\'));
-  ForceDirectories(_DestinationFolder);
+  ForceDirectoriesEx(_DestinationFolder);
 
   TestFolderData := TStringList.Create;
   TestFolderData.Add('1.txt');
@@ -287,7 +287,7 @@ begin
   for I := 0 to TestFolderData.Count - 1 do
   begin
     Path := Root + TestFolderData[I];
-    ForceDirectories(ExtractFilePath(Path));
+    ForceDirectoriesEx(ExtractFilePath(Path));
     if DirectoryExists(Path) then
     begin
       Inc(Result.Folders);
@@ -316,7 +316,7 @@ end;
 procedure ClearFolder(const Path: string);
 begin
   DeleteFolder(Path);
-  ForceDirectories(Path);
+  ForceDirectoriesEx(Path);
 end;
 
 function GetTestFolderPath(TestIndex: Integer; SrcFolder: Boolean;
@@ -330,7 +330,7 @@ begin
   if Clear then
     ClearFolder(Result)
   else
-    ForceDirectories(Result);
+    ForceDirectoriesEx(Result);
 end;
 
 procedure CreateLargeFile(const Path: string);

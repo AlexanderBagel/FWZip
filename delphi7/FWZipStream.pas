@@ -654,7 +654,9 @@ begin
     raise EFWMultiStreamException.Create('Нельзя завершать текущий том находясь в середине архива.');
   if FCurrentDiskData <> nil then
     if FCurrentDiskData.Size > 0 then
-      GetNextWriteVolume;
+      // Rouse_ 01.09.2023
+      // Фикс критической ошибки, не обновлялся внутренний стрим обьекта
+      FCurrentDiskData := GetNextWriteVolume;
 end;
 
 function TFWAbstractMultiStream.UpdateCurrentDiskData: Integer;
@@ -706,7 +708,7 @@ begin
   SetLength(FReadVolumesSize, FVolumesPath.Count);
   SetLength(FWriteVolumesSize, FVolumesPath.Count);
   FreeAndNil(FCurrentStream);
-  ForceDirectories(ExtractFilePath(NewVolumePath));
+  ForceDirectoriesEx(ExtractFilePath(NewVolumePath));
   FCurrentStream :=
     TFileStream.Create(NewVolumePath, fmCreate or fmShareDenyWrite);
   UpdateVolumeSize;
