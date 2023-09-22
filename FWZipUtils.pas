@@ -6,7 +6,7 @@
 //  * Purpose   : Набор платформозависимых методов
 //  * Author    : Александр (Rouse_) Багель
 //  * Copyright : © Fangorn Wizards Lab 1998 - 2023.
-//  * Version   : 2.0.1
+//  * Version   : 2.0.2
 //  * Home Page : http://rouse.drkb.ru
 //  * Home Blog : http://alexander-bagel.blogspot.ru
 //  ****************************************************************************
@@ -330,11 +330,42 @@ begin
   {$ENDIF}
 end;
 
+function IsLocalDrive(const Value: string): Boolean;
+begin
+  Result := (Length(Value) > 2) and (Value[2] = ':');
+end;
+
+function IsNetworkSlashPresent(const Value: string): Boolean;
+begin
+  Result := (Length(Value) > 2) and (Value[1] = '\') and (Value[2] = '\');
+end;
+
+function FixupFilePrefix(const Value: string): string;
+begin
+  Result := StringReplace(Value, '/', '\', [rfReplaceAll]);
+  if AnsiSameText(Copy(Result, 1, 7), 'file:\\') then
+  begin
+    Delete(Result, 1, 7);
+    if not IsLocalDrive(Result) then
+      Result := '\\' + Result;
+  end;
+end;
+
 function IncludeLongNamePrefix(const Value: string): string;
 begin
   {$IFDEF MSWINDOWS}
   if UseLongNamePrefix and not LongPrefixPresent(Value) and (Length(Value) > MAX_PATH) then
-    Result := LongNamePrefix + Value
+  begin
+    Result := FixupFilePrefix(Value);
+    if IsLocalDrive(Result) then
+      Result := LongNamePrefix + Result
+    else
+    begin
+      if IsNetworkSlashPresent(Result) then
+        Delete(Result, 1, 2);
+      Result := UNCLongNamePrefix + Result;
+    end;
+  end
   else
   {$ENDIF}
     Result := Value;
