@@ -39,6 +39,10 @@ uses
   Classes;
 
 const
+  FWZipVersionInt = $02000002;
+  FWZipVersionStr = '2.0.2';
+
+const
   MAXBYTE = 255;
   MAXWORD = 65535;
   MAXDWORD = DWORD(-1);
