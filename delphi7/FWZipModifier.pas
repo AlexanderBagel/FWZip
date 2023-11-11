@@ -6,7 +6,7 @@
 //  * Purpose   : Класс для модификации созданного ранее ZIP архива
 //  * Author    : Александр (Rouse_) Багель
 //  * Copyright : © Fangorn Wizards Lab 1998 - 2023.
-//  * Version   : 2.0.1
+//  * Version   : 2.0.2
 //  * Home Page : http://rouse.drkb.ru
 //  * Home Blog : http://alexander-bagel.blogspot.ru
 //  ****************************************************************************
@@ -36,7 +36,8 @@ uses
   FWZipReader,
   FWZipWriter,
   FWZipStream,
-  FWZipZLib;
+  FWZipZLib,
+  FWZipUtils;
 
 type
   TReaderIndex = Integer;
@@ -45,9 +46,11 @@ type
   private
     FReaderIndex: TReaderIndex;     // индекс TFWZipReader в массиве TFWZipModifier.FReaderList
     FOriginalItemIndex: Integer;    // оригинальный индекс элемента в изначальном архиве
+    FOverloadItemPath: string;      // задаваемый извне путь элемента в архиве
   protected
     property ReaderIndex: TReaderIndex read FReaderIndex write FReaderIndex;
     property OriginalItemIndex: Integer read FOriginalItemIndex write FOriginalItemIndex;
+    property OverloadItemPath: string read FOverloadItemPath write FOverloadItemPath;
   public
     constructor Create(Owner: TFWZipWriter;
       const InitFilePath: string;
@@ -80,7 +83,8 @@ type
     FReaderList: TReaderList;
     function CheckZipFileIndex(Value: TReaderIndex): TReaderIndex;
     function AddItemFromZip(AReader: TFWZipReader;
-      ReaderIndex: TReaderIndex; ItemIndex: Integer): Integer;
+      ReaderIndex: TReaderIndex; ItemIndex: Integer;
+      OverloadItemPath: string): Integer;
     function GetReader(Index: Integer): TFWZipReader;
   protected
     function GetItemClass: TFWZipWriterItemClass; override;
@@ -101,6 +105,7 @@ type
       ZipEndOffset: Integer = -1): TReaderIndex; overload;
     function AddFromZip(ReaderIndex: TReaderIndex): Integer; overload;
     function AddFromZip(ReaderIndex: TReaderIndex; const ItemPath: string): Integer; overload;
+    function AddFromZip(ReaderIndex: TReaderIndex; const ItemPath, NewItemPath: string): Integer; overload;
     function AddFromZip(ReaderIndex: TReaderIndex; ItemsList: TStringList): Integer; overload;
     function ReadersCount: Integer;
     property Reader[Index: Integer]: TFWZipReader read GetReader;
@@ -139,13 +144,8 @@ end;
 // =============================================================================
 function TFWZipModifier.AddFromZip(ReaderIndex: TReaderIndex;
   const ItemPath: string): Integer;
-var
-  Reader: TFWZipReader;
 begin
-  CheckZipFileIndex(ReaderIndex);
-  Reader := FReaderList[ReaderIndex].Reader;
-  Result :=
-    AddItemFromZip(Reader, ReaderIndex, Reader.GetElementIndex(ItemPath));
+  Result := AddFromZip(ReaderIndex, ItemPath, EmptyStr);
 end;
 
 //
@@ -163,7 +163,7 @@ begin
   Result := 0;
   Reader := FReaderList[ReaderIndex].Reader;
   for I := 0 to Reader.Count - 1 do
-    if AddItemFromZip(Reader, ReaderIndex, I) >= 0 then
+    if AddItemFromZip(Reader, ReaderIndex, I, EmptyStr) >= 0 then
       Inc(Result);
 end;
 
@@ -186,8 +186,28 @@ begin
   Reader := FReaderList[ReaderIndex].Reader;
   for I := 0 to ItemsList.Count - 1 do
     if AddItemFromZip(Reader, ReaderIndex,
-      Reader.GetElementIndex(ItemsList[I])) >= 0 then
+      Reader.GetElementIndex(ItemsList[I]), EmptyStr) >= 0 then
       Inc(Result);
+end;
+
+//
+//  Функция переносит элемент в финальный архив из ранее добавленного архива.
+//  В качестве результата возвращает индекс элемента в списке.
+//  Параметры:
+//  ReaderIndex - индекс ранее добавленно функцией AddZipFile архива
+//  ItemPath - имя элемента, которое требуется добавить
+//  NewItemPath - новое имя элемента в архиве
+// =============================================================================
+function TFWZipModifier.AddFromZip(ReaderIndex: TReaderIndex; const ItemPath,
+  NewItemPath: string): Integer;
+var
+  Reader: TFWZipReader;
+begin
+  CheckZipFileIndex(ReaderIndex);
+  Reader := FReaderList[ReaderIndex].Reader;
+  Result :=
+    AddItemFromZip(Reader, ReaderIndex, Reader.GetElementIndex(ItemPath),
+      CheckFileNameSlashes( NewItemPath));
 end;
 
 //
@@ -195,7 +215,10 @@ end;
 //  В качестве результата возвращает индекс элемента в списке.
 // =============================================================================
 function TFWZipModifier.AddItemFromZip(AReader: TFWZipReader;
-  ReaderIndex: TReaderIndex; ItemIndex: Integer): Integer;
+  ReaderIndex: TReaderIndex; ItemIndex: Integer;
+  OverloadItemPath: string): Integer;
+const
+  OldItemType: array [Boolean] of string = ('file', 'folder');
 var
   OldItem: TFWZipReaderItemFriendly;
   NewItem: TFWZipModifierItem;
@@ -204,6 +227,20 @@ begin
   if ItemIndex < 0 then Exit;
   // Получаем указатель на элемент из уже существующего архива
   OldItem := TFWZipReaderItemFriendly(AReader.Item[ItemIndex]);
+  // Проверка соответствия нового имени типу старого элемента
+  if OverloadItemPath <> '' then
+  begin
+    if OverloadItemPath <> OldItem.FileName then
+    begin
+      if OldItem.IsFolder <>
+        (OverloadItemPath[Length(OverloadItemPath)] = ZIP_SLASH) then
+        raise EFWZipModifier.CreateFmt(
+          '"%s" does not match the %s path.',
+          [OverloadItemPath, OldItemType[OldItem.IsFolder]]);
+    end
+    else
+      OverloadItemPath := EmptyStr;
+  end;
   // создаем новый элемент, который будем добавлять к новому архиву
   NewItem := TFWZipModifierItem(
     GetItemClass.Create(Self, '', OldItem.Attributes, OldItem.FileName));
@@ -212,6 +249,7 @@ begin
   // инициализируем ему индексы, дабы потом понять, откуда брать о нем данные
   NewItem.ReaderIndex := ReaderIndex;
   NewItem.OriginalItemIndex := ItemIndex;
+  NewItem.OverloadItemPath := OverloadItemPath;
   // инициализируем внешние и рассчитываемые поля
   NewItem.Comment := OldItem.Comment;
   NewItem.NeedDescriptor :=
@@ -384,20 +422,40 @@ var
   OldItem: TFWZipReaderItemFriendly;
   NewItem: TFWZipModifierItem;
   Reader: TFWZipReader;
+  FileDate: Cardinal;
 begin
   NewItem := TFWZipModifierItem(CurrentItem);
+
   // проверка, работаем ли мы с элементом, данные которого заполняются вручную?
   if not NewItem.UseExternalData then
   begin
     inherited;
     Exit;
   end;
+
   Reader := FReaderList[NewItem.ReaderIndex].Reader;
   OldItem := TFWZipReaderItemFriendly(Reader.Item[NewItem.OriginalItemIndex]);
+
   // полностью перезаписываем все данные структуры
   // исключением является поле RelativeOffsetOfLocalHeader
   // но оно реинициализируется после вызова данного метода
   Value := OldItem.CentralDirFileHeaderEx;
+
+  // Rouse_ 11.11.2023
+  // если имя в архиве было переназначено,
+  // то меняем его с правкой времени последнего изменения
+  if NewItem.OverloadItemPath <> '' then
+  begin
+    Value.Filename := NewItem.OverloadItemPath;
+    Value.Header.FilenameLength :=
+      StringLength(NewItem.OverloadItemPath, CurrentItem.UseUTF8String);
+
+    Value.Attributes.ftLastWriteTime := GetCurrentFileTime;
+    FileDate := FileTimeToLocalFileDate(Value.Attributes.ftLastWriteTime);
+
+    Value.Header.LastModFileTimeTime := FileDate and $FFFF;
+    Value.Header.LastModFileTimeDate := FileDate shr 16;
+  end;
 end;
 
 //

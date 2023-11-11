@@ -6,7 +6,7 @@
 //  * Purpose   : Набор классов для юниттестирования FWZip
 //  * Author    : Александр (Rouse_) Багель
 //  * Copyright : © Fangorn Wizards Lab 1998 - 2023.
-//  * Version   : 2.0.1
+//  * Version   : 2.0.2
 //  * Home Page : http://rouse.drkb.ru
 //  * Home Blog : http://alexander-bagel.blogspot.ru
 //  ****************************************************************************
@@ -137,6 +137,7 @@ const
   ZipName = 'test.zip';
   ZipName1 = 'test1.zip';
   ZipName2 = 'test2.zip';
+  RenamedZipName: string = 'renamed_file.txt';
 
   TestStringBlock: array [0..2] of string = (
     'Тестовый текстовый файл №1',
@@ -983,9 +984,10 @@ begin
   try
     Index := Modifier.AddZipFile(SrcFolder + ZipName);
     Modifier.AddFromZip(Index, TestFolderData[0]);
+    Modifier.AddFromZip(Index, TestFolderData[1], RenamedZipName);
     Modifier.AddFile(SrcFolder + TestFolderData[12]);
     Modifier.AddFromZip(Index, TestFolderData[2]);
-    CheckCount(Modifier.Count, 3);
+    CheckCount(Modifier.Count, 4);
     CheckBuildResult(Modifier.BuildZip(DstFolder + ZipName));
   finally
     Modifier.Free;
@@ -995,9 +997,10 @@ begin
   Reader.Check;
   Reader.ExtractAll(DstFolder);
 
-  CheckFiles(SrcFolder + TestFolderData[1], SrcFolder + TestFolderData[1]);
-  CheckFiles(DstFolder + TestFolderData[2], DstFolder + TestFolderData[2]);
-  CheckFiles(DstFolder + ExtractFileName(TestFolderData[12]),
+  CheckFiles(SrcFolder + TestFolderData[0], DstFolder + TestFolderData[0]);
+  CheckFiles(SrcFolder + TestFolderData[1], DstFolder + RenamedZipName);
+  CheckFiles(SrcFolder + TestFolderData[2], DstFolder + TestFolderData[2]);
+  CheckFiles(SrcFolder + TestFolderData[12],
     DstFolder + ExtractFileName(TestFolderData[12]));
 
   Clear;
@@ -1036,8 +1039,8 @@ begin
   Reader.Check;
   Reader.ExtractAll(DstFolder);
 
-  CheckFiles(SrcFolder + TestFolderData[1], SrcFolder + TestFolderData[1]);
-  CheckFiles(DstFolder + TestFolderData[2], DstFolder + TestFolderData[2]);
+  CheckFiles(SrcFolder + TestFolderData[1], DstFolder + TestFolderData[1]);
+  CheckFiles(SrcFolder + TestFolderData[2], DstFolder + TestFolderData[2]);
 
   Clear;
   DeleteFolder(SrcFolder);
@@ -1307,8 +1310,8 @@ begin
   Reader.Check;
   Reader.ExtractAll(DstFolder);
 
-  CheckFiles(SrcFolder + TestFolderData[1], SrcFolder + TestFolderData[1]);
-  CheckFiles(DstFolder + TestFolderData[2], DstFolder + TestFolderData[2]);
+  CheckFiles(SrcFolder + TestFolderData[1], DstFolder + TestFolderData[1]);
+  CheckFiles(SrcFolder + TestFolderData[2], DstFolder + TestFolderData[2]);
 
   Clear;
   DeleteFolder(SrcFolder);
@@ -2312,9 +2315,10 @@ begin
     try
       Index := Modifier.AddZipFile(M1);
       Modifier.AddFromZip(Index, TestFolderData[0]);
+      Modifier.AddFromZip(Index, TestFolderData[1], RenamedZipName);
       Modifier.AddFile(SrcFolder + TestFolderData[12]);
       Modifier.AddFromZip(Index, TestFolderData[2]);
-      CheckCount(Modifier.Count, 3);
+      CheckCount(Modifier.Count, 4);
       M := TFWFileMultiStream.CreateWrite(DstFolder + ZipName);
       try
         CheckBuildResult(Modifier.BuildZip(M));
@@ -2337,9 +2341,10 @@ begin
     M.Free;
   end;
 
-  CheckFiles(SrcFolder + TestFolderData[1], SrcFolder + TestFolderData[1]);
-  CheckFiles(DstFolder + TestFolderData[2], DstFolder + TestFolderData[2]);
-  CheckFiles(DstFolder + ExtractFileName(TestFolderData[12]),
+  CheckFiles(SrcFolder + TestFolderData[0], DstFolder + TestFolderData[0]);
+  CheckFiles(SrcFolder + TestFolderData[1], DstFolder + RenamedZipName);
+  CheckFiles(SrcFolder + TestFolderData[2], DstFolder + TestFolderData[2]);
+  CheckFiles(SrcFolder + TestFolderData[12],
     DstFolder + ExtractFileName(TestFolderData[12]));
 
   Clear;
@@ -2400,8 +2405,8 @@ begin
     M.Free;
   end;
 
-  CheckFiles(SrcFolder + TestFolderData[1], SrcFolder + TestFolderData[1]);
-  CheckFiles(DstFolder + TestFolderData[2], DstFolder + TestFolderData[2]);
+  CheckFiles(SrcFolder + TestFolderData[1], DstFolder + TestFolderData[1]);
+  CheckFiles(SrcFolder + TestFolderData[2], DstFolder + TestFolderData[2]);
 
   Clear;
   DeleteFolder(SrcFolder);
@@ -2581,8 +2586,8 @@ begin
     M.Free;
   end;
 
-  CheckFiles(SrcFolder + TestFolderData[1], SrcFolder + TestFolderData[1]);
-  CheckFiles(DstFolder + TestFolderData[2], DstFolder + TestFolderData[2]);
+  CheckFiles(SrcFolder + TestFolderData[1], DstFolder + TestFolderData[1]);
+  CheckFiles(SrcFolder + TestFolderData[2], DstFolder + TestFolderData[2]);
 
   Clear;
   DeleteFolder(SrcFolder);

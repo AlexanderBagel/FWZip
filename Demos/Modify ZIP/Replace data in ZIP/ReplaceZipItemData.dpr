@@ -6,7 +6,7 @@
 //  * Purpose   : Демонстрация изменения данных в уже созданном архиве
 //  * Author    : Александр (Rouse_) Багель
 //  * Copyright : © Fangorn Wizards Lab 1998 - 2023.
-//  * Version   : 2.0.0
+//  * Version   : 2.0.2
 //  * Home Page : http://rouse.drkb.ru
 //  * Home Blog : http://alexander-bagel.blogspot.ru
 //  ****************************************************************************
@@ -69,8 +69,8 @@ begin
         S.Free;
       end;
 
-      // ну и добавляем последний элемент
-      Modifier.AddFromZip(Index, 'test4.txt');
+      // ну и добавляем последний элемент с одновременным изменением имени
+      Modifier.AddFromZip(Index, 'test4.txt', 'New test4.txt');
       // теперь делаем новый архив,
       // при этом данные от первого второго и четвертого элемента
       // скопируются как есть без распаковки,
