@@ -5,8 +5,8 @@
 //  * Unit Name : FWZipConsts
 //  * Purpose   : Типы и константы используемые для работы с ZIP архивами
 //  * Author    : Александр (Rouse_) Багель
-//  * Copyright : © Fangorn Wizards Lab 1998 - 2023.
-//  * Version   : 2.0.2
+//  * Copyright : © Fangorn Wizards Lab 1998 - 2024.
+//  * Version   : 2.0.3
 //  * Home Page : http://rouse.drkb.ru
 //  * Home Blog : http://alexander-bagel.blogspot.ru
 //  ****************************************************************************
@@ -39,8 +39,8 @@ uses
   Classes;
 
 const
-  FWZipVersionInt = $02000002;
-  FWZipVersionStr = '2.0.2';
+  FWZipVersionInt = $02000003;
+  FWZipVersionStr = '2.0.3';
 
 const
   MAXBYTE = 255;

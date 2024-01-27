@@ -7,8 +7,8 @@
 //  *           : Вынесено из ZLibEx в отдельный модуль
 //  *           : для совместимости со старыми версиями Delphi
 //  * Author    : Александр (Rouse_) Багель
-//  * Copyright : © Fangorn Wizards Lab 1998 - 2023.
-//  * Version   : 2.0.1
+//  * Copyright : © Fangorn Wizards Lab 1998 - 2024.
+//  * Version   : 2.0.3
 //  * Home Page : http://rouse.drkb.ru
 //  * Home Blog : http://alexander-bagel.blogspot.ru
 //  ****************************************************************************
@@ -608,18 +608,15 @@ begin
   FZStream.avail_in := 0;
 
   try
-    while ZCompressCheck(ZDeflate(FZStream, zfFinish)) <> Z_STREAM_END do
+    while ZCompressCheck(ZDeflate(FZStream, zfFinish), False) <> Z_STREAM_END do
     begin
       StreamWriteBuffer(FBuffer, SizeOf(FBuffer) - FZStream.avail_out);
-
       FZStream.next_out := @FBuffer;
       FZStream.avail_out := SizeOf(FBuffer);
     end;
 
-    if FZStream.avail_out < SizeOf(FBuffer) then
-    begin
-      StreamWriteBuffer(FBuffer, SizeOf(FBuffer) - FZStream.avail_out);
-    end;
+    if Integer(FZStream.avail_out) < Length(FBuffer) then
+      FStream.WriteBuffer(FBuffer, Length(FBuffer) - Integer(FZStream.avail_out));
   finally
     ZDeflateEnd(FZStream);
   end;
@@ -643,7 +640,7 @@ begin
 
   while FZStream.avail_in > 0 do
   begin
-    ZCompressCheck(ZDeflate(FZStream, zfNoFlush));
+    ZCompressCheck(ZDeflate(FZStream, zfNoFlush), False);
 
     if FZStream.avail_out = 0 then
     begin
