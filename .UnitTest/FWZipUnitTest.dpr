@@ -20,12 +20,12 @@ uses
   {$ENDIF}
   FWZipTests in '..\FWZipTests.pas';
 
-{$R *.res}
-
 {$IFDEF FPC}
   {$IFDEF CONSOLE_TESTRUNNER}
   var Application: TTestRunner;
   {$ENDIF}
+{$ELSE}
+  {$R *.res}
 {$ENDIF}
 begin
   {$IFDEF FPC}

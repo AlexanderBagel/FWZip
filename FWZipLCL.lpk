@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CONFIG>
+  <Package Version="5">
+    <PathDelim Value="\"/>
+    <Name Value="FWZipLCL"/>
+    <Author Value="Alexander (Rouse) Bagel"/>
+    <CompilerOptions>
+      <Version Value="11"/>
+      <PathDelim Value="\"/>
+      <SearchPaths>
+        <IncludeFiles Value=".;fpc_lib"/>
+        <Libraries Value="fpc_lib"/>
+        <UnitOutputDirectory Value="lib\$(TargetCPU)-$(TargetOS)"/>
+      </SearchPaths>
+    </CompilerOptions>
+    <Description Value="The FWZip class set is designed for creating and unpacking ZIP archives with Store and Deflate compression methods."/>
+    <License Value="MIT"/>
+    <Version Major="2" Release="4"/>
+    <Files Count="14">
+      <Item1>
+        <Filename Value="FWZipConsts.pas"/>
+        <UnitName Value="FWZipConsts"/>
+      </Item1>
+      <Item2>
+        <Filename Value="FWZipCrc32.pas"/>
+        <UnitName Value="FWZipCrc32"/>
+      </Item2>
+      <Item3>
+        <Filename Value="FWZipCrypt.pas"/>
+        <UnitName Value="FWZipCrypt"/>
+      </Item3>
+      <Item4>
+        <Filename Value="FWZipModifier.pas"/>
+        <UnitName Value="FWZipModifier"/>
+      </Item4>
+      <Item5>
+        <Filename Value="FWZipReader.pas"/>
+        <UnitName Value="FWZipReader"/>
+      </Item5>
+      <Item6>
+        <Filename Value="FWZipStream.pas"/>
+        <UnitName Value="FWZipStream"/>
+      </Item6>
+      <Item7>
+        <Filename Value="FWZipUtils.pas"/>
+        <UnitName Value="FWZipUtils"/>
+      </Item7>
+      <Item8>
+        <Filename Value="FWZipWriter.pas"/>
+        <UnitName Value="FWZipWriter"/>
+      </Item8>
+      <Item9>
+        <Filename Value="FWZipZLib.pas"/>
+        <UnitName Value="FWZipZLib"/>
+      </Item9>
+      <Item10>
+        <Filename Value="FWZipZLibFPC.pas"/>
+        <UnitName Value="FWZipZLibFPC"/>
+      </Item10>
+      <Item11>
+        <Filename Value="fpc_lib\libzlib_coff_win_amd64.a"/>
+        <Type Value="Binary"/>
+      </Item11>
+      <Item12>
+        <Filename Value="fpc_lib\libzlib_coff_x386.a"/>
+        <Type Value="Binary"/>
+      </Item12>
+      <Item13>
+        <Filename Value="fpc_lib\libzlib_elf_intel_386.a"/>
+        <Type Value="Binary"/>
+      </Item13>
+      <Item14>
+        <Filename Value="fpc_lib\libzlib_elf64_for_x86-64.a"/>
+        <Type Value="Binary"/>
+      </Item14>
+    </Files>
+    <CompatibilityMode Value="True"/>
+    <RequiredPkgs Count="3">
+      <Item1>
+        <PackageName Value="LCLBase"/>
+      </Item1>
+      <Item2>
+        <PackageName Value="LazUtils"/>
+      </Item2>
+      <Item3>
+        <PackageName Value="FCL"/>
+      </Item3>
+    </RequiredPkgs>
+    <UsageOptions>
+      <LibraryPath Value="fpc_lib"/>
+      <UnitPath Value="$(PkgOutDir)"/>
+    </UsageOptions>
+    <PublishOptions>
+      <Version Value="2"/>
+      <UseFileFilters Value="True"/>
+    </PublishOptions>
+  </Package>
+</CONFIG>

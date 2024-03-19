@@ -27,6 +27,9 @@
     </RunParams>
     <RequiredPackages>
       <Item>
+        <PackageName Value="FWZipLCL"/>
+      </Item>
+      <Item>
         <PackageName Value="fpcunittestrunner"/>
       </Item>
       <Item>
@@ -42,14 +45,17 @@
         <Filename Value="..\FWZipTests.pas"/>
         <IsPartOfProject Value="True"/>
       </Unit>
+      <Unit>
+        <Filename Value="..\FWZipStream.pas"/>
+        <IsPartOfProject Value="True"/>
+      </Unit>
     </Units>
   </ProjectOptions>
   <CompilerOptions>
     <Version Value="11"/>
     <PathDelim Value="\"/>
     <SearchPaths>
-      <IncludeFiles Value="..;$(ProjOutDir)"/>
-      <Libraries Value="..\fpc_lib"/>
+      <IncludeFiles Value="$(ProjOutDir)"/>
       <OtherUnitFiles Value=".."/>
       <UnitOutputDirectory Value="."/>
     </SearchPaths>
@@ -72,7 +78,10 @@
       <CompilerMessages>
         <IgnoredMessages idx5024="True"/>
       </CompilerMessages>
-      <CustomOptions Value="-dBorland -dVer150 -dDelphi7 -dCompiler6_Up -dPUREPASCAL -dUNIT_TEST"/>
+      <CustomOptions Value="-dUNIT_TEST"/>
+      <OtherDefines Count="1">
+        <Define0 Value="UNIT_TEST"/>
+      </OtherDefines>
     </Other>
   </CompilerOptions>
   <Debugging>

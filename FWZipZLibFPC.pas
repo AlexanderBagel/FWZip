@@ -5,8 +5,8 @@
 //  * Unit Name : FWZipZLibFPC
 //  * Purpose   : Линковка ZLib для Free Pascal
 //  * Author    : Александр (Rouse_) Багель
-//  * Copyright : © Fangorn Wizards Lab 1998 - 2023.
-//  * Version   : 2.0.0
+//  * Copyright : © Fangorn Wizards Lab 1998 - 2024.
+//  * Version   : 2.0.4
 //  * Home Page : http://rouse.drkb.ru
 //  * Home Blog : http://alexander-bagel.blogspot.ru
 //  ****************************************************************************
@@ -16,7 +16,7 @@
 //
 //  Используемые источники:
 //  ftp://ftp.info-zip.org/pub/infozip/doc/appnote-iz-latest.zip
-//  https://zlib.net/zlib-1.2.13.tar.gz
+//  https://zlib.net/zlib-1.3.1.tar.gz
 //  http://www.base2ti.com/
 //
 
@@ -34,13 +34,13 @@ interface
 const
   {** version ids *******************************************************************************}
 
-  ZLIB_VERSION: PAnsiChar = '1.2.13';
+  ZLIB_VERSION: PAnsiChar = '1.3.1';
 
-  ZLIB_VERNUM = $12D0;
+  ZLIB_VERNUM = $1310;
 
   ZLIB_VER_MAJOR = 1;
-  ZLIB_VER_MINOR = 2;
-  ZLIB_VER_REVISION = 13;
+  ZLIB_VER_MINOR = 3;
+  ZLIB_VER_REVISION = 1;
   ZLIB_VER_SUBREVISION = 0;
 
   {** return codes ******************************************************************************}
@@ -74,7 +74,7 @@ type
   LongwordType = Longword;
   {$ENDIF}
 
-  TZStreamRec = packed record
+  TZStreamRec = record
     next_in  : PByte;         // next input byte
     avail_in : Cardinal;      // number of bytes available at next_in
     total_in : LongwordType;  // total nb of input bytes read so far

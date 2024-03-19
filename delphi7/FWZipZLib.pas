@@ -8,7 +8,7 @@
 //  *           : для совместимости со старыми версиями Delphi
 //  * Author    : Александр (Rouse_) Багель
 //  * Copyright : © Fangorn Wizards Lab 1998 - 2024.
-//  * Version   : 2.0.3
+//  * Version   : 2.0.4
 //  * Home Page : http://rouse.drkb.ru
 //  * Home Blog : http://alexander-bagel.blogspot.ru
 //  ****************************************************************************
@@ -429,7 +429,11 @@ begin
       begin
         Inc(outSize, delta);
         ReallocMem(outBuffer, outSize);
+        {$IF defined(FPC) and not defined(USE_ZLIB_FPC)}
+        zstream.next_out := pBytef(outBuffer) + zstream.total_out;
+        {$ELSE}
         zstream.next_out := PByte(outBuffer) + zstream.total_out;
+        {$ENDIF}
         zstream.avail_out := delta;
       end;
     finally
@@ -472,7 +476,11 @@ begin
       begin
         Inc(outSize, delta);
         ReallocMem(outBuffer, outSize);
+        {$IF defined(FPC) and not defined(USE_ZLIB_FPC)}
+        zstream.next_out := pBytef(outBuffer) + zstream.total_out;
+        {$ELSE}
         zstream.next_out := PByte(outBuffer) + zstream.total_out;
+        {$ENDIF}
         zstream.avail_out := delta;
       end;
     finally

@@ -6,7 +6,7 @@
 //  * Purpose   : Типы и константы используемые для работы с ZIP архивами
 //  * Author    : Александр (Rouse_) Багель
 //  * Copyright : © Fangorn Wizards Lab 1998 - 2024.
-//  * Version   : 2.0.3
+//  * Version   : 2.0.4
 //  * Home Page : http://rouse.drkb.ru
 //  * Home Blog : http://alexander-bagel.blogspot.ru
 //  ****************************************************************************
@@ -16,7 +16,7 @@
 //
 //  Используемые источники:
 //  ftp://ftp.info-zip.org/pub/infozip/doc/appnote-iz-latest.zip
-//  https://zlib.net/zlib-1.2.13.tar.gz
+//  https://zlib.net/zlib-1.3.1.tar.gz
 //  http://www.base2ti.com/
 //
 
@@ -39,8 +39,8 @@ uses
   Classes;
 
 const
-  FWZipVersionInt = $02000003;
-  FWZipVersionStr = '2.0.3';
+  FWZipVersionInt = $02000004;
+  FWZipVersionStr = '2.0.4';
 
 const
   MAXBYTE = 255;

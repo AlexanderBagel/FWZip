@@ -5,8 +5,8 @@
 //  * Unit Name : FWZipUtils
 //  * Purpose   : Набор платформозависимых методов
 //  * Author    : Александр (Rouse_) Багель
-//  * Copyright : © Fangorn Wizards Lab 1998 - 2023.
-//  * Version   : 2.0.2
+//  * Copyright : © Fangorn Wizards Lab 1998 - 2024.
+//  * Version   : 2.0.4
 //  * Home Page : http://rouse.drkb.ru
 //  * Home Blog : http://alexander-bagel.blogspot.ru
 //  ****************************************************************************
@@ -16,7 +16,7 @@
 //
 //  Используемые источники:
 //  ftp://ftp.info-zip.org/pub/infozip/doc/appnote-iz-latest.zip
-//  https://zlib.net/zlib-1.2.13.tar.gz
+//  https://zlib.net/zlib-1.3.1.tar.gz
 //  http://www.base2ti.com/
 //
 
@@ -414,6 +414,7 @@ var
   Info: Stat;
   SystemFileName: RawByteString;
 begin
+  FillChar(AAttr, SizeOf(AAttr), 0);
   SystemFileName := ToSingleByteFileSystemEncodedFileName(AFilePath);
   Info := default(Stat);
   if (fpstat(PChar(SystemFileName), Info) < 0) or fpS_ISDIR(info.st_mode) then
