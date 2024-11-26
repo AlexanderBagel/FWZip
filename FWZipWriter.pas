@@ -5,8 +5,8 @@
 //  * Unit Name : FWZipWriter
 //  * Purpose   : Класс для создания ZIP архива
 //  * Author    : Александр (Rouse_) Багель
-//  * Copyright : © Fangorn Wizards Lab 1998 - 2023.
-//  * Version   : 2.0.1
+//  * Copyright : © Fangorn Wizards Lab 1998 - 2024.
+//  * Version   : 2.0.5
 //  * Home Page : http://rouse.drkb.ru
 //  * Home Blog : http://alexander-bagel.blogspot.ru
 //  ****************************************************************************
@@ -237,19 +237,18 @@ procedure TFWZipWriterItem.ChangeDataStream(Value: TStream;
   AOwnership: TStreamOwnership);
 begin
   if not FOwner.BuildState then
-    if Value.Size <> 0 then
+  begin
+    FreeAndNil(FData);
+    if AOwnership = soOwned then
+      FData := Value
+    else
     begin
-      FreeAndNil(FData);
-      if AOwnership = soOwned then
-        FData := Value
-      else
-      begin
-        FData := TMemoryStream.Create;
-        FData.CopyFrom(Value, 0);
-      end;
-      FSize := FData.Size;
-      FFilePath := '';
+      FData := TMemoryStream.Create;
+      FData.CopyFrom(Value, 0);
     end;
+    FSize := FData.Size;
+    FFilePath := '';
+  end;
 end;
 
 //
