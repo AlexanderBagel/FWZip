@@ -5,8 +5,8 @@
 //  * Unit Name : FWZipConsts
 //  * Purpose   : Типы и константы используемые для работы с ZIP архивами
 //  * Author    : Александр (Rouse_) Багель
-//  * Copyright : © Fangorn Wizards Lab 1998 - 2024.
-//  * Version   : 2.0.5
+//  * Copyright : © Fangorn Wizards Lab 1998 - 2025.
+//  * Version   : 2.0.6
 //  * Home Page : http://rouse.drkb.ru
 //  * Home Blog : http://alexander-bagel.blogspot.ru
 //  ****************************************************************************
@@ -39,8 +39,8 @@ uses
   Classes;
 
 const
-  FWZipVersionInt = $02000005;
-  FWZipVersionStr = '2.0.5';
+  FWZipVersionInt = $02000006;
+  FWZipVersionStr = '2.0.6';
 
 const
   MAXBYTE = 255;
@@ -316,7 +316,8 @@ type
     eaAbort,                // остановить создание архива
     eaUseNewFilePath,       // использовать новый путь к файлу (пар. NewFilePath)
     eaUseNewFilePathAndDel, // то-же что и acUseNewFilePath, только файл удаляется после использования
-    eaUseNewFileData        // использовать содержимое файла из стрима (пар. NewFileData)
+    eaUseNewFileData,       // использовать содержимое файла из стрима (пар. NewFileData)
+    eaReRaise               // передать исключение наружу
   );
 
   TZipBuildExceptionEvent = procedure(Sender: TObject;
@@ -398,6 +399,11 @@ var
   ///  Глобальная переменная управляющая включением/отключением поддержки длинных путей
   /// </summary>
   UseLongNamePrefix: Boolean = True;
+
+  /// <summary>
+  ///  Глобальная переменная управляющая поведением по умолчанию при возникновении исключения
+  /// </summary>
+  DefaultExceptionAction: TExceptionAction = eaSkip;
 
 implementation
 

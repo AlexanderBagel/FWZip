@@ -5,8 +5,8 @@
 //  * Unit Name : FWZipWriter
 //  * Purpose   : Класс для создания ZIP архива
 //  * Author    : Александр (Rouse_) Багель
-//  * Copyright : © Fangorn Wizards Lab 1998 - 2024.
-//  * Version   : 2.0.5
+//  * Copyright : © Fangorn Wizards Lab 1998 - 2025.
+//  * Version   : 2.0.6
 //  * Home Page : http://rouse.drkb.ru
 //  * Home Blog : http://alexander-bagel.blogspot.ru
 //  ****************************************************************************
@@ -748,16 +748,16 @@ begin
             Item[I].UseExternalData := False;
 
             // запрашиваем пользователя, что делать с исключением?         
-            ExceptAction := eaSkip;
-            NewFilePath := ''; 
-            
+            ExceptAction := DefaultExceptionAction;
+            NewFilePath := '';
+
             NewFileData := TMemoryStream.Create;
             try
-            
+
               if Assigned(FBuidException) then
-                FBuidException(Self, E, I, ExceptAction, 
+                FBuidException(Self, E, I, ExceptAction,
                   NewFilePath, NewFileData);
-                  
+
               // обрабатываем выбор польтзователя
               case ExceptAction of
 
@@ -773,16 +773,16 @@ begin
                   FCD[I].ExceptOnWrite := True;
                   // Также увеличим число исключений, для правильной записи
                   // количества элементов архива в корневой директории
-                  Inc(FExceptionCount); 
+                  Inc(FExceptionCount);
                   Inc(I);
-                  Result := brPartialBuild;                                
+                  Result := brPartialBuild;
                 end;
 
                 // остановить создание архива
                 eaAbort:
                 begin
                   Result := brAborted;
-                  Exit;                  
+                  Exit;
                 end;
 
                 // использовать данные из другого файла
@@ -802,25 +802,29 @@ begin
                   DeletePackedFile := ExceptAction = eaUseNewFilePathAndDel;
                   Continue;
                 end;
-                
+
                 // использовать данные из стрима
                 eaUseNewFileData:
                 begin
                   FBuildState := False;
                   try
-                    Item[I].ChangeDataStream(NewFileData);                    
+                    Item[I].ChangeDataStream(NewFileData);
                   finally
                     FBuildState := True;
-                  end;                
+                  end;
                   Continue;
                 end;
+
               end;
 
             finally
               NewFileData.Free;
-            end;                      
+            end;
+
+            if ExceptAction = eaReRaise then
+              raise;
           end;
-          
+
         end;
       end;
 
