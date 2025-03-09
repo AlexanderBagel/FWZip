@@ -429,7 +429,7 @@ begin
       begin
         Inc(outSize, delta);
         ReallocMem(outBuffer, outSize);
-        {$IF defined(FPC) and not defined(USE_ZLIB_FPC)}
+        {$IFDEF USE_PBYTEF}
         zstream.next_out := pBytef(outBuffer) + zstream.total_out;
         {$ELSE}
         zstream.next_out := PByte(outBuffer) + zstream.total_out;
@@ -476,7 +476,7 @@ begin
       begin
         Inc(outSize, delta);
         ReallocMem(outBuffer, outSize);
-        {$IF defined(FPC) and not defined(USE_ZLIB_FPC)}
+        {$IFDEF USE_PBYTEF}
         zstream.next_out := pBytef(outBuffer) + zstream.total_out;
         {$ELSE}
         zstream.next_out := PByte(outBuffer) + zstream.total_out;

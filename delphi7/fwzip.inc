@@ -5,8 +5,8 @@
 //  * Unit Name : fwzip.inc
 //  * Purpose   : Набор классов для распаковки ZIP архива
 //  * Author    : Александр (Rouse_) Багель
-//  * Copyright : © Fangorn Wizards Lab 1998 - 2023.
-//  * Version   : 2.0.0
+//  * Copyright : © Fangorn Wizards Lab 1998 - 2025.
+//  * Version   : 2.0.7
 //  * Home Page : http://rouse.drkb.ru
 //  * Home Blog : http://alexander-bagel.blogspot.ru
 //  ****************************************************************************
@@ -50,7 +50,11 @@
 // Lazarus предлагает использовать внешнюю библиотеку
 // отключаем такое поведение и включаем использование скомпиленых обьектников
 {$IFDEF FPC}
-  {$IFNDEF USE_DEFAULT_FPC_ZLIB}
+  {$IFDEF USE_DEFAULT_FPC_ZLIB}
+    // в случае использования штатной zlib в структуре используется pByteF
+    // вместо обычного pByte, поэтому этот момент нужно учесть отдельно
+    {$DEFINE USE_PBYTEF}
+  {$ELSE}
     {$DEFINE USE_ZLIB_FPC}
   {$ENDIF}
   {$UNDEF USE_ZLIB_EX}

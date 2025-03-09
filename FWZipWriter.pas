@@ -6,7 +6,7 @@
 //  * Purpose   : Класс для создания ZIP архива
 //  * Author    : Александр (Rouse_) Багель
 //  * Copyright : © Fangorn Wizards Lab 1998 - 2025.
-//  * Version   : 2.0.6
+//  * Version   : 2.0.7
 //  * Home Page : http://rouse.drkb.ru
 //  * Home Blog : http://alexander-bagel.blogspot.ru
 //  ****************************************************************************
@@ -95,7 +95,7 @@ type
   TFWZipWriterItemClass = class of TFWZipWriterItem;
 
   // Результат создания архива
-  TBuildZipResult = 
+  TBuildZipResult =
   (
     brDone,         // архив создан успешно
     brFailed,       // ошибка создания архива
@@ -264,7 +264,7 @@ begin
   FFilePath := InitFilePath;
   FAttributes := InitAttributes;
   FSize :=
-    FileSizeToInt64(FAttributes.nFileSizeLow, FAttributes.nFileSizeHigh);  
+    FileSizeToInt64(FAttributes.nFileSizeLow, FAttributes.nFileSizeHigh);
   FFileName := InitFileName;
   UseUTF8String := Owner.UseUTF8String;
 end;
@@ -695,7 +695,7 @@ begin
       I := 0;
       DeletePackedFile := False;
       OldPathName := '';
-      while I < Count do      
+      while I < Count do
       begin
         try
 
@@ -747,7 +747,7 @@ begin
             // что делать в этом случае
             Item[I].UseExternalData := False;
 
-            // запрашиваем пользователя, что делать с исключением?         
+            // запрашиваем пользователя, что делать с исключением?
             ExceptAction := DefaultExceptionAction;
             NewFilePath := '';
 
@@ -1921,6 +1921,7 @@ procedure TFWZipWriter.UpdateLocalHeaders(Stream: TStream);
 var
   I: Integer;
   lfh: TLocalFileHeader;
+  cdfh: TCentralDirectoryFileHeader;
   dd: TDataDescriptor;
   UseDescriptor: Boolean;
   {%H-}Info64: TExDataInfo64;
@@ -1937,20 +1938,21 @@ begin
     lfh.LocalFileHeaderSignature := LOCAL_FILE_HEADER_SIGNATURE;
 
     // рассчитываем версию необходимую для распаковки элемента архива
+    cdfh := FCD[I].Header;
     lfh.VersionNeededToExtract := GetVersionToExtract(I);
-    lfh.GeneralPurposeBitFlag := FCD[I].Header.GeneralPurposeBitFlag;
+    lfh.GeneralPurposeBitFlag := cdfh.GeneralPurposeBitFlag;
     UseDescriptor := lfh.GeneralPurposeBitFlag and PBF_DESCRIPTOR <> 0;
-    lfh.CompressionMethod := FCD[I].Header.CompressionMethod;
-    lfh.LastModFileTimeTime := FCD[I].Header.LastModFileTimeTime;
-    lfh.LastModFileTimeDate := FCD[I].Header.LastModFileTimeDate;
+    lfh.CompressionMethod := cdfh.CompressionMethod;
+    lfh.LastModFileTimeTime := cdfh.LastModFileTimeTime;
+    lfh.LastModFileTimeDate := cdfh.LastModFileTimeDate;
     if UseDescriptor then
     begin
       dd.DescriptorSignature := DATA_DESCRIPTOR_SIGNATURE;
-      // хоть в стандарте сказано что при использовании дескрипторов 
+      // хоть в стандарте сказано что при использовании дескрипторов
       // поля Crc32, CompressedSize и UncompressedSize должны быль установлены
       // в ноль, но большинство архиваторов этого не делают,
       // поэтому уподобимся им :)
-      lfh.Crc32 := FCD[I].Header.Crc32;
+      lfh.Crc32 := cdfh.Crc32;
       dd.Crc32 := lfh.Crc32;
       if FCD[I].CompressedSize > MAXDWORD then
         dd.CompressedSize := MAXDWORD
@@ -1965,7 +1967,7 @@ begin
     end
     else
     begin
-      lfh.Crc32 := FCD[I].Header.Crc32;
+      lfh.Crc32 := cdfh.Crc32;
       if FCD[I].CompressedSize > MAXDWORD then
         lfh.CompressedSize := MAXDWORD
       else
@@ -1975,7 +1977,7 @@ begin
       else
         lfh.UncompressedSize := FCD[I].UncompressedSize;
     end;
-    lfh.FilenameLength := FCD[I].Header.FilenameLength;
+    lfh.FilenameLength := cdfh.FilenameLength;
 
     if (FCD[I].UncompressedSize >= MAXDWORD) or
       (FCD[I].CompressedSize >= MAXDWORD) then
@@ -2059,3 +2061,4 @@ begin
 end;
 
 end.
+
