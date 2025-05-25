@@ -5,8 +5,8 @@
 //  * Unit Name : FWZipReader
 //  * Purpose   : Набор классов для распаковки ZIP архива
 //  * Author    : Александр (Rouse_) Багель
-//  * Copyright : © Fangorn Wizards Lab 1998 - 2023.
-//  * Version   : 2.0.1
+//  * Copyright : © Fangorn Wizards Lab 1998 - 2025.
+//  * Version   : 2.0.8
 //  * Home Page : http://rouse.drkb.ru
 //  * Home Blog : http://alexander-bagel.blogspot.ru
 //  ****************************************************************************
@@ -36,6 +36,7 @@ uses
   Classes,
   Contnrs,
   Masks,
+  DateUtils,
   FWZipConsts,
   FWZipCrc32,
   FWZipCrypt,
@@ -62,6 +63,7 @@ type
     FItemIndex, FTag: Integer;
     FDuplicate: TZipDuplicateEvent;
     FPresentStreams: TPresentStreams;
+    function GetLastModDateTime: TDateTime;
     function GetString(const Index: Integer): string;
   protected
     procedure DoProgress(Sender: TObject; ProgressState: TProgressState);
@@ -94,6 +96,7 @@ type
     property VersionNeededToExtract: Word read
       FFileHeader.Header.VersionNeededToExtract;
     property CompressionMethod: Word read FFileHeader.Header.CompressionMethod;
+    property LastModDateTime: TDateTime read GetLastModDateTime;
     property LastModFileTime: Word read FFileHeader.Header.LastModFileTimeTime;
     property LastModFileDate: Word read FFileHeader.Header.LastModFileTimeDate;
     property Crc32: Cardinal read FFileHeader.Header.Crc32;
@@ -165,7 +168,7 @@ type
     function Find(const Value: string; out AItem: TFWZipReaderItem;
       IgnoreCase: Boolean = True): Boolean; overload;
 
-    function GetElementIndex(const FileName: string): Integer;
+    function GetElementIndex(FileName: string): Integer;
     procedure LoadFromFile(const Value: string; SFXOffset: Integer = -1;
       ZipEndOffset: Integer = -1);
     procedure LoadFromStream(Value: TStream; SFXOffset: Integer = -1;
@@ -285,6 +288,7 @@ var
   FileDate: Integer;
   DuplicateAction: TDuplicateAction;
   ResultFileName: string;
+  Attributes: TFileAttributeData;
 begin
   Result := erDone;
 
@@ -350,6 +354,24 @@ begin
         // перезаписать
         daOverwrite:
           SetNormalFileAttributes(FullPath);
+
+        daOverwriteOldest:
+        begin
+          if not GetFileAttributes(FullPath, Attributes)  then
+          begin
+            Result := erSkiped;
+            Exit;
+          end;
+
+          if CompareDateTime(LastModDateTime,
+            FileTimeToLocalDateTime(Attributes.ftLastWriteTime)) > 0  then
+            SetNormalFileAttributes(FullPath)
+          else
+          begin
+            Result := erSkiped;
+            Exit;
+          end;
+        end;
 
         // распаковать с другим именем
         daUseNewFilePath:
@@ -651,6 +673,25 @@ begin
   finally
     Decryptor.Free;
   end;
+end;
+
+//
+// =============================================================================
+function TFWZipReaderItem.GetLastModDateTime: TDateTime;
+begin
+{$IFDEF FPC}
+  Result := ComposeDateTime(
+    EncodeDate(
+      (LastModFileDate shr 9) + 1980,
+      (LastModFileDate shr 5) and 15,
+      (LastModFileDate and 31)),
+    EncodeTime(
+      (LastModFileTime shr 11),
+      (LastModFileTime shr 5) and 63,
+      (LastModFileTime and 31) shl 1,0));
+{$ELSE}
+  Result := FileDateToDateTime(LastModFileTime + LastModFileDate shl 16);
+{$ENDIF}
 end;
 
 //
@@ -1137,11 +1178,12 @@ end;
 //
 //  Функция возвращает индекс элемента по его имени
 // =============================================================================
-function TFWZipReader.GetElementIndex(const FileName: string): Integer;
+function TFWZipReader.GetElementIndex(FileName: string): Integer;
 var
   I: Integer;
 begin
   Result := -1;
+  FileName := StringReplace(FileName, '\', ZIP_SLASH, [rfReplaceAll]);
   for I := 0 to Count - 1 do
     if {%H-}AnsiCompareText(Item[I].FileName, FileName) = 0 then
     begin

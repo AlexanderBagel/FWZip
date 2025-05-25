@@ -172,6 +172,8 @@ end;
 
 var
   I: Integer;
+  APath: string;
+  Attributes: TFileAttributeData;
 begin
   SetCurrentDir(ExtractFilePath(ParamStr(0)));
   try
@@ -343,6 +345,32 @@ begin
       // New folder -> New folder (2) -> New folder (3) и т.д.)
 
       Reader.ExtractAll('..\DemoResults\BuildWithExceptionUnpack\');
+
+      // ≈ще одним методом работы с перезаписываемыми элементами
+      // €вл€етс€ работа с флагом DefaultDuplicateAction
+      // Ќапример если часто обновл€етс€ один и тот-же архив, а выгружать
+      // необходимо только измененные элементы, то имеет смысл выставить
+      // значние daOverwriteOldest, и выполнить автоматическую распаковку
+
+      Reader.OnDuplicate := nil;
+      Reader.DefaultDuplicateAction := daOverwriteOldest;
+
+      // специально дл€ теста дату последней записи FWZipModifier на диске
+      // помен€ем на несколько недель назад
+      APath := PathCanonicalize(ExtractFilePath(ParamStr(0)) +
+        '..\DemoResults\BuildWithExceptionUnpack\FWZipModifier.pas');
+      GetFileAttributes(APath, Attributes);
+      Dec(Attributes.ftLastWriteTime.dwHighDateTime, 3000);
+      SetFileAttributes(APath, Attributes);
+
+      // после чего еще раз распакуем весь архив.
+      // в результате у элемента FWZipModifier.pas должен сто€ть результат erDone
+      Writeln;
+      Writeln('Manual extract 2:');
+      for I := 0 to Reader.Count - 1 do
+        ShowManualExtractResult(
+          string(Reader[I].FileName),
+          Reader[I].Extract('..\DemoResults\BuildWithExceptionUnpack\', ''));
 
     finally
       Reader.Free;

@@ -5,8 +5,8 @@
 //  * Unit Name : MergeZip
 //  * Purpose   : Демонстрация обьединения нескольких архивов
 //  * Author    : Александр (Rouse_) Багель
-//  * Copyright : © Fangorn Wizards Lab 1998 - 2023.
-//  * Version   : 2.0.0
+//  * Copyright : © Fangorn Wizards Lab 1998 - 2025.
+//  * Version   : 2.0.8
 //  * Home Page : http://rouse.drkb.ru
 //  * Home Blog : http://alexander-bagel.blogspot.ru
 //  ****************************************************************************
@@ -35,11 +35,14 @@ program MergeZip;
 
 uses
   SysUtils,
+  TypInfo,
+  FWZipWriter,
   FWZipModifier;
 
 var
   Modifier: TFWZipModifier;
   Index1, Index2: TReaderIndex;
+  BuildZipResult: TBuildZipResult;
 begin
   SetCurrentDir(ExtractFilePath(ParamStr(0)));
   try
@@ -57,7 +60,8 @@ begin
       // теперь создаем новый архив который будет включать в себя все элементы обоих архивов
       // и технически будет идентичен архиву split_main_archive.zip, который
       // был создан в примере SplitZip (оба архива будут совпадать вплоть до контрольной суммы)
-      Modifier.BuildZip('..\..\DemoResults\merged_archive.zip')
+      BuildZipResult := Modifier.BuildZip('..\..\DemoResults\merged_archive.zip');
+      Writeln(GetEnumName(TypeInfo(TBuildZipResult), Integer(BuildZipResult)));
     finally
       Modifier.Free;
     end;

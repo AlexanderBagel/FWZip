@@ -6,7 +6,7 @@
 //  * Purpose   : Типы и константы используемые для работы с ZIP архивами
 //  * Author    : Александр (Rouse_) Багель
 //  * Copyright : © Fangorn Wizards Lab 1998 - 2025.
-//  * Version   : 2.0.7
+//  * Version   : 2.0.8
 //  * Home Page : http://rouse.drkb.ru
 //  * Home Blog : http://alexander-bagel.blogspot.ru
 //  ****************************************************************************
@@ -39,8 +39,8 @@ uses
   Classes;
 
 const
-  FWZipVersionInt = $02000007;
-  FWZipVersionStr = '2.0.7';
+  FWZipVersionInt = $02000008;
+  FWZipVersionStr = '2.0.8';
 
 const
   MAXBYTE = 255;
@@ -334,6 +334,7 @@ type
   (
     daSkip,                // пропустить файл
     daOverwrite,           // перезаписать
+    daOverwriteOldest,     // перезаписать если файл на диске имеет более старое время модификации чем в архиве
     daUseNewFilePath,      // сохранить с новым именем
     daAbort                // отменить распаковку
   );

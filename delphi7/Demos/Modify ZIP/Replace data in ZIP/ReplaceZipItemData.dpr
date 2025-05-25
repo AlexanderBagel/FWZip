@@ -5,8 +5,8 @@
 //  * Unit Name : ReplaceZipItemData
 //  * Purpose   : ƒемонстраци€ изменени€ данных в уже созданном архиве
 //  * Author    : јлександр (Rouse_) Ѕагель
-//  * Copyright : © Fangorn Wizards Lab 1998 - 2023.
-//  * Version   : 2.0.2
+//  * Copyright : © Fangorn Wizards Lab 1998 - 2025.
+//  * Version   : 2.0.8
 //  * Home Page : http://rouse.drkb.ru
 //  * Home Blog : http://alexander-bagel.blogspot.ru
 //  ****************************************************************************
@@ -36,8 +36,15 @@ program ReplaceZipItemData;
 uses
   SysUtils,
   Classes,
+  TypInfo,
   FWZipReader,
+  FWZipWriter,
   FWZipModifier;
+
+procedure Check(Value: TBuildZipResult);
+begin
+  Writeln(GetEnumName(TypeInfo(TBuildZipResult), Integer(Value)));
+end;
 
 var
   Modifier: TFWZipModifier;
@@ -75,7 +82,7 @@ begin
       // при этом данные от первого второго и четвертого элемента
       // скопируютс€ как есть без распаковки,
       // а вместо третьего элемента будет добавлен новый блок данных
-      Modifier.BuildZip('..\..\DemoResults\replaced_data_archive1.zip');
+      Check(Modifier.BuildZip('..\..\DemoResults\replaced_data_archive1.zip'));
     finally
       Modifier.Free;
     end;
@@ -102,7 +109,7 @@ begin
       end;
 
       // теперь делаем новый архив, принцип тот же самый
-      Modifier.BuildZip('..\..\DemoResults\replaced_data_archive2.zip');
+      Check(Modifier.BuildZip('..\..\DemoResults\replaced_data_archive2.zip'));
     finally
       Modifier.Free;
     end;
@@ -136,7 +143,7 @@ begin
         end;
 
         // и ребилдим архив
-        Modifier.BuildZip('..\..\DemoResults\replaced_data_archive3.zip');
+        Check(Modifier.BuildZip('..\..\DemoResults\replaced_data_archive3.zip'));
       finally
         Modifier.Free;
       end;
@@ -145,7 +152,7 @@ begin
       Reader.Free;
     end;
 
-    // четвертый вариант, это небольша€ модификаци€ епрвого варианта,
+    // четвертый вариант, это небольша€ модификаци€ первого варианта,
     // только подключение архива происходит так-же как и в третьем через ридер
     // но в этот раз врем€ жизни ридера будет контролировать модификатор
 
@@ -183,7 +190,50 @@ begin
       // при этом данные от первого второго и четвертого элемента
       // скопируютс€ как есть без распаковки,
       // а вместо третьего элемента будет добавлен новый блок данных
-      Modifier.BuildZip('..\..\DemoResults\replaced_data_archive4.zip');
+      Check(Modifier.BuildZip('..\..\DemoResults\replaced_data_archive4.zip'));
+    finally
+      Modifier.Free;
+    end;
+
+    // ƒанный пример был добавлен по просьбе пользователей
+    // ќн показывает что модифицировать файлы в архиве можно
+    // в абсолютно произвольном пор€дке, причем с сохранением позиции элементов
+    // дл€ этого используетс€ метод InsertStream
+    Modifier := TFWZipModifier.Create;
+    try
+      // подключаем ранее созданный архив
+      Index := Modifier.AddZipFile('..\..\DemoResults\split_main_archive.zip');
+      // добавл€ем все элементы
+      Modifier.AddFromZip(Index);
+      // теперь удалим запись о четвертом элементе
+      Modifier.DeleteItem(3);
+
+      // и пишем новые данные
+      S := TStringStream.Create('новые данные дл€ последнего элемента архива - вариант два');
+      try
+        S.Position := 0;
+        Modifier.InsertStream('test4.txt', 3, S);
+      finally
+        S.Free;
+      end;
+
+      // теперь удалим запись о самом первом элементе
+      Modifier.DeleteItem(0);
+      // и пишем новые данные
+      S := TStringStream.Create('новые данные дл€ первого элемента архива - вариант два');
+      try
+        S.Position := 0;
+        Modifier.InsertStream('test1.txt', 0, S);
+      finally
+        S.Free;
+      end;
+
+      // а теперь второй файл, ранее добавленый как стрим, заменим на реальный файл на диске
+      Modifier.DeleteItem(1);
+      Modifier.InsertFile('..\..\..\FWZipModifier.pas', 1);
+
+      // теперь делаем новый архив, принцип тот же самый
+      Check(Modifier.BuildZip('..\..\DemoResults\replaced_data_archive5.zip'));
     finally
       Modifier.Free;
     end;

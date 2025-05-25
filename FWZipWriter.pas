@@ -6,7 +6,7 @@
 //  * Purpose   : Класс для создания ZIP архива
 //  * Author    : Александр (Rouse_) Багель
 //  * Copyright : © Fangorn Wizards Lab 1998 - 2025.
-//  * Version   : 2.0.7
+//  * Version   : 2.0.8
 //  * Home Page : http://rouse.drkb.ru
 //  * Home Blog : http://alexander-bagel.blogspot.ru
 //  ****************************************************************************
@@ -129,6 +129,8 @@ type
     function GetItem(Index: Integer): TFWZipWriterItem;
   protected
     function GetItemClass: TFWZipWriterItemClass; virtual;
+    function GetFileItem(const FilePath: string;
+      Attributes: TFileAttributeData; const FileName: string): TFWZipWriterItem;
     function AddNewItem(Value: TFWZipWriterItem): Integer;
     function IsMultiPartZip(AStream: TStream): Boolean;
     procedure FillItemCDFHeader(CurrentItem: TFWZipWriterItem;
@@ -142,7 +144,8 @@ type
   protected
     function CheckFileNameSlashes(const Value: string): string;
     function CreateItemFromStream(const FileName: string;
-      Value: TStream; AOwnerShip: TStreamOwnership): TFWZipWriterItem;
+      Value: TStream; const Attributes: TFileAttributeData;
+      AOwnerShip: TStreamOwnership): TFWZipWriterItem;
     function GetVersionToExtract(Index: Integer): Word;
     function GetCurrentFileTime: TFileTime;
     procedure SaveItemToStream(Stream: TStream; Index: Integer); virtual;
@@ -169,7 +172,9 @@ type
       Attributes: TFileAttributeData;
       const FileName: string = ''): Integer; overload;
     function AddStream(const FileName: string; Value: TStream;
-      AOwnerShip: TStreamOwnership = soReference): Integer;
+      AOwnerShip: TStreamOwnership = soReference): Integer; overload;
+    function AddStream(const FileName: string; Value: TStream;
+      Attributes: TFileAttributeData; AOwnerShip: TStreamOwnership = soReference): Integer; overload;
     function AddFiles(Value: TStringList): Integer;
     function AddFilesAndFolders(Value: TStringList; SubFolders: Boolean = True): Integer;
     function AddFolder(const Path: string;
@@ -188,8 +193,16 @@ type
     function Find(const Value: string; out AItem: TFWZipWriterItem;
       IgnoreCase: Boolean = True): Boolean; overload;
 
+    function InsertFile(const FilePath: string; Index: Integer;
+      const FileName: string = ''): Integer; overload;
+    function InsertFile(const FilePath: string; Index: Integer;
+      Attributes: TFileAttributeData;
+      const FileName: string = ''): Integer; overload;
     function InsertStream(const FileName: string; Index: Integer;
-      Value: TStream; AOwnerShip: TStreamOwnership = soReference): Integer;
+      Value: TStream; AOwnerShip: TStreamOwnership = soReference): Integer; overload;
+    function InsertStream(const FileName: string; Index: Integer;
+      Value: TStream; Attributes: TFileAttributeData;
+      AOwnerShip: TStreamOwnership = soReference): Integer; overload;
 
     // Свойство отвечает за добавление папки в виде TFWZipWriterItem
     // непосредственно перед добавлением данных из указаной папки
@@ -422,27 +435,12 @@ function TFWZipWriter.AddFile(const FilePath: string;
   Attributes: TFileAttributeData; const FileName: string): Integer;
 var
   Item: TFWZipWriterItem;
-  InitFileName, FullFilePath: string;
 begin
-  // Проверка что нам передали. папку или файл?
-  Result := -1;
-  FullFilePath := PathCanonicalize(FilePath);
-  if not FileExists(FullFilePath) then Exit;
-  if FileName = '' then
-    InitFileName := ExtractFileName(ExcludeTrailingPathDelimiter(FullFilePath))
+  Item := GetFileItem(FilePath, Attributes, FileName);
+  if Item = nil then
+    Result := -1
   else
-    InitFileName := CheckFileNameSlashes(FileName);
-
-  Item := GetItemClass.Create(Self, FullFilePath, Attributes, InitFileName);
-  Item.CompressionLevel := FDefaultCompressionLevel;
-  Item.Password := FDefaultPassword;
-
-  // в случае наличия дескриптора мы можем
-  // производить расчет контрольной суммы на лету, т.к. при включенном
-  // режиме шифрования она не участвует в генерации заголовка инициализации
-  Item.NeedDescriptor := FDefaultDescryptorState;
-
-  Result := AddNewItem(Item);
+    Result := AddNewItem(Item);
 end;
 
 //
@@ -626,9 +624,29 @@ end;
 function TFWZipWriter.AddStream(const FileName: string;
   Value: TStream; AOwnerShip: TStreamOwnership): Integer;
 var
+  Size: Int64;
+  Attributes: TFileAttributeData;
+begin
+  Size := Value.Size;
+  ZeroMemory(@Attributes, SizeOf(TFileAttributeData));
+  Attributes.ftCreationTime := GetCurrentFileTime;
+  Attributes.ftLastAccessTime := Attributes.ftCreationTime;
+  Attributes.ftLastWriteTime := Attributes.ftCreationTime;
+  Attributes.nFileSizeLow := Size and MAXDWORD;
+  Attributes.nFileSizeHigh := Size shr 32;
+  Result := AddStream(FileName, Value, Attributes, AOwnerShip);
+end;
+
+//
+//  Функция добавляет в архив данные из переданного стрима с указанными аттрибутами.
+//  В качестве результата возвращает индекс элемента в списке
+// =============================================================================
+function TFWZipWriter.AddStream(const FileName: string; Value: TStream;
+  Attributes: TFileAttributeData; AOwnerShip: TStreamOwnership): Integer;
+var
   Item: TFWZipWriterItem;
 begin
-  Item := CreateItemFromStream(FileName, Value, AOwnerShip);
+  Item := CreateItemFromStream(FileName, Value, Attributes, AOwnerShip);
   Result := AddNewItem(Item);
 end;
 
@@ -1194,22 +1212,15 @@ end;
 //  Функция создает но не добавляет в масив записей новый элемент
 // =============================================================================
 function TFWZipWriter.CreateItemFromStream(const FileName: string;
-  Value: TStream; AOwnerShip: TStreamOwnership): TFWZipWriterItem;
+  Value: TStream; const Attributes: TFileAttributeData;
+  AOwnerShip: TStreamOwnership): TFWZipWriterItem;
 var
   Size: Int64;
   InitFileName: string;
-  Attributes: TFileAttributeData;
 begin
   // проверка на дубли
   InitFileName := CheckFileNameSlashes(FileName);
 
-  Size := Value.Size;
-  ZeroMemory(@Attributes, SizeOf(TFileAttributeData));
-  Attributes.ftCreationTime := GetCurrentFileTime;
-  Attributes.ftLastAccessTime := Attributes.ftCreationTime;
-  Attributes.ftLastWriteTime := Attributes.ftCreationTime;
-  Attributes.nFileSizeLow := Size and MAXDWORD;
-  Attributes.nFileSizeHigh := Size shr 32;
   Result := GetItemClass.Create(Self, '', Attributes, InitFileName);
   Result.CompressionLevel := FDefaultCompressionLevel;
   Result.Password := FDefaultPassword;
@@ -1292,6 +1303,33 @@ end;
 function TFWZipWriter.GetCurrentFileTime: TFileTime;
 begin
   Result := DateTimeToFileTime(Now);
+end;
+
+//
+//  Функция возвращает новый элемент для добавляемого файла
+// =============================================================================
+function TFWZipWriter.GetFileItem(const FilePath: string;
+  Attributes: TFileAttributeData; const FileName: string): TFWZipWriterItem;
+var
+  InitFileName, FullFilePath: string;
+begin
+  // Проверка что нам передали. папку или файл?
+  Result := nil;
+  FullFilePath := PathCanonicalize(FilePath);
+  if not FileExists(FullFilePath) then Exit;
+  if FileName = '' then
+    InitFileName := ExtractFileName(ExcludeTrailingPathDelimiter(FullFilePath))
+  else
+    InitFileName := CheckFileNameSlashes(FileName);
+
+  Result := GetItemClass.Create(Self, FullFilePath, Attributes, InitFileName);
+  Result.CompressionLevel := FDefaultCompressionLevel;
+  Result.Password := FDefaultPassword;
+
+  // в случае наличия дескриптора мы можем
+  // производить расчет контрольной суммы на лету, т.к. при включенном
+  // режиме шифрования она не участвует в генерации заголовка инициализации
+  Result.NeedDescriptor := FDefaultDescryptorState;
 end;
 
 //
@@ -1517,15 +1555,97 @@ begin
 end;
 
 //
+//  Функция добавляет в архив данные из переданного файла с указанной позицией.
+//  В качестве результата возвращает индекс элемента в списке
+//  Параметры:
+//  FilePath - путь к файлу
+//  Index - порядковый номер элемента в архиве
+//  FileName - наименование файла в архиве
+//    (включая относительный путь от корня архива)
+// =============================================================================
+function TFWZipWriter.InsertFile(const FilePath: string; Index: Integer;
+  const FileName: string): Integer;
+var
+  Attributes: TFileAttributeData;
+  FullFilePath: string;
+begin
+  Result := -1;
+  FullFilePath := PathCanonicalize(FilePath);
+  // Добавляем только в том случае если объект доступен
+  // и мы смогли снять его аттрибуты
+  if GetFileAttributes(FullFilePath, Attributes) then
+    Result := InsertFile(FullFilePath, Index, Attributes, FileName);
+end;
+
+//
+//  Функция добавляет в архив данные из переданного файла с указанной позицией и аттрибутами.
+//  В качестве результата возвращает индекс элемента в списке
+//  Параметры:
+//  FilePath - путь к файлу
+//  Index - порядковый номер элемента в архиве
+//  Attributes - аттрибуты файла
+//  FileName - наименование файла в архиве
+//    (включая относительный путь от корня архива)
+// =============================================================================
+function TFWZipWriter.InsertFile(const FilePath: string; Index: Integer;
+  Attributes: TFileAttributeData; const FileName: string): Integer;
+var
+  Item: TFWZipWriterItem;
+begin
+  Item := GetFileItem(FilePath, Attributes, FileName);
+  if Item = nil then
+    Result := -1
+  else
+  begin
+    FItems.Insert(Index, Item);
+    Result := Index;
+  end;
+end;
+
+//
 //  Функция добавляет в архив данные из переданного стрима.
 //  В качестве результата возвращает индекс элемента в списке
+//  Параметры:
+//  FileName - наименование файла в архиве
+//    (включая относительный путь от корня архива)
+//  Index - порядковый номер элемента в архиве
+//  Value - данные добавляемого через стрим файла
+//  AOwnerShip - флаг указывающий кто будет владельцем стрима
 // =============================================================================
 function TFWZipWriter.InsertStream(const FileName: string; Index: Integer;
   Value: TStream; AOwnerShip: TStreamOwnership): Integer;
 var
+  Size: Int64;
+  Attributes: TFileAttributeData;
+begin
+  Size := Value.Size;
+  ZeroMemory(@Attributes, SizeOf(TFileAttributeData));
+  Attributes.ftCreationTime := GetCurrentFileTime;
+  Attributes.ftLastAccessTime := Attributes.ftCreationTime;
+  Attributes.ftLastWriteTime := Attributes.ftCreationTime;
+  Attributes.nFileSizeLow := Size and MAXDWORD;
+  Attributes.nFileSizeHigh := Size shr 32;
+  Result := InsertStream(FileName, Index, Value, Attributes, AOwnerShip);
+end;
+
+//
+//  Функция добавляет в архив данные из переданного стрима с указанными аттрибутами.
+//  В качестве результата возвращает индекс элемента в списке
+//  Параметры:
+//  FileName - наименование файла в архиве
+//    (включая относительный путь от корня архива)
+//  Index - порядковый номер элемента в архиве
+//  Value - данные добавляемого через стрим файла
+//  Attributes - аттрибуты файла
+//  AOwnerShip - флаг указывающий кто будет владельцем стрима
+// =============================================================================
+function TFWZipWriter.InsertStream(const FileName: string; Index: Integer;
+  Value: TStream; Attributes: TFileAttributeData;
+  AOwnerShip: TStreamOwnership): Integer;
+var
   Item: TFWZipWriterItem;
 begin
-  Item := CreateItemFromStream(FileName, Value, AOwnerShip);
+  Item := CreateItemFromStream(FileName, Value, Attributes, AOwnerShip);
   FItems.Insert(Index, Item);
   Result := Index;
 end;

@@ -6,8 +6,8 @@
 //  * Purpose   : Демонстрация создания архива используя различные
 //  *           : варианты добавления данных
 //  * Author    : Александр (Rouse_) Багель
-//  * Copyright : © Fangorn Wizards Lab 1998 - 2023.
-//  * Version   : 2.0.0
+//  * Copyright : © Fangorn Wizards Lab 1998 - 2025.
+//  * Version   : 2.0.8
 //  * Home Page : http://rouse.drkb.ru
 //  * Home Blog : http://alexander-bagel.blogspot.ru
 //  ****************************************************************************
@@ -37,6 +37,7 @@ uses
   SysUtils,
   Classes,
   TypInfo,
+  FWZipConsts,
   FWZipWriter,
   FWZipUtils;
 
@@ -53,6 +54,7 @@ var
   SR: TSearchRec;
   I, ItemIndex: Integer;
   BuildZipResult: TBuildZipResult;
+  Attributes: TFileAttributeData;
 begin
 
   SetCurrentDir(ExtractFilePath(ParamStr(0)));
@@ -80,6 +82,23 @@ begin
         CheckResult(ItemIndex);
         // Можно добавить коментарий к самому элементу
         Zip.Item[ItemIndex].Comment := 'Мой тестовый комментарий';
+
+        // Для добавленного через стрим элемента, в качестве аттрибутов
+        // используется текущее время.
+        // Впрочем можно назначить произвольные аттрибуты
+        // Для примера возьмем иx у самого себя
+        if GetFileAttributes(ParamStr(0), Attributes) then
+        begin
+
+          // Важно! Поля с размером в атрибутах игнорируются.
+          // Используются только поля хранящие время.
+
+          // Вот этот способ необходимо использовать для уже добавленого элемента
+          Zip.Item[ItemIndex].ChangeAttributes(Attributes);
+
+          // А так же можно можно указать аттрибуты сразу при добавлении
+          CheckResult(Zip.AddStream('file_with_custom_attributes.txt', S));
+        end;
       finally
         S.Free;
       end;
@@ -109,6 +128,12 @@ begin
       finally
         S.Free;
       end;
+
+      // Создадим пустую папку в архиве
+      CheckResult(Zip.AddEmptyFolder('FirstEmptyFolder'));
+
+      // Создадим пустую папку с заранее указаным путём
+      CheckResult(Zip.AddEmptyFolder('SecondEmptyFolder\Subfolder1\Subfolder2'));
 
       // Теперь будут показаны пять вариантов добавления файлов
       // физически присутствующих на диске

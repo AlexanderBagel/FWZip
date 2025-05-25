@@ -6,7 +6,7 @@
 //  * Purpose   : Набор классов для распаковки ZIP архива
 //  * Author    : Александр (Rouse_) Багель
 //  * Copyright : © Fangorn Wizards Lab 1998 - 2025.
-//  * Version   : 2.0.7
+//  * Version   : 2.0.8
 //  * Home Page : http://rouse.drkb.ru
 //  * Home Blog : http://alexander-bagel.blogspot.ru
 //  ****************************************************************************
@@ -66,6 +66,7 @@
   // необходимо отключать использование данных функций
   {$IF COMPILERVERSION < 20.0 }
     {$DEFINE OLDEST_ZLIB}
+    {$DEFINE OLDEST_DELPHI}
   {$ELSE}
     {$UNDEF OLDEST_ZLIB}
   {$IFEND}
@@ -79,7 +80,9 @@
 {$ENDIF}
 
 // Разрешаем использовать два устаревших метода компресии буферов
-{$DEFINE USE_OLDEST_METHODS}
+{$IFNDEF OLDEST_DELPHI}
+  {$DEFINE USE_OLDEST_METHODS}
+{$ENDIF}
 
 // Если подключена внешняя библиотека, то использовать deflateInit2_ и inflateInit2_ можно
 {$IFDEF USE_ZLIB_DLL}

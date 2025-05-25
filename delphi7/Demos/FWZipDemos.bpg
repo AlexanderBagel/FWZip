@@ -10,10 +10,10 @@ DCC = $(ROOT)\bin\dcc32.exe $**
 BRCC = $(ROOT)\bin\brcc32.exe $**
 #------------------------------------------------------------------------------
 PROJECTS = CreateZIPDemo1.exe CreateZIPDemo2.exe ExctractZIPDemo1.exe \
-  ExctractZIPDemo2.exe MergeZip.exe ReplaceZipItemData.exe SplitZip.exe \
+  ExctractZIPDemo2.exe FWZipPerfomance.exe BuildWithException.exe \
+  UseExDataBlob.exe SplitZip.exe MergeZip.exe ReplaceZipItemData.exe \
   CreateMultiPartZip.exe ModifyMultiPartZip.exe ReadMultiPartZip.exe \
-  FWZipPerfomance.exe BuildWithException.exe UseExDataBlob.exe ZipAnalizer.exe \
-  ZipAnalizer2.exe
+  ZipAnalizer.exe ZipAnalizer2.exe
 #------------------------------------------------------------------------------
 default: $(PROJECTS)
 #------------------------------------------------------------------------------

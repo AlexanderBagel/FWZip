@@ -5,8 +5,8 @@
 //  * Unit Name : SplitZip
 //  * Purpose   : Демонстрация работы c разбитием архива
 //  * Author    : Александр (Rouse_) Багель
-//  * Copyright : © Fangorn Wizards Lab 1998 - 2023.
-//  * Version   : 2.0.0
+//  * Copyright : © Fangorn Wizards Lab 1998 - 2025.
+//  * Version   : 2.0.8
 //  * Home Page : http://rouse.drkb.ru
 //  * Home Blog : http://alexander-bagel.blogspot.ru
 //  ****************************************************************************
@@ -35,6 +35,7 @@ program SplitZip;
 uses
   SysUtils,
   Classes,
+  TypInfo,
   FWZipWriter,
   FWZipModifier;
 
@@ -49,6 +50,11 @@ begin
   finally
     S.Free;
   end;
+end;
+
+procedure Check(Value: TBuildZipResult);
+begin
+  Writeln(GetEnumName(TypeInfo(TBuildZipResult), Integer(Value)));
 end;
 
 var
@@ -67,7 +73,7 @@ begin
       AddItem(Writer, 'test3.txt', 'третий элемент');
       AddItem(Writer, 'test4.txt', 'четвертый элемент');
       // сохраняем
-      Writer.BuildZip('..\..\DemoResults\split_main_archive.zip');
+      Check(Writer.BuildZip('..\..\DemoResults\split_main_archive.zip'));
     finally
       Writer.Free;
     end;
@@ -90,7 +96,7 @@ begin
       Modifier.AddFromZip(Index, 'test3.txt');
       Modifier.AddFromZip(Index, 'test4.txt');
       // сохраняем во торой архив
-      Modifier.BuildZip('..\..\DemoResults\splited_archive2.zip');
+      Check(Modifier.BuildZip('..\..\DemoResults\splited_archive2.zip'));
     finally
       Modifier.Free;
     end;
