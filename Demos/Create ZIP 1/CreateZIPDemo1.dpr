@@ -97,7 +97,7 @@ begin
           Zip.Item[ItemIndex].ChangeAttributes(Attributes);
 
           // А так же можно можно указать аттрибуты сразу при добавлении
-          CheckResult(Zip.AddStream('file_with_custom_attributes.txt', S));
+          CheckResult(Zip.AddStream('file_with_custom_attributes.txt', S, Attributes));
         end;
       finally
         S.Free;
