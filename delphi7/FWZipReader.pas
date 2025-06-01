@@ -289,6 +289,7 @@ var
   DuplicateAction: TDuplicateAction;
   ResultFileName: string;
   Attributes: TFileAttributeData;
+  NeedOverrideFile: Boolean;
 begin
   Result := erDone;
 
@@ -330,92 +331,89 @@ begin
     ForceDirectoriesEx(FullPath);
     Exit;
   end;
+
   ForceDirectoriesEx(ExtractFilePath(FullPath));
-  try
 
-    // проверка на существование файла
-    if FileExists(FullPath) then
-    begin
+  // проверка на существование файла
+  NeedOverrideFile := FileExists(FullPath);
+  if NeedOverrideFile then
+  begin
 
-      // если файл уже существует, узнаем - как жить дальше с этим ;)
-      DuplicateAction := FOwner.DefaultDuplicateAction;
-      if Assigned(FDuplicate) then
-        FDuplicate(Self, FullPath, DuplicateAction);
+    // если файл уже существует, узнаем - как жить дальше с этим ;)
+    DuplicateAction := FOwner.DefaultDuplicateAction;
+    if Assigned(FDuplicate) then
+      FDuplicate(Self, FullPath, DuplicateAction);
 
-      case DuplicateAction of
+    case DuplicateAction of
 
-        // пропустить файл
-        daSkip:
+      // пропустить файл
+      daSkip:
+      begin
+        Result := erSkiped;
+        Exit;
+      end;
+
+      // перезаписать
+      daOverwrite:
+        SetNormalFileAttributes(FullPath);
+
+      daOverwriteOldest:
+      begin
+        if not GetFileAttributes(FullPath, Attributes)  then
         begin
           Result := erSkiped;
           Exit;
         end;
 
-        // перезаписать
-        daOverwrite:
-          SetNormalFileAttributes(FullPath);
-
-        daOverwriteOldest:
+        if CompareDateTime(LastModDateTime,
+          FileTimeToLocalDateTime(Attributes.ftLastWriteTime)) > 0  then
+          SetNormalFileAttributes(FullPath)
+        else
         begin
-          if not GetFileAttributes(FullPath, Attributes)  then
-          begin
-            Result := erSkiped;
-            Exit;
-          end;
+          Result := erSkiped;
+          Exit;
+        end;
+      end;
 
-          if CompareDateTime(LastModDateTime,
-            FileTimeToLocalDateTime(Attributes.ftLastWriteTime)) > 0  then
-            SetNormalFileAttributes(FullPath)
-          else
-          begin
-            Result := erSkiped;
-            Exit;
-          end;
+      // распаковать с другим именем
+      daUseNewFilePath:
+        // если программист указал новый пусть к файлу,
+        // то о существовании директории он должен позаботиться сам
+        if not DirectoryExists(ExtractFilePath(FullPath)) then
+        begin
+          Result := erSkiped;
+          Exit;
         end;
 
-        // распаковать с другим именем
-        daUseNewFilePath:
-          // если программист указал новый пусть к файлу,
-          // то о существовании директории он должен позаботиться сам
-          if not DirectoryExists(ExtractFilePath(FullPath)) then
-          begin
-            Result := erSkiped;
-            Exit;
-          end;
+      // прервать распаковку
+      daAbort:
+        Abort;
 
-        // прервать распаковку
-        daAbort:
-          Abort;
-
-      end;
     end;
+  end;
 
-    UnpackedFile := TFileStream.Create(FullPath, fmCreate);
-    try
-      Result := ExtractToStream(UnpackedFile, Password);
-    finally
-      UnpackedFile.Free;
-    end;
+  UnpackedFile := TFileStream.Create(FullPath, fmCreate);
+  try
+    Result := ExtractToStream(UnpackedFile, Password);
+  finally
+    UnpackedFile.Free;
+  end;
 
-    if Result <> erDone then
-    begin
+  if Result <> erDone then
+  begin
+    if not NeedOverrideFile then
       DeleteFile(FullPath);
-      Exit;
-    end;
+    Exit;
+  end;
 
-    if IsAttributesPresent(FFileHeader.Attributes) then
-      SetFileAttributes(FullPath, FFileHeader.Attributes)
-    else
-    begin
-      FileDate :=
-        FFileHeader.Header.LastModFileTimeTime +
-        FFileHeader.Header.LastModFileTimeDate shl 16;
-      FileSetDate(FullPath, FileDate);
-    end;
-
-  except
-    DeleteFile(FullPath);
-    raise;
+  if IsAttributesPresent(FFileHeader.Attributes) then
+    SetFileAttributes(FullPath, FFileHeader.Attributes)
+  else
+  begin
+    FileDate :=
+      FFileHeader.Header.LastModFileTimeTime +
+      FFileHeader.Header.LastModFileTimeDate shl 16;
+    FileSetDate(FullPath, FileDate);
   end;
 end;
 

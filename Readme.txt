@@ -64,6 +64,7 @@ mailto: rouse79@yandex.ru
     - Добавлены два метода InsertFile (с аттрибутами и без).
     - В фунции GetElementIndex производится автоматическая коррекция слэшей для поиска по имени элемента.
     - К флагам поведения при конфликте имен файлов добавлен флаг TDuplicateAction.daOverwriteOldest производящий перезапись если файл в архиве более новый.
+    - При DefaultDuplicateAction = daAbort теперь существующий файл не удаляется.
 
   2.0.7 (от 9 марта 2025 года):
     - Исправлена ошибка компиляции в FPC 3.3.1 в режимах -O2/-O3 (Asm: [lea reg64,reg64,mem64] invalid combination of opcode and operands).
