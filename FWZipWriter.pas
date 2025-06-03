@@ -1215,7 +1215,6 @@ function TFWZipWriter.CreateItemFromStream(const FileName: string;
   Value: TStream; const Attributes: TFileAttributeData;
   AOwnerShip: TStreamOwnership): TFWZipWriterItem;
 var
-  Size: Int64;
   InitFileName: string;
 begin
   // проверка на дубли
