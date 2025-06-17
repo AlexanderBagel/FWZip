@@ -6,7 +6,7 @@
 //  * Purpose   : Класс для создания ZIP архива
 //  * Author    : Александр (Rouse_) Багель
 //  * Copyright : © Fangorn Wizards Lab 1998 - 2025.
-//  * Version   : 2.0.8
+//  * Version   : 2.0.9
 //  * Home Page : http://rouse.drkb.ru
 //  * Home Blog : http://alexander-bagel.blogspot.ru
 //  ****************************************************************************
@@ -1268,13 +1268,22 @@ begin
           CurrentProgress :=
             Round(FCompressedStream.Position / (FCompressedStream.Size / 100));
         if FTotalSizeCount = 0 then
-          FTotalProgress := 100
+          FTotalProgress := Round((FProcessedItemIndex + 1) / (Count / 100))
         else
           FTotalProgress :=
             Round((FTotalProcessedCount + FCompressedStream.Position) /
               (FTotalSizeCount / 100));
       end;
-      psFinalization, psEnd: CurrentProgress := 100;
+      psFinalization:
+        CurrentProgress := 100;
+      psEnd:
+      begin
+        CurrentProgress := 100;
+        if FTotalSizeCount = 0 then
+          FTotalProgress := Round((FProcessedItemIndex + 1) / (Count / 100))
+        else
+          FTotalProgress := Round(FTotalProcessedCount / (FTotalSizeCount / 100));
+      end;
     else
       CurrentProgress := 0;
     end;

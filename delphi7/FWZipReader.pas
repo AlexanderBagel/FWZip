@@ -6,7 +6,7 @@
 //  * Purpose   : Набор классов для распаковки ZIP архива
 //  * Author    : Александр (Rouse_) Багель
 //  * Copyright : © Fangorn Wizards Lab 1998 - 2025.
-//  * Version   : 2.0.8
+//  * Version   : 2.0.9
 //  * Home Page : http://rouse.drkb.ru
 //  * Home Blog : http://alexander-bagel.blogspot.ru
 //  ****************************************************************************
@@ -167,6 +167,14 @@ type
     /// </summary>
     function Find(const Value: string; out AItem: TFWZipReaderItem;
       IgnoreCase: Boolean = True): Boolean; overload;
+    function Find(const Value: string; FromIndex: Integer;
+      out AItem: TFWZipReaderItem; IgnoreCase: Boolean = True): Boolean; overload;
+
+    /// <summary>
+    ///  Функция ищет запись об элементе по маске
+    /// </summary>
+    function FindByMask(const Value: string; FromIndex: Integer;
+      out AItem: TFWZipReaderItem): Boolean; overload;
 
     function GetElementIndex(FileName: string): Integer;
     procedure LoadFromFile(const Value: string; SFXOffset: Integer = -1;
@@ -1142,15 +1150,18 @@ begin
   ProcessExtractOrCheckAllData(ExtractMask, Path, False);
 end;
 
-function TFWZipReader.Find(const Value: string; out AItem: TFWZipReaderItem;
-  IgnoreCase: Boolean): Boolean;
+//
+//  Функция ищет элемент архива по имени начиная с определенного индекса
+// =============================================================================
+function TFWZipReader.Find(const Value: string; FromIndex: Integer;
+  out AItem: TFWZipReaderItem; IgnoreCase: Boolean): Boolean;
 var
   I: Integer;
   AItemText: string;
 begin
   Result := False;
   AItem := nil;
-  for I := 0 to Count - 1 do
+  for I := FromIndex to Count - 1 do
   begin
     AItemText := Item[I].FileName;
     if IgnoreCase then
@@ -1162,7 +1173,37 @@ begin
       AItem := Item[I];
       Break;
     end;
-  end;;
+  end;
+end;
+
+//
+//  Функция ищет элемент архива по имени до первого вхождения
+// =============================================================================
+function TFWZipReader.Find(const Value: string; out AItem: TFWZipReaderItem;
+  IgnoreCase: Boolean): Boolean;
+begin
+  Result := Find(Value, 0, AItem, IgnoreCase);
+end;
+
+//
+//  Функция ищет элемент архива по маске начиная с определенного индекса
+// =============================================================================
+function TFWZipReader.FindByMask(const Value: string; FromIndex: Integer;
+  out AItem: TFWZipReaderItem): Boolean;
+var
+  I: Integer;
+begin
+  Result := False;
+  AItem := nil;
+  for I := FromIndex to Count - 1 do
+  begin
+    Result := MatchesMask(Item[I].FileName, Value);
+    if Result then
+    begin
+      AItem := Item[I];
+      Break;
+    end;
+  end;
 end;
 
 //
@@ -1498,12 +1539,13 @@ var
   CurrentItem: TFWZipReaderItem;
   ExtractResult: TExtractResult;
   CancelExtract, Handled: Boolean;
-  Password: string;
+  Password, ZipExtractMask: string;
   ExtractList: TList;
   FakeStream: TFakeStream;
 begin
   FTotalSizeCount := 0;
   FTotalProcessedCount := 0;
+  ZipExtractMask := StringReplace(ExtractMask, '\', ZIP_SLASH, [rfReplaceAll]);
   ExtractList := TList.Create;
   try
     // Производим поиск файлов для распаковки
@@ -1514,7 +1556,7 @@ begin
         Inc(FTotalSizeCount, Item[I].UncompressedSize);
       end
       else
-        if MatchesMask(Item[I].FileName, ExtractMask) then
+        if MatchesMask(Item[I].FileName, ZipExtractMask) then
         begin
           ExtractList.Add(UIntToPtr(I));
           Inc(FTotalSizeCount, Item[I].UncompressedSize);
