@@ -2622,7 +2622,7 @@ begin
     Modifier := TFWZipModifier.Create;
     try
       // подключаем ранее созданный архив
-      Index := Modifier.AddZipFile(M);
+      Index := Modifier.AddZipFile(M1);
       // добавляем из него первые два элемента
       Modifier.AddFromZip(Index, 'test1.txt');
       Modifier.AddFromZip(Index, 'test2.txt');
