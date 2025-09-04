@@ -29,14 +29,24 @@ unit FWZipTests;
 
 interface
 
+{$I fwzip.inc}
+
 uses
-{$IFDEF FPC}
-  LCLIntf, LCLType, fpcunit, testregistry, FileUtil, DateUtils,
+{$IFDEF MSWINDOWS}Windows,{$ENDIF}
+{$IFDEF LINUX_DELPHI}IOUtils, Posix.Unistd,{$ENDIF}
+{$IFDEF FPC} LCLIntf, LCLType, FileUtil, DateUtils, {$ENDIF}
+
+{$IF DEFINED(FPC_TESTS)}
+  fpcunit, testregistry,
+{$ELSEIF DEFINED(DUNITX_TESTS)}
+  DUnitX.TestFramework,
 {$ELSE}
-  TestFramework, Windows,
+  TestFramework,
 {$ENDIF}
+
   Classes, SysUtils,
 
+  {$IFDEF LINUX_DELPHI}FWZipLinuxDelphiCompability,{$ENDIF}
   FWZipStream,
   FWZipWriter,
   FWZipConsts,
@@ -51,7 +61,8 @@ type
 
   { TFWZipUnitTest }
 
-  TFWZipUnitTest = class(TTestCase)
+  {$IFDEF DUNITX_TESTS}[TestFixture]{$ENDIF}
+  TFWZipUnitTest = class{$IFNDEF DUNITX_TESTS}(TTestCase){$ENDIF}
   strict private
     FZipWriter: TFWZipWriter;
     FZipReader: TFWZipReader;
@@ -66,60 +77,103 @@ type
     procedure CheckReaderWidthExcept;
     procedure CheckLoadReaderWidthExcept(const Path: string);
   protected
-    procedure TearDown; override;
+    {$IFDEF DUNITX_TESTS}[TearDown]{$ENDIF}
+    procedure TearDown;{$IFNDEF DUNITX_TESTS}override;{$ENDIF}
     // Тесты преобразования времени
     procedure TestDateTimeConvertion;
   published
     // Легкие тесты обычного архива
+    {$IFDEF DUNITX_TESTS}[Test]{$ENDIF}
     procedure TestBuildWithStream;
+    {$IFDEF DUNITX_TESTS}[Test]{$ENDIF}
     procedure TestBuildWithExistingFile;
+    {$IFDEF DUNITX_TESTS}[Test]{$ENDIF}
     procedure TestBuildWithExistingFile2;
+    {$IFDEF DUNITX_TESTS}[Test]{$ENDIF}
     procedure TestBuildWithPassword;
+    {$IFDEF DUNITX_TESTS}[Test]{$ENDIF}
     procedure TestBuildWithPassword1;
+    {$IFDEF DUNITX_TESTS}[Test]{$ENDIF}
     procedure TestMerge2Zip;
+    {$IFDEF DUNITX_TESTS}[Test]{$ENDIF}
     procedure TestChangeZip;
+    {$IFDEF DUNITX_TESTS}[Test]{$ENDIF}
     procedure TestDeleteFromZip;
+    {$IFDEF DUNITX_TESTS}[Test]{$ENDIF}
     procedure TestSplitZip;
+    {$IFDEF DUNITX_TESTS}[Test]{$ENDIF}
     procedure TestBuildWithException;
+    {$IFDEF DUNITX_TESTS}[Test]{$ENDIF}
     procedure TestExtractZeroSizeItem;
+    {$IFDEF DUNITX_TESTS}[Test]{$ENDIF}
     procedure TestFind;
     {$IFNDEF WINE}
+    {$IFDEF DUNITX_TESTS}[Test]{$ENDIF}
     procedure TestExtractOverride;
     {$ENDIF}
+    {$IFDEF DUNITX_TESTS}[Test]{$ENDIF}
     procedure TestExData;
     // тесты стрима для мультипарт архива
+    {$IFDEF DUNITX_TESTS}[Test]{$ENDIF}
     procedure TestMultiStream1;
+    {$IFDEF DUNITX_TESTS}[Test]{$ENDIF}
     procedure TestMultiStream2;
+    {$IFDEF DUNITX_TESTS}[Test]{$ENDIF}
     procedure TestMultiStream3;
+    {$IFDEF DUNITX_TESTS}[Test]{$ENDIF}
     procedure TestMultiStream4;
+    {$IFDEF DUNITX_TESTS}[Test]{$ENDIF}
     procedure TestMultiStream5;
+    {$IFDEF DUNITX_TESTS}[Test]{$ENDIF}
     procedure TestMultiStream6;
+    {$IFDEF DUNITX_TESTS}[Test]{$ENDIF}
     procedure TestMultiStream7;
+    {$IFDEF DUNITX_TESTS}[Test]{$ENDIF}
     procedure TestMultiStream8;
+    {$IFDEF DUNITX_TESTS}[Test]{$ENDIF}
     procedure TestMultiStream9;
+    {$IFDEF DUNITX_TESTS}[Test]{$ENDIF}
     procedure TestMultiStream10;
+    {$IFDEF DUNITX_TESTS}[Test]{$ENDIF}
     procedure TestMultiStream11;
     // Тесты для MultyPart архива
+    {$IFDEF DUNITX_TESTS}[Test]{$ENDIF}
     procedure TestMultyPartBuildWithStream;
+    {$IFDEF DUNITX_TESTS}[Test]{$ENDIF}
     procedure TestMultyPartBuildWithExistingFile;
+    {$IFDEF DUNITX_TESTS}[Test]{$ENDIF}
     procedure TestMultyPartBuildWithExistingFile2;
+    {$IFDEF DUNITX_TESTS}[Test]{$ENDIF}
     procedure TestMultyPartBuildWithPassword;
+    {$IFDEF DUNITX_TESTS}[Test]{$ENDIF}
     procedure TestMultyPartBuildWithPassword1;
+    {$IFDEF DUNITX_TESTS}[Test]{$ENDIF}
     procedure TestMultyPartMerge2Zip;
+    {$IFDEF DUNITX_TESTS}[Test]{$ENDIF}
     procedure TestMultyPartChangeZip;
+    {$IFDEF DUNITX_TESTS}[Test]{$ENDIF}
     procedure TestMultyPartDeleteFromZip;
+    {$IFDEF DUNITX_TESTS}[Test]{$ENDIF}
     procedure TestMultyPartSplitZip;
+    {$IFDEF DUNITX_TESTS}[Test]{$ENDIF}
     procedure TestMultyPartBuildWithException;
     {$IFNDEF WINE}
+    {$IFDEF DUNITX_TESTS}[Test]{$ENDIF}
     procedure TestMultyPartExtractOverride;
     {$ENDIF}
+    {$IFDEF DUNITX_TESTS}[Test]{$ENDIF}
     procedure TestMultyPartExData;
+    {$IFDEF DUNITX_TESTS}[Test]{$ENDIF}
     procedure TestMultyPartBuildSingleZip;
     // Тяжелые тесты для обычного архива
+    {$IFDEF DUNITX_TESTS}[Test]{$ENDIF}
     procedure TestZip64_BigFiles;
+    {$IFDEF DUNITX_TESTS}[Test]{$ENDIF}
     procedure TestZip64_BigFilesCount;
     // Тяжелые тесты для MultyPart архива
+    {$IFDEF DUNITX_TESTS}[Test]{$ENDIF}
     procedure TestMultyPartZip64_BigFiles;
+    {$IFDEF DUNITX_TESTS}[Test]{$ENDIF}
     procedure TestMultyPartZip64_BigFilesCount;
   end;
 
@@ -181,19 +235,33 @@ begin
 end;
 
 procedure InitFolders;
+
+  function _PathCanonicalize(const aFolderName: string): string;
+  begin
+    Result := PathCanonicalize(RootFolder + _L('fwziptest\'+aFolderName+'\'));
+    // В Linux + Delphi функция ExpandFileName работает иначе, в частности, возвращает результат без PathDelim в конце,
+    // поэтому в данном случае необходимо явно добавить '/' в конец
+    {$IFDEF LINUX_DELPHI}
+    Result := IncludeTrailingPathDelimiter(Result);
+    {$ENDIF}
+  end;
+
 begin
   {$IFNDEF CUSTOM_TEMP_FOLDER_PATH}
-  {$IFDEF FPC}
+  {$IF DEFINED(FPC)}
   RootFolder := GetTempDir;
+  {$ELSEIF DEFINED(LINUX_DELPHI)}
+  RootFolder := TPath.GetTempPath;
   {$ELSE}
   SetLength(RootFolder, MAX_PATH);
   if GetTempPath(MAX_PATH, @RootFolder[1]) = 0 then Exit;
   {$ENDIF}
   RootFolder := IncludeTrailingPathDelimiter(PChar(RootFolder));
-  {$ENDIF}
-  _SorceFolder := PathCanonicalize(RootFolder + _L('fwziptest\src\'));
+  {$ENDIF CUSTOM_TEMP_FOLDER_PATH}
+
+  _SorceFolder := _PathCanonicalize('src');
   ForceDirectories(_SorceFolder);
-  _DestinationFolder := PathCanonicalize(RootFolder + _L('fwziptest\dst\'));
+  _DestinationFolder := _PathCanonicalize('dst');
   ForceDirectoriesEx(_DestinationFolder);
 
   TestFolderData := TStringList.Create;
@@ -214,9 +282,15 @@ begin
 end;
 
 procedure DeleteFolder(const Path: string);
-{$IFDEF FPC}
+{$IF DEFINED(FPC)}
 begin
   DeleteDirectory(Path, False);
+end;
+{$ELSEIF DEFINED(LINUX_DELPHI)}
+begin
+  if TDirectory.Exists(Path) then begin
+    TDirectory.Delete(Path, True);
+  end;
 end;
 {$ELSE}
 var
@@ -241,6 +315,7 @@ begin
   RemoveDirectory(PChar(Path));
 end;
 {$ENDIF}
+
 
 procedure CreateFile(const Path: string);
 var
@@ -418,6 +493,21 @@ begin
     S.Free;
   end;
 end;
+
+
+{$IFDEF DUNITX_TESTS}
+procedure CheckEquals(anExpectedValue, anActualValue: Cardinal; const aMsg: string = ''); overload;
+begin
+  Assert.AreEqual(anExpectedValue, anActualValue, aMsg);
+end;
+
+
+procedure CheckEquals(anExpectedValue, anActualValue: UInt64; const aMsg: string = ''); overload;
+begin
+  Assert.AreEqual(anExpectedValue, anActualValue, aMsg);
+end;
+{$ENDIF}
+
 
 { Test_CreateZip }
 
@@ -605,14 +695,13 @@ begin
   // нужно в цикле менять локальный часовой пояс и проверять уже по локальным значениям
   // сейчас цифры актуальны только для Бишкека UTC +6
   PUInt64(@ConstDateTime)^ := 4675509705865876384; // '11.02.2005 10:40:12'
-
   F := DateTimeToFileTime(ConstDateTime);
+
   CheckEquals(F.dwLowDateTime, 3318603264, 'DateTimeToFileTime failed');
   CheckEquals(F.dwHighDateTime, 29691891, 'DateTimeToFileTime failed');
 
   CheckDateTimeValue := FileTimeToLocalDateTime(F);
   CheckEquals(PUInt64(@ConstDateTime)^, PUInt64(@CheckDateTimeValue)^, 'FileTimeToLocalDateTime failed');
-
   FileDate := FileTimeToLocalFileDate(F);
   CheckEquals(FileDate, 843797766, 'FileTimeToLocalFileDate failed');
 end;
@@ -637,7 +726,7 @@ begin
     Writer.AddFile(SrcFolder + TestFolderData[1]);
     CheckBuildResult(Writer.BuildZip(DstFile), brPartialBuild);
   finally
-    FileClose(hLockedFile);
+    FileClose(hLockedFile)
   end;
 
   // а теперь должно быть нормально
@@ -2866,8 +2955,10 @@ end;
 initialization
 
   InitFolders;
-  {$IFDEF FPC}
+  {$IF DEFINED(FPC_TESTS)}
   RegisterTest(TFWZipUnitTest);
+  {$ELSEIF DEFINED(DUNITX_TESTS)}
+  TDUnitX.RegisterTestFixture(TFWZipUnitTest, 'TFWZipUnitTest');
   {$ELSE}
   RegisterTest(TFWZipUnitTest.Suite);
   {$ENDIF}
