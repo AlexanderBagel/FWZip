@@ -331,12 +331,14 @@ begin
   Result := Value;
   if Result = '' then Exit;
   UniqueString(Result);
-  {$IF DEFINED(FPC)}
+  {$IFDEF FPC}
   Result := UTF8ToCP866(Value);
-  {$ELSEIF DEFINED(LINUX_DELPHI)}
-  Result := Value;
   {$ELSE}
-  AnsiToOem(PAnsiChar(Value), PAnsiChar(Result));
+    {$IFDEF LINUX}
+    Result := Value;
+    {$ELSE}
+    AnsiToOem(PAnsiChar(Value), PAnsiChar(Result));
+    {$ENDIF}
   {$ENDIF}
 end;
 
@@ -345,12 +347,14 @@ begin
   Result := Value;
   if Result = '' then Exit;
   UniqueString(Result);
-  {$IF DEFINED(FPC)}
+  {$IFDEF FPC}
   Result := CP866ToUTF8(Value);
-  {$ELSEIF DEFINED(LINUX_DELPHI)}
-  Result := Value;
   {$ELSE}
-  OemToAnsi(PAnsiChar(Result), PAnsiChar(Result));
+    {$IFDEF LINUX}
+    Result := Value;
+    {$ELSE}
+    OemToAnsi(PAnsiChar(Result), PAnsiChar(Result));
+    {$ENDIF}
   {$ENDIF}
 end;
 
@@ -490,8 +494,12 @@ procedure SetNormalFileAttributes(const AFilePath: string);
 var
   AAttr: TFileAttributeData;
 begin
-  {$IF DEFINED(FPC) OR DEFINED(LINUX_DELPHI)}
+  {$IFDEF FPC}
   AAttr := Default(TFileAttributeData);
+  {$ELSE}
+  {$IFDEF LINUX}
+  AAttr := Default(TFileAttributeData);
+  {$ENDIF}
   {$ENDIF}
   AAttr.dwFileAttributes := $80; // FILE_ATTRIBUTE_NORMAL
   SetFileAttributes(AFilePath, AAttr);

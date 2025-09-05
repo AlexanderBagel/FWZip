@@ -1,4 +1,19 @@
-﻿unit FWZipLinuxDelphiCompability;
+﻿////////////////////////////////////////////////////////////////////////////////
+//
+//  ****************************************************************************
+//  * Project   : FWZip
+//  * Unit Name : FWZipLinuxDelphiCompability
+//  * Purpose   : Совместимость библиотеки FWZip с Linux+Delphi
+//  * Author    : Danil Zaripov (github.com/DonilZ)
+//  * Copyright : © Fangorn Wizards Lab 1998 - 2024.
+//  * Version   : 2.0.9
+//  ****************************************************************************
+//  * Latest Source : https://github.com/AlexanderBagel/FWZip
+//  * Fork Source   : https://github.com/DonilZ/FWZip
+//  ****************************************************************************
+//
+
+unit FWZipLinuxDelphiCompability;
 
 {$I fwzip.inc}
 

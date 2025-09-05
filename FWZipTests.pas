@@ -36,12 +36,14 @@ uses
 {$IFDEF LINUX_DELPHI}IOUtils, Posix.Unistd,{$ENDIF}
 {$IFDEF FPC} LCLIntf, LCLType, FileUtil, DateUtils, {$ENDIF}
 
-{$IF DEFINED(FPC_TESTS)}
+{$IFDEF FPC_TESTS}
   fpcunit, testregistry,
-{$ELSEIF DEFINED(DUNITX_TESTS)}
-  DUnitX.TestFramework,
 {$ELSE}
+  {$IFDEF DUNITX_TESTS}
+  DUnitX.TestFramework,
+  {$ELSE}
   TestFramework,
+  {$ENDIF}
 {$ENDIF}
 
   Classes, SysUtils,
@@ -187,6 +189,31 @@ type
     Files, Folders: Integer;
   end;
 
+{$IFNDEF FPC}
+{$IF CompilerVersion <= 18.5} // Delphi 2007
+  PUInt64 = ^UInt64;
+
+  TStringStreamHelper = class helper for TStringStream
+  public
+    procedure SaveToFile(const FileName: string);
+  end;
+
+  procedure TStringStreamHelper.SaveToFile(const FileName: string);
+  var
+    M: TMemoryStream;
+  begin
+    M := TMemoryStream.Create;
+    try
+      Position := 0;
+      M.CopyFrom(Self, 0);
+      M.SaveToFile(FileName);
+    finally
+      M.Free;
+    end;
+  end;
+{$IFEND}
+{$ENDIF}
+
 const
   ZipName = 'test.zip';
   ZipName1 = 'test1.zip';
@@ -248,13 +275,15 @@ procedure InitFolders;
 
 begin
   {$IFNDEF CUSTOM_TEMP_FOLDER_PATH}
-  {$IF DEFINED(FPC)}
+  {$IFDEF FPC}
   RootFolder := GetTempDir;
-  {$ELSEIF DEFINED(LINUX_DELPHI)}
-  RootFolder := TPath.GetTempPath;
   {$ELSE}
-  SetLength(RootFolder, MAX_PATH);
-  if GetTempPath(MAX_PATH, @RootFolder[1]) = 0 then Exit;
+    {$IFDEF LINUX}
+    RootFolder := TPath.GetTempPath;
+    {$ELSE}
+    SetLength(RootFolder, MAX_PATH);
+    if GetTempPath(MAX_PATH, @RootFolder[1]) = 0 then Exit;
+    {$ENDIF}
   {$ENDIF}
   RootFolder := IncludeTrailingPathDelimiter(PChar(RootFolder));
   {$ENDIF CUSTOM_TEMP_FOLDER_PATH}
@@ -282,38 +311,40 @@ begin
 end;
 
 procedure DeleteFolder(const Path: string);
-{$IF DEFINED(FPC)}
+{$IFDEF FPC}
 begin
   DeleteDirectory(Path, False);
 end;
-{$ELSEIF DEFINED(LINUX_DELPHI)}
-begin
-  if TDirectory.Exists(Path) then begin
-    TDirectory.Delete(Path, True);
-  end;
-end;
 {$ELSE}
-var
-  SR: TSearchRec;
-begin
-  if FindFirst(Path + '*.*', faAnyFile, SR) = 0 then
-  try
-    repeat
-      if SR.Name = '.' then Continue;
-      if SR.Name = '..' then Continue;
-      if DirectoryExists(Path + SR.Name) then
-      begin
-        DeleteFolder(Path + SR.Name + '\');
-        RemoveDirectory(PChar(Path + SR.Name));
-        Continue;
-      end;
-      DeleteFile(PChar(Path + SR.Name))
-    until FindNext(SR) <> 0;
-  finally
-    FindClose(SR);
+  {$IFDEF LINUX}
+  begin
+    if TDirectory.Exists(Path) then begin
+      TDirectory.Delete(Path, True);
+    end;
   end;
-  RemoveDirectory(PChar(Path));
-end;
+  {$ELSE}
+  var
+    SR: TSearchRec;
+  begin
+    if FindFirst(Path + '*.*', faAnyFile, SR) = 0 then
+    try
+      repeat
+        if SR.Name = '.' then Continue;
+        if SR.Name = '..' then Continue;
+        if DirectoryExists(Path + SR.Name) then
+        begin
+          DeleteFolder(Path + SR.Name + '\');
+          RemoveDirectory(PChar(Path + SR.Name));
+          Continue;
+        end;
+        DeleteFile(PChar(Path + SR.Name))
+      until FindNext(SR) <> 0;
+    finally
+      FindClose(SR);
+    end;
+    RemoveDirectory(PChar(Path));
+  end;
+  {$ENDIF}
 {$ENDIF}
 
 
@@ -2955,12 +2986,14 @@ end;
 initialization
 
   InitFolders;
-  {$IF DEFINED(FPC_TESTS)}
+  {$IFDEF FPC_TESTS}
   RegisterTest(TFWZipUnitTest);
-  {$ELSEIF DEFINED(DUNITX_TESTS)}
-  TDUnitX.RegisterTestFixture(TFWZipUnitTest, 'TFWZipUnitTest');
   {$ELSE}
-  RegisterTest(TFWZipUnitTest.Suite);
+    {$IFDEF DUNITX_TESTS}
+    TDUnitX.RegisterTestFixture(TFWZipUnitTest, 'TFWZipUnitTest');
+    {$ELSE}
+    RegisterTest(TFWZipUnitTest.Suite);
+    {$ENDIF}
   {$ENDIF}
 
 finalization
