@@ -40,16 +40,21 @@ unit FWZipUtils;
 
 interface
 
+{$I fwzip.inc}
+
 uses
+  {$IFDEF FPC}LConvEncoding,{$ENDIF}
+
+  {$IFDEF LINUX_DELPHI}Posix.SysStat,{$ENDIF}
+
   {$IFDEF LINUX}
-  Unix, Baseunix, DateUtils, Types,
+  {$IFDEF FPC}Unix, Baseunix,{$ENDIF}
+  DateUtils, Types,
   {$ELSE}
   Windows,
   {$ENDIF}
-  {$IFDEF FPC}
-  LConvEncoding,
-  {$ENDIF}
   SysUtils,
+  {$IFDEF LINUX_DELPHI}FWZipLinuxDelphiCompability,{$ENDIF}
   FWZipConsts;
 
   // утилитарные преобразования для отключения ворнингов под FPC
@@ -157,6 +162,9 @@ const
   MonthLength: array [Boolean] of array [0..11] of Integer =
 	  ((31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31),
 	   (31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31));
+
+type
+  InternalStat = {$IFDEF FPC}Stat{$ELSE}_stat{$ENDIF};
 
 function SystemTimeToFileTime(
   const ATime: TSystemTime; out AFileTime: TFileTime): Boolean;
@@ -286,7 +294,37 @@ begin
   Result := DateTimeToUnix(SystemTimeToDateTime(SystemTime));
 end;
 
-{$ENDIF}
+
+function Internal_fpstat(aSystemFileName: RawByteString; var aBuf: InternalStat): Integer;
+begin
+  {$IFDEF FPC}
+  Result := fpstat(PChar(aSystemFileName), aBuf);
+  {$ELSE}
+  Result := stat(PAnsiChar(AnsiString(aSystemFileName)), aBuf);
+  {$ENDIF}
+end;
+
+
+function Internal_fpS_ISDIR(aMode: Cardinal): Boolean;
+begin
+  {$IFDEF FPC}
+  Result := fpS_ISDIR(aMode);
+  {$ELSE}
+  Result := S_ISDIR(aMode);
+  {$ENDIF}
+end;
+
+
+function Internal_fputime(aSystemFileName: RawByteString; var aTimBuf: TUTimBuf): Integer;
+begin
+  {$IFDEF FPC}
+  Result := fputime(PChar(aSystemFileName), @aTimBuf);
+  {$ELSE}
+  Result := utime(PAnsiChar(AnsiString(aSystemFileName)), @aTimBuf);
+  {$ENDIF}
+end;
+
+{$ENDIF LINUX}
 
 function ConvertToOemString(const Value: AnsiString): AnsiString;
 begin
@@ -296,7 +334,11 @@ begin
   {$IFDEF FPC}
   Result := UTF8ToCP866(Value);
   {$ELSE}
-  AnsiToOem(PAnsiChar(Value), PAnsiChar(Result));
+    {$IFDEF LINUX}
+    Result := Value;
+    {$ELSE}
+    AnsiToOem(PAnsiChar(Value), PAnsiChar(Result));
+    {$ENDIF}
   {$ENDIF}
 end;
 
@@ -308,7 +350,11 @@ begin
   {$IFDEF FPC}
   Result := CP866ToUTF8(Value);
   {$ELSE}
-  OemToAnsi(PAnsiChar(Result), PAnsiChar(Result));
+    {$IFDEF LINUX}
+    Result := Value;
+    {$ELSE}
+    OemToAnsi(PAnsiChar(Result), PAnsiChar(Result));
+    {$ENDIF}
   {$ENDIF}
 end;
 
@@ -409,15 +455,14 @@ end;
 function GetFileAttributes(const AFilePath: string;
 	out AAttr: TFileAttributeData): Boolean;
 {$IFDEF LINUX}
-
 var
-  Info: Stat;
+  Info: InternalStat;
   SystemFileName: RawByteString;
 begin
   FillChar(AAttr, SizeOf(AAttr), 0);
-  SystemFileName := ToSingleByteFileSystemEncodedFileName(AFilePath);
-  Info := default(Stat);
-  if (fpstat(PChar(SystemFileName), Info) < 0) or fpS_ISDIR(info.st_mode) then
+  SystemFileName := {$IFDEF FPC}ToSingleByteFileSystemEncodedFileName(AFilePath){$ELSE}AFilePath{$ENDIF};
+  Info := Default(InternalStat);
+  if (Internal_fpstat(SystemFileName, Info) < 0) or Internal_fpS_ISDIR(info.st_mode) then
     Result := False
   else
   begin
@@ -432,7 +477,6 @@ begin
       AAttr.nFileSizeLow := DWORD(Info.st_size);
     end;
   end;
-
 {$ELSE}
 begin
   Result := GetFileAttributesEx(PChar(AFilePath),
@@ -452,6 +496,10 @@ var
 begin
   {$IFDEF FPC}
   AAttr := Default(TFileAttributeData);
+  {$ELSE}
+  {$IFDEF LINUX}
+  AAttr := Default(TFileAttributeData);
+  {$ENDIF}
   {$ENDIF}
   AAttr.dwFileAttributes := $80; // FILE_ATTRIBUTE_NORMAL
   SetFileAttributes(AFilePath, AAttr);
@@ -477,8 +525,8 @@ begin
   {$IFDEF LINUX}
   t.actime := FileTimeToUnixDate(AAttr.ftLastAccessTime);
   t.modtime:= FileTimeToUnixDate(AAttr.ftLastWriteTime);
-  SystemFileName := ToSingleByteFileSystemEncodedFileName(AFilePath);
-  fputime(PChar(SystemFileName), @t);
+  SystemFileName := {$IFDEF FPC}ToSingleByteFileSystemEncodedFileName(AFilePath){$ELSE}AFilePath{$ENDIF};
+  Internal_fputime(SystemFileName, t);
   {$ELSE}
   hFile := FileOpen(AFilePath, fmOpenWrite);
   try

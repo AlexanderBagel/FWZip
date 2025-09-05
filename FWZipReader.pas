@@ -32,11 +32,15 @@ interface
 {$I fwzip.inc}
 
 uses
+  //Подключен для устранения Warning'а
+  {$IFDEF LINUX_DELPHI}Posix.Unistd,{$ENDIF}
+
   SysUtils,
   Classes,
   Contnrs,
   Masks,
   DateUtils,
+  {$IFDEF LINUX_DELPHI}FWZipLinuxDelphiCompability,{$ENDIF}
   FWZipConsts,
   FWZipCrc32,
   FWZipCrypt,
@@ -1344,7 +1348,11 @@ begin
   // Спасибо v1ctar за найденый глюк
   //FFileStream.Free;
   FreeAndNil(FFileStream);
+  {$IFDEF LINUX_DELPHI}
+  FFileStream := TFileStream.CreateWithFpLock(PathCanonicalize(Value), fmOpenRead or fmShareDenyWrite);
+  {$ELSE}
   FFileStream := TFileStream.Create(PathCanonicalize(Value), fmOpenRead or fmShareDenyWrite);
+  {$ENDIF}
   LoadFromStream(FFileStream, SFXOffset, ZipEndOffset);
 end;
 
