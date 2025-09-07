@@ -124,13 +124,13 @@ begin
   Result := FOwner.Size;
 end;
 
-function TFWZipCRC32Stream.Read(var Buffer; Count: Integer): Longint;
+function TFWZipCRC32Stream.Read(var Buffer; Count: LongInt): Longint;
 begin
   Result := FOwner.Read(Buffer, Count);
   FCRC32 := CRC32Calc(FCRC32, @Buffer, Result);
 end;
 
-function TFWZipCRC32Stream.Seek(Offset: Integer; Origin: Word): Longint;
+function TFWZipCRC32Stream.Seek(Offset: LongInt; Origin: Word): Longint;
 begin
   Result := FOwner.Seek(Offset, Origin);
 end;
@@ -141,7 +141,7 @@ begin
   Result := FOwner.Seek(Offset, Origin);
 end;
 
-function TFWZipCRC32Stream.Write(const Buffer; Count: Integer): Longint;
+function TFWZipCRC32Stream.Write(const Buffer; Count: LongInt): Longint;
 begin
   Result := FOwner.Write(Buffer, Count);
   FCRC32 := CRC32Calc(FCRC32, @Buffer, Result);

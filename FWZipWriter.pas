@@ -32,10 +32,14 @@ interface
 {$I fwzip.inc}
 
 uses
+  //Подключен для устранения Warning'а
+  {$IFDEF LINUX_DELPHI}Posix.Unistd,{$ENDIF}
+
   SysUtils,
   Classes,
   Contnrs,
   Masks,
+  {$IFDEF LINUX_DELPHI}FWZipLinuxDelphiCompability,{$ENDIF}
   FWZipConsts,
   FWZipCrc32,
   FWZipCrypt,
@@ -1004,8 +1008,11 @@ begin
           else
           begin
             try
-              F := TFileStream.Create(CurrentItem.FilePath,
-                fmOpenRead or fmShareDenyWrite);
+              {$IFDEF LINUX_DELPHI}
+              F := TFileStream.CreateWithFpLock(CurrentItem.FilePath, fmOpenRead or fmShareDenyWrite);
+              {$ELSE}
+              F := TFileStream.Create(CurrentItem.FilePath, fmOpenRead or fmShareDenyWrite);
+              {$ENDIF}
               try
                 FCD[Index].Header.Crc32 :=
                   CopyWithProgress(F, Stream, Cryptor)
@@ -1078,8 +1085,11 @@ begin
                 defaultWindowBits, 8, zsDefault);
               try
                 try
-                  F := TFileStream.Create(CurrentItem.FilePath,
-                    fmOpenRead or fmShareDenyWrite);
+                  {$IFDEF LINUX_DELPHI}
+                  F := TFileStream.CreateWithFpLock(CurrentItem.FilePath, fmOpenRead or fmShareDenyWrite);
+                  {$ELSE}
+                  F := TFileStream.Create(CurrentItem.FilePath, fmOpenRead or fmShareDenyWrite);
+                  {$ENDIF}
                   try
                     // сохраняем ссылку на стрим с данными для рассчета прогресса
                     FCompressedStream := F;

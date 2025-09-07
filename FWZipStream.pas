@@ -51,8 +51,11 @@ interface
 {$I fwzip.inc}
 
 uses
+  //Подключены для устранения Warning'ов
+  {$IFDEF LINUX_DELPHI}Posix.Unistd, Posix.Stdio,{$ENDIF}
+
   {$IFNDEF FPC}
-  Windows, // для инлайн RenameFile
+  {$IFDEF MSWINDOWS}Windows,{для инлайн RenameFile}{$ENDIF}
   {$ENDIF}
   Classes,
   SysUtils,
@@ -290,7 +293,7 @@ begin
   Result := FSize;
 end;
 
-function TFWZipItemStream.Read(var Buffer; Count: Integer): Longint;
+function TFWZipItemStream.Read(var Buffer; Count: Longint): Longint;
 var
   P: PByte;
   DecryptBuff: Pointer;
@@ -355,7 +358,7 @@ begin
   end;
 end;
 
-function TFWZipItemStream.Seek(Offset: Integer; Origin: Word): Longint;
+function TFWZipItemStream.Seek(Offset: Longint; Origin: Word): Longint;
 begin
   Result := Seek(Int64(Offset), TSeekOrigin(Origin));
 end;
@@ -370,7 +373,7 @@ begin
   Result := FPosition;
 end;
 
-function TFWZipItemStream.Write(const Buffer; Count: Integer): Longint;
+function TFWZipItemStream.Write(const Buffer; Count: Longint): Longint;
 var
   EncryptBuffer: PByte;
 begin
