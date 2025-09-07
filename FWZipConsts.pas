@@ -6,7 +6,7 @@
 //  * Purpose   : Типы и константы используемые для работы с ZIP архивами
 //  * Author    : Александр (Rouse_) Багель
 //  * Copyright : © Fangorn Wizards Lab 1998 - 2025.
-//  * Version   : 2.0.9
+//  * Version   : 2.0.10
 //  * Home Page : http://rouse.drkb.ru
 //  * Home Blog : http://alexander-bagel.blogspot.ru
 //  ****************************************************************************
@@ -39,8 +39,8 @@ uses
   Classes;
 
 const
-  FWZipVersionInt = $02000009;
-  FWZipVersionStr = '2.0.9';
+  FWZipVersionInt = $0200000A;
+  FWZipVersionStr = '2.0.10';
 
 const
   MAXBYTE = 255;

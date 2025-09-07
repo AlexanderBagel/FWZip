@@ -6,7 +6,7 @@
 //  * Purpose   : Класс для создания ZIP архива
 //  * Author    : Александр (Rouse_) Багель
 //  * Copyright : © Fangorn Wizards Lab 1998 - 2025.
-//  * Version   : 2.0.9
+//  * Version   : 2.0.10
 //  * Home Page : http://rouse.drkb.ru
 //  * Home Blog : http://alexander-bagel.blogspot.ru
 //  ****************************************************************************
@@ -32,10 +32,14 @@ interface
 {$I fwzip.inc}
 
 uses
+  //Подключен для устранения Warning'а
+  {$IFDEF LINUX_DELPHI}Posix.Unistd,{$ENDIF}
+
   SysUtils,
   Classes,
   Contnrs,
   Masks,
+  {$IFDEF LINUX_DELPHI}FWZipLinuxDelphiCompability,{$ENDIF}
   FWZipConsts,
   FWZipCrc32,
   FWZipCrypt,
@@ -140,7 +144,7 @@ type
     procedure FillExData(Stream: TStream; Index: Integer); virtual;
   protected
     procedure DoProgress(ProgressState: TProgressState);
-    procedure CompressorOnProcess(Sender: TObject);
+    procedure CompressorOnProcess({%H-}Sender: TObject);
   protected
     function CheckFileNameSlashes(const Value: string): string;
     function CreateItemFromStream(const FileName: string;
@@ -1004,8 +1008,11 @@ begin
           else
           begin
             try
-              F := TFileStream.Create(CurrentItem.FilePath,
-                fmOpenRead or fmShareDenyWrite);
+              {$IFDEF LINUX_DELPHI}
+              F := TFileStream.CreateWithFpLock(CurrentItem.FilePath, fmOpenRead or fmShareDenyWrite);
+              {$ELSE}
+              F := TFileStream.Create(CurrentItem.FilePath, fmOpenRead or fmShareDenyWrite);
+              {$ENDIF}
               try
                 FCD[Index].Header.Crc32 :=
                   CopyWithProgress(F, Stream, Cryptor)
@@ -1078,8 +1085,11 @@ begin
                 defaultWindowBits, 8, zsDefault);
               try
                 try
-                  F := TFileStream.Create(CurrentItem.FilePath,
-                    fmOpenRead or fmShareDenyWrite);
+                  {$IFDEF LINUX_DELPHI}
+                  F := TFileStream.CreateWithFpLock(CurrentItem.FilePath, fmOpenRead or fmShareDenyWrite);
+                  {$ELSE}
+                  F := TFileStream.Create(CurrentItem.FilePath, fmOpenRead or fmShareDenyWrite);
+                  {$ENDIF}
                   try
                     // сохраняем ссылку на стрим с данными для рассчета прогресса
                     FCompressedStream := F;
@@ -1677,7 +1687,7 @@ var
   ExDataNTFS: TExDataNTFS;
   ZIP64Data: TMemoryStream;
   TotalExDataStream: TMemoryStream;
-  FirstDisk: Boolean;
+  FirstDisk, NewVolumeStarted: Boolean;
 begin
   FirstDisk := True;
   FcdfhRecordOnDisk := 0;
@@ -1763,10 +1773,15 @@ begin
             FCD[I].Header.FilenameLength + FCD[I].Header.FileCommentLength +
             FCD[I].Header.ExtraFieldLength then
           begin
-            TFWAbstractMultiStream(Stream).StartNewVolume;
+            // Rouse_ 07.09.2025
+            // Фикс критической ошибки. Новый том может быть не создан
+            // по причине того, что текущий и так имеет нулевой размер
+            // и нет смысла в инициализации нового.
+            NewVolumeStarted := TFWAbstractMultiStream(Stream).StartNewVolume;
             if FcdfhRecordOnDisk = 0 then
             begin
-              Inc(FcdfhDiskNumber);
+              if NewVolumeStarted then
+                Inc(FcdfhDiskNumber);
               FcdfhOffset := 0;
             end
             else

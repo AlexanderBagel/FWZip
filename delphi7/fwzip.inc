@@ -60,6 +60,7 @@
   {$UNDEF USE_ZLIB_EX}
   {$UNDEF USE_ZLIB_DLL}
   {$UNDEF OLDEST_ZLIB}
+  {$DEFINE FPC_TESTS}
 {$ELSE}
   // deflateInit2_ и inflateInit2_ отсутствуют в Delphi вплоть до 2009-ой
   // поэтому при использовании старых версий дельфи и стандартного модул€ ZLib
@@ -70,6 +71,12 @@
   {$ELSE}
     {$UNDEF OLDEST_ZLIB}
   {$IFEND}
+  {$IFDEF LINUX}
+    {$DEFINE LINUX_DELPHI}
+    {$DEFINE DUNITX_TESTS}
+  {$ELSE}
+    {$DEFINE DUNIT_TESTS}
+  {$ENDIF}
 {$ENDIF}
 
 // ≈сли подключена библиотека ZLibEx, то использовать deflateInit2_ и inflateInit2_ можно

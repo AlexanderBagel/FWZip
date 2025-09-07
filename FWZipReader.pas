@@ -152,7 +152,7 @@ type
       Path: string; CheckMode: Boolean);
     procedure SetStreamPosition(DiskNumber: Integer; Offset: Int64);
   protected
-    procedure DoProgress(Sender: TObject;
+    procedure DoProgress({%H-}Sender: TObject;
       const FileName: string; Extracted, TotalSize: Int64;
       ProgressState: TProgressState);
   protected

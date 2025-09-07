@@ -6,7 +6,7 @@
 //  * Purpose   : Класс для создания ZIP архива
 //  * Author    : Александр (Rouse_) Багель
 //  * Copyright : © Fangorn Wizards Lab 1998 - 2025.
-//  * Version   : 2.0.9
+//  * Version   : 2.0.10
 //  * Home Page : http://rouse.drkb.ru
 //  * Home Blog : http://alexander-bagel.blogspot.ru
 //  ****************************************************************************
@@ -144,7 +144,7 @@ type
     procedure FillExData(Stream: TStream; Index: Integer); virtual;
   protected
     procedure DoProgress(ProgressState: TProgressState);
-    procedure CompressorOnProcess(Sender: TObject);
+    procedure CompressorOnProcess({%H-}Sender: TObject);
   protected
     function CheckFileNameSlashes(const Value: string): string;
     function CreateItemFromStream(const FileName: string;
@@ -1687,7 +1687,7 @@ var
   ExDataNTFS: TExDataNTFS;
   ZIP64Data: TMemoryStream;
   TotalExDataStream: TMemoryStream;
-  FirstDisk: Boolean;
+  FirstDisk, NewVolumeStarted: Boolean;
 begin
   FirstDisk := True;
   FcdfhRecordOnDisk := 0;
@@ -1773,10 +1773,15 @@ begin
             FCD[I].Header.FilenameLength + FCD[I].Header.FileCommentLength +
             FCD[I].Header.ExtraFieldLength then
           begin
-            TFWAbstractMultiStream(Stream).StartNewVolume;
+            // Rouse_ 07.09.2025
+            // Фикс критической ошибки. Новый том может быть не создан
+            // по причине того, что текущий и так имеет нулевой размер
+            // и нет смысла в инициализации нового.
+            NewVolumeStarted := TFWAbstractMultiStream(Stream).StartNewVolume;
             if FcdfhRecordOnDisk = 0 then
             begin
-              Inc(FcdfhDiskNumber);
+              if NewVolumeStarted then
+                Inc(FcdfhDiskNumber);
               FcdfhOffset := 0;
             end
             else

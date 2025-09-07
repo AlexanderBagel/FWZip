@@ -459,7 +459,7 @@ var
   Info: InternalStat;
   SystemFileName: RawByteString;
 begin
-  FillChar(AAttr, SizeOf(AAttr), 0);
+  AAttr := Default(TFileAttributeData);
   SystemFileName := {$IFDEF FPC}ToSingleByteFileSystemEncodedFileName(AFilePath){$ELSE}AFilePath{$ENDIF};
   Info := Default(InternalStat);
   if (Internal_fpstat(SystemFileName, Info) < 0) or Internal_fpS_ISDIR(info.st_mode) then

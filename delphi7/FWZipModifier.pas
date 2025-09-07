@@ -93,7 +93,7 @@ type
     procedure CompressItem(CurrentItem: TFWZipWriterItem;
       Index: Integer; StreamSizeBeforeCompress: Int64; Stream: TStream); override;
     procedure FillExData(Stream: TStream; Index: Integer); override;
-    procedure OnLoadExData(Sender: TObject; ItemIndex: Integer;
+    procedure OnLoadExData({%H-}Sender: TObject; ItemIndex: Integer;
       Tag: Word; Data: TStream);
   public
     destructor Destroy; override;

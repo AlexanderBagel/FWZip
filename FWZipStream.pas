@@ -8,8 +8,8 @@
 //  *           : для поддержки разбитых на тома архивов и прочее утилитарные
 //  *           : стримы для проверки целостности архива
 //  * Author    : Александр (Rouse_) Багель
-//  * Copyright : © Fangorn Wizards Lab 1998 - 2023.
-//  * Version   : 2.0.1
+//  * Copyright : © Fangorn Wizards Lab 1998 - 2025.
+//  * Version   : 2.0.10
 //  * Home Page : http://rouse.drkb.ru
 //  * Home Blog : http://alexander-bagel.blogspot.ru
 //  ****************************************************************************
@@ -139,6 +139,9 @@ type
   TFWLastVolumesType = (lvtLastPart, lvtCentralDirectory);
 
   // Данный стрим используется при работе с архивом разбитым на тома
+
+  { TFWAbstractMultiStream }
+
   TFWAbstractMultiStream = class(TStream)
   private
     FMode: TFWMultiStreamMode;
@@ -176,7 +179,7 @@ type
     ///  Начинает новый том архива даже если предыдущий был заполнен не до конца
     ///  Работает только в режиме msmWrite
     /// </summary>
-    procedure StartNewVolume;
+    function StartNewVolume: Boolean;
     property Mode: TFWMultiStreamMode read FMode;
   end;
 
@@ -650,16 +653,18 @@ begin
   end;
 end;
 
-procedure TFWAbstractMultiStream.StartNewVolume;
+function TFWAbstractMultiStream.StartNewVolume: Boolean;
 begin
   CheckMode(msmWrite);
   if Position <> Size then
     raise EFWMultiStreamException.Create('Нельзя завершать текущий том находясь в середине архива.');
-  if FCurrentDiskData <> nil then
-    if FCurrentDiskData.Size > 0 then
-      // Rouse_ 01.09.2023
-      // Фикс критической ошибки, не обновлялся внутренний стрим обьекта
-      FCurrentDiskData := GetNextWriteVolume;
+  // Rouse_ 07.09.2025
+  // Результат показывает, был ли вообще создан новый том?
+  Result := Assigned(FCurrentDiskData) and (FCurrentDiskData.Size > 0);
+  if Result then
+    // Rouse_ 01.09.2023
+    // Фикс критической ошибки, не обновлялся внутренний стрим обьекта
+    FCurrentDiskData := GetNextWriteVolume;
 end;
 
 function TFWAbstractMultiStream.UpdateCurrentDiskData: Integer;

@@ -8,8 +8,8 @@
 //  *           : для поддержки разбитых на тома архивов и прочее утилитарные
 //  *           : стримы для проверки целостности архива
 //  * Author    : Александр (Rouse_) Багель
-//  * Copyright : © Fangorn Wizards Lab 1998 - 2023.
-//  * Version   : 2.0.1
+//  * Copyright : © Fangorn Wizards Lab 1998 - 2025.
+//  * Version   : 2.0.10
 //  * Home Page : http://rouse.drkb.ru
 //  * Home Blog : http://alexander-bagel.blogspot.ru
 //  ****************************************************************************
@@ -51,8 +51,11 @@ interface
 {$I fwzip.inc}
 
 uses
+  //Подключены для устранения Warning'ов
+  {$IFDEF LINUX_DELPHI}Posix.Unistd, Posix.Stdio,{$ENDIF}
+
   {$IFNDEF FPC}
-  Windows, // для инлайн RenameFile
+  {$IFDEF MSWINDOWS}Windows,{для инлайн RenameFile}{$ENDIF}
   {$ENDIF}
   Classes,
   SysUtils,
@@ -136,6 +139,9 @@ type
   TFWLastVolumesType = (lvtLastPart, lvtCentralDirectory);
 
   // Данный стрим используется при работе с архивом разбитым на тома
+
+  { TFWAbstractMultiStream }
+
   TFWAbstractMultiStream = class(TStream)
   private
     FMode: TFWMultiStreamMode;
@@ -173,7 +179,7 @@ type
     ///  Начинает новый том архива даже если предыдущий был заполнен не до конца
     ///  Работает только в режиме msmWrite
     /// </summary>
-    procedure StartNewVolume;
+    function StartNewVolume: Boolean;
     property Mode: TFWMultiStreamMode read FMode;
   end;
 
@@ -290,7 +296,7 @@ begin
   Result := FSize;
 end;
 
-function TFWZipItemStream.Read(var Buffer; Count: Integer): Longint;
+function TFWZipItemStream.Read(var Buffer; Count: Longint): Longint;
 var
   P: PByte;
   DecryptBuff: Pointer;
@@ -355,7 +361,7 @@ begin
   end;
 end;
 
-function TFWZipItemStream.Seek(Offset: Integer; Origin: Word): Longint;
+function TFWZipItemStream.Seek(Offset: Longint; Origin: Word): Longint;
 begin
   Result := Seek(Int64(Offset), TSeekOrigin(Origin));
 end;
@@ -370,7 +376,7 @@ begin
   Result := FPosition;
 end;
 
-function TFWZipItemStream.Write(const Buffer; Count: Integer): Longint;
+function TFWZipItemStream.Write(const Buffer; Count: Longint): Longint;
 var
   EncryptBuffer: PByte;
 begin
@@ -647,16 +653,18 @@ begin
   end;
 end;
 
-procedure TFWAbstractMultiStream.StartNewVolume;
+function TFWAbstractMultiStream.StartNewVolume: Boolean;
 begin
   CheckMode(msmWrite);
   if Position <> Size then
     raise EFWMultiStreamException.Create('Нельзя завершать текущий том находясь в середине архива.');
-  if FCurrentDiskData <> nil then
-    if FCurrentDiskData.Size > 0 then
-      // Rouse_ 01.09.2023
-      // Фикс критической ошибки, не обновлялся внутренний стрим обьекта
-      FCurrentDiskData := GetNextWriteVolume;
+  // Rouse_ 07.09.2025
+  // Результат показывает, был ли вообще создан новый том?
+  Result := Assigned(FCurrentDiskData) and (FCurrentDiskData.Size > 0);
+  if Result then
+    // Rouse_ 01.09.2023
+    // Фикс критической ошибки, не обновлялся внутренний стрим обьекта
+    FCurrentDiskData := GetNextWriteVolume;
 end;
 
 function TFWAbstractMultiStream.UpdateCurrentDiskData: Integer;
