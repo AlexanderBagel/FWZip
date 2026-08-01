@@ -781,7 +781,7 @@ begin
                   NewFilePath, NewFileData);
 
               // обрабатываем выбор польтзователя
-              case ExceptAction of
+              {%H-}case ExceptAction of
 
                 // повторить попытку
                 eaRetry:

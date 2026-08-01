@@ -5,8 +5,8 @@
 //  * Unit Name : FWZipUtils
 //  * Purpose   : Набор платформозависимых методов
 //  * Author    : Александр (Rouse_) Багель
-//  * Copyright : © Fangorn Wizards Lab 1998 - 2024.
-//  * Version   : 2.0.4
+//  * Copyright : © Fangorn Wizards Lab 1998 - 2026.
+//  * Version   : 2.0.11
 //  * Home Page : http://rouse.drkb.ru
 //  * Home Blog : http://alexander-bagel.blogspot.ru
 //  ****************************************************************************
@@ -98,6 +98,12 @@ uses
   function FileTimeToLocalFileDate(AFileTime: TFileTime): Cardinal;
   function FileTimeToLocalDateTime(AFileTime: TFileTime): TDateTime;
   function DateTimeToFileTime(ADateTime: TDateTime): TFileTime;
+
+  {$IFDEF LINUX}
+  function SystemTimeToFileTime(const ATime: TSystemTime; out AFileTime: TFileTime): Boolean;
+  function FileTimeToSystemTime(const AFileTime: TFileTime; out ASystemTime: TSystemTime): Boolean;
+  {$ENDIF}
+
 
   // не реализованные под Linux аналоги Windows функций
   // ===========================================================================

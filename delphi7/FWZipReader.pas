@@ -5,8 +5,8 @@
 //  * Unit Name : FWZipReader
 //  * Purpose   : Набор классов для распаковки ZIP архива
 //  * Author    : Александр (Rouse_) Багель
-//  * Copyright : © Fangorn Wizards Lab 1998 - 2025.
-//  * Version   : 2.0.9
+//  * Copyright : © Fangorn Wizards Lab 1998 - 2026.
+//  * Version   : 2.0.11
 //  * Home Page : http://rouse.drkb.ru
 //  * Home Blog : http://alexander-bagel.blogspot.ru
 //  ****************************************************************************
@@ -130,8 +130,10 @@ type
     FDuplicate: TZipDuplicateEvent;
     FStartZipDataOffset, FEndZipDataOffset: Int64;
     FDefaultDuplicateAction: TDuplicateAction;
+    FExtractFilter: TZipExtractFilterEvent;
     function GetItem(Index: Integer): TFWZipReaderItem;
     procedure SetDefaultDuplicateAction(const Value: TDuplicateAction);
+    function ShouldExtractItem(Index: Integer; const AExtractMask: string): Boolean;
   protected
     property ZIPStream: TStream read FZIPStream;
     // Rouse_ 02.10.2012
@@ -202,6 +204,7 @@ type
     property OnException: TZipExtractExceptionEvent
       read FException write FException;
     property OnDuplicate: TZipDuplicateEvent read FDuplicate write FDuplicate;
+    property OnExtractFilter: TZipExtractFilterEvent read FExtractFilter write FExtractFilter;
   end;
 
   EWrongPasswordException = class(Exception);
@@ -212,6 +215,7 @@ type
 implementation
 
 { TFWZipReaderItem }
+
 
 //
 //  Стрим для работы с данными извне
@@ -1558,17 +1562,11 @@ begin
   try
     // Производим поиск файлов для распаковки
     for I := 0 to Count - 1 do
-      if ExtractMask = '' then
+      if ShouldExtractItem(I, ZipExtractMask) then
       begin
         ExtractList.Add(UIntToPtr(I));
         Inc(FTotalSizeCount, Item[I].UncompressedSize);
-      end
-      else
-        if MatchesMask(Item[I].FileName, ZipExtractMask) then
-        begin
-          ExtractList.Add(UIntToPtr(I));
-          Inc(FTotalSizeCount, Item[I].UncompressedSize);
-        end;
+      end;
 
     if not CheckMode then
     begin
@@ -1697,6 +1695,21 @@ begin
     TFWAbstractMultiStream(FZIPStream).Seek(DiskNumber, Offset)
   else
     FZIPStream.Position := Offset;
+end;
+
+//
+//  Функция принимает решение, можно ли распаковывать файл или нет?
+// =============================================================================
+function TFWZipReader.ShouldExtractItem(Index: Integer;
+  const AExtractMask: string): Boolean;
+begin
+  if Assigned(FExtractFilter) then
+  begin
+    Result := True;
+    FExtractFilter(Self, Item[Index].FileName, Result);
+  end
+  else
+    Result := (AExtractMask = '') or MatchesMask(Item[Index].FileName, AExtractMask);
 end;
 
 //

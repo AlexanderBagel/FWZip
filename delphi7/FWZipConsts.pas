@@ -5,8 +5,8 @@
 //  * Unit Name : FWZipConsts
 //  * Purpose   : Типы и константы используемые для работы с ZIP архивами
 //  * Author    : Александр (Rouse_) Багель
-//  * Copyright : © Fangorn Wizards Lab 1998 - 2025.
-//  * Version   : 2.0.10
+//  * Copyright : © Fangorn Wizards Lab 1998 - 2026.
+//  * Version   : 2.0.11
 //  * Home Page : http://rouse.drkb.ru
 //  * Home Blog : http://alexander-bagel.blogspot.ru
 //  ****************************************************************************
@@ -39,8 +39,8 @@ uses
   Classes;
 
 const
-  FWZipVersionInt = $0200000A;
-  FWZipVersionStr = '2.0.10';
+  FWZipVersionInt = $0200000B;
+  FWZipVersionStr = '2.0.11';
 
 const
   MAXBYTE = 255;
@@ -341,6 +341,8 @@ type
 
   TZipDuplicateEvent = procedure(Sender: TObject;
     var Path: string; var Action: TDuplicateAction) of object;
+  TZipExtractFilterEvent = procedure(Sender: TObject; const FileName: string;
+    var Accept: Boolean) of object;
 
 const
   CRC32Table: array[Byte] of Cardinal =

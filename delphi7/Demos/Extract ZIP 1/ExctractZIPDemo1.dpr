@@ -6,8 +6,8 @@
 //  * Purpose   : Демонстрация распаковки архива.
 //  *           : Используется архив созданный демоприложением CreateZIPDemo1
 //  * Author    : Александр (Rouse_) Багель
-//  * Copyright : © Fangorn Wizards Lab 1998 - 2025.
-//  * Version   : 2.0.8
+//  * Copyright : © Fangorn Wizards Lab 1998 - 2026.
+//  * Version   : 2.0.11
 //  * Home Page : http://rouse.drkb.ru
 //  * Home Blog : http://alexander-bagel.blogspot.ru
 //  ****************************************************************************
@@ -40,6 +40,7 @@ uses
   Classes,
   SysUtils,
   TypInfo,
+  FWZipConsts,
   FWZipReader,
   FWZipUtils;
 
@@ -48,10 +49,25 @@ begin
   Result := GetEnumName(TypeInfo(TExtractResult), Integer(Value));
 end;
 
+// общий комбинированный фильтр дла извлечения файлов
+// применяется для тех случаев когда обычной маской нельзя точно
+// задать условия для имени файлов подходящих под фильтр
+procedure OnExtractFilter(Self, Sender: TObject; const FileName: string;
+  var AcceptExtract: Boolean);
+begin
+  // Комбинированный фильтр будет выглядеть так:
+  AcceptExtract :=
+    // 1. разрешаем извлекать только те файлы которые лежат в корне
+    (FileName = ExtractFileName(StringReplace(FileName, ZIP_SLASH, PathDelim, [rfReplaceAll])))
+    // 2. а также в папке AddFile
+    or (Copy(FileName, 1, 8) = 'AddFile/');
+end;
+
 var
   Zip: TFWZipReader;
   Index: Integer;
   M: TStringStream;
+  Method: TMethod;
 begin
   SetCurrentDir(ExtractFilePath(ParamStr(0)));
   try
@@ -100,6 +116,13 @@ begin
       // Третий вариант распаковки - автоматическая распаковка по маске
       // (данный код распакует все файлы находящиеся в папке AddFolderDemo архива)
       Zip.ExtractAll('AddFolderDemo*', '..\DemoResults\CreateZIPDemo1\ExtractMasked\');
+
+      // Четвертый вариант - распаковать только необходимые файлы
+      // которые выбираются через назначеный обработчик
+      Method.Code := @OnExtractFilter;
+      Method.Data := Zip;
+      Zip.OnExtractFilter := TZipExtractFilterEvent(Method);
+      Zip.ExtractAll('..\DemoResults\CreateZIPDemo1\ExtractManualMasked\');
     finally
       Zip.Free;
     end;
