@@ -5,8 +5,8 @@
 //  * Unit Name : FWZipModifier
 //  * Purpose   : Класс для модификации созданного ранее ZIP архива
 //  * Author    : Александр (Rouse_) Багель
-//  * Copyright : © Fangorn Wizards Lab 1998 - 2023.
-//  * Version   : 2.0.2
+//  * Copyright : © Fangorn Wizards Lab 1998 - 2026.
+//  * Version   : 2.0.12
 //  * Home Page : http://rouse.drkb.ru
 //  * Home Blog : http://alexander-bagel.blogspot.ru
 //  ****************************************************************************
@@ -440,6 +440,10 @@ begin
   // исключением является поле RelativeOffsetOfLocalHeader
   // но оно реинициализируется после вызова данного метода
   Value := OldItem.CentralDirFileHeaderEx;
+
+  // Rouse_ 11.09.2026
+  // Modifier не давал возможности изменить коментарий элемента
+  Value.FileComment := NewItem.Comment;
 
   // Rouse_ 11.11.2023
   // если имя в архиве было переназначено,

@@ -119,7 +119,13 @@ type
 
   function inflateEnd(var strm: TZStreamRec): Integer; cdecl;
 
-  function inflateReset(var strm: TZStreamRec): Integer; cdecl;
+  function inflateReset(var strm: TZStreamRec): Integer; cdecl;  
+
+  function deflateSetDictionary(var strm: TZStreamRec;
+    dictionary: PByte; dictLength: Cardinal): Integer; cdecl;
+
+  function inflateSetDictionary(var strm: TZStreamRec;
+    dictionary: PByte; dictLength: Cardinal): Integer; cdecl;   
 
   function adler32(adler: Longint; const buf; len: Integer): Longint; cdecl;
 
@@ -154,6 +160,8 @@ function inflateInit2_ external;
 function inflate external;
 function inflateEnd external;
 function inflateReset external;
+function deflateSetDictionary external;
+function inflateSetDictionary external;
 function adler32 external;
 function crc32 external;
 
