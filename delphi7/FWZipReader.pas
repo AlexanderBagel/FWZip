@@ -6,7 +6,7 @@
 //  * Purpose   : Набор классов для распаковки ZIP архива
 //  * Author    : Александр (Rouse_) Багель
 //  * Copyright : © Fangorn Wizards Lab 1998 - 2026.
-//  * Version   : 2.0.11
+//  * Version   : 2.0.14
 //  * Home Page : http://rouse.drkb.ru
 //  * Home Blog : http://alexander-bagel.blogspot.ru
 //  ****************************************************************************
@@ -345,6 +345,7 @@ begin
   if IsFolder then
   begin
     ForceDirectoriesEx(FullPath);
+    SetFileAttributes(FullPath, FFileHeader.Attributes);
     Exit;
   end;
 
@@ -693,6 +694,9 @@ end;
 // =============================================================================
 function TFWZipReaderItem.GetLastModDateTime: TDateTime;
 begin
+  // Rouse_ 22.09.2026
+  // для элементов архива с отсутствующим временем подставляется текущее
+  if LastModFileTime + LastModFileDate = 0 then Exit(Now);
 {$IFDEF FPC}
   Result := ComposeDateTime(
     EncodeDate(

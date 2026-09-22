@@ -6,7 +6,7 @@
 //  * Purpose   : Класс для модификации созданного ранее ZIP архива
 //  * Author    : Александр (Rouse_) Багель
 //  * Copyright : © Fangorn Wizards Lab 1998 - 2026.
-//  * Version   : 2.0.12
+//  * Version   : 2.0.14
 //  * Home Page : http://rouse.drkb.ru
 //  * Home Blog : http://alexander-bagel.blogspot.ru
 //  ****************************************************************************
@@ -444,6 +444,8 @@ begin
   // Rouse_ 11.09.2026
   // Modifier не давал возможности изменить коментарий элемента
   Value.FileComment := NewItem.Comment;
+  // с обязательной правкой длины коментария!
+  Value.Header.FileCommentLength := StringLength(NewItem.Comment, CurrentItem.UseUTF8String);
 
   // Rouse_ 11.11.2023
   // если имя в архиве было переназначено,

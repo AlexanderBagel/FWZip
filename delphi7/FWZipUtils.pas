@@ -6,7 +6,7 @@
 //  * Purpose   : Набор платформозависимых методов
 //  * Author    : Александр (Rouse_) Багель
 //  * Copyright : © Fangorn Wizards Lab 1998 - 2026.
-//  * Version   : 2.0.11
+//  * Version   : 2.0.14
 //  * Home Page : http://rouse.drkb.ru
 //  * Home Blog : http://alexander-bagel.blogspot.ru
 //  ****************************************************************************
@@ -534,7 +534,17 @@ begin
   SystemFileName := {$IFDEF FPC}ToSingleByteFileSystemEncodedFileName(AFilePath){$ELSE}AFilePath{$ENDIF};
   Internal_fputime(SystemFileName, t);
   {$ELSE}
-  hFile := FileOpen(AFilePath, fmOpenWrite);
+
+  // Rouse_ 22.09.2026
+  // Добавлена поддержка NTFS_EXDATA аттрибутов для папок
+  if (AAttr.dwFileAttributes and FILE_ATTRIBUTE_DIRECTORY) <> 0 then
+    hFile := CreateFile(PChar(AFilePath), GENERIC_WRITE,
+      FILE_SHARE_READ or FILE_SHARE_WRITE or FILE_SHARE_DELETE,
+      nil, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, 0)
+  else
+    hFile := FileOpen(AFilePath, fmOpenWrite);
+
+  if hFile <> 0 then  
   try
     SetFileTime(hFile,
       @AAttr.ftCreationTime,

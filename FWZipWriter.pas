@@ -6,7 +6,7 @@
 //  * Purpose   : Класс для создания ZIP архива
 //  * Author    : Александр (Rouse_) Багель
 //  * Copyright : © Fangorn Wizards Lab 1998 - 2025.
-//  * Version   : 2.0.10
+//  * Version   : 2.0.14
 //  * Home Page : http://rouse.drkb.ru
 //  * Home Blog : http://alexander-bagel.blogspot.ru
 //  ****************************************************************************
@@ -400,6 +400,12 @@ var
 begin
   ZeroMemory(@Attributes, SizeOf(TFileAttributeData));
   Attributes.dwFileAttributes := faDirectory;
+  // Rouse_ 22.09.2026
+  // В стандарте время для папок не предусмотрено, но допускается,
+  // поэтому тоже будем его использовать
+  Attributes.ftCreationTime := GetCurrentFileTime;
+  Attributes.ftLastAccessTime := Attributes.ftCreationTime;
+  Attributes.ftLastWriteTime := Attributes.ftCreationTime;
   Result := AddEmptyFolder(FolderRelativeName, Attributes);
 end;
 
