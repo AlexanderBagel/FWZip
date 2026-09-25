@@ -6,7 +6,7 @@
 //  * Purpose   : Класс для создания ZIP архива
 //  * Author    : Александр (Rouse_) Багель
 //  * Copyright : © Fangorn Wizards Lab 1998 - 2025.
-//  * Version   : 2.0.14
+//  * Version   : 2.0.15
 //  * Home Page : http://rouse.drkb.ru
 //  * Home Blog : http://alexander-bagel.blogspot.ru
 //  ****************************************************************************
@@ -1708,6 +1708,10 @@ begin
 
     // пропускаем элементы при записи которых произошло исключение
     if FCD[I].ExceptOnWrite then Continue;
+
+    // Rouse_ 25.09.2026
+    // Обязательный сброс размеров дополнительных атрибутов
+    FCD[I].Header.ExtraFieldLength := 0;
 
     // перед записью каждого элемента CentralDirectory
     // необходимо подготовить буфферы с расширенными данными
